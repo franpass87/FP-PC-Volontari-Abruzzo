@@ -321,7 +321,10 @@ class PCV_Abruzzo_Plugin {
         echo '<div class="wrap"><h1 class="wp-heading-inline">Volontari Abruzzo</h1></div>';
         $table = new PCV_List_Table( $this );
         $table->prepare_items();
-        echo '<form method="post">'; $table->display(); echo '</form>';
+        echo '<form method="post">';
+        wp_nonce_field( 'pcv_bulk_action' );
+        $table->display();
+        echo '</form>';
     }
 
     public function render_settings_page() {
@@ -422,11 +425,25 @@ if ( ! class_exists( 'PCV_List_Table' ) ) {
             }
         }
         
-        public function get_bulk_actions(){ 
-            return []; 
+        public function get_bulk_actions(){
+            return ['delete' => 'Elimina'];
         }
-        
+
+        public function process_bulk_action(){
+            if('delete' !== $this->current_action()) return;
+            check_admin_referer('pcv_bulk_action');
+            if(empty($_POST['id']) || !is_array($_POST['id'])) return;
+            global $wpdb;
+            $ids = array_map('absint', $_POST['id']);
+            $ids = array_filter($ids);
+            if(!$ids) return;
+            $table = $this->plugin->table_name();
+            $placeholders = implode(',', array_fill(0, count($ids), '%d'));
+            $wpdb->query( $wpdb->prepare("DELETE FROM {$table} WHERE id IN ($placeholders)", $ids) );
+        }
+
         public function prepare_items(){
+            $this->process_bulk_action();
             global $wpdb;
             $table = $this->plugin->table_name();
             $per_page=20; $current_page=$this->get_pagenum();
