@@ -322,7 +322,7 @@ class PCV_Abruzzo_Plugin {
 
     public function admin_assets($hook) {
         if ( strpos($hook, self::MENU_SLUG) === false ) return;
-        $css = ".pcv-topbar{display:flex;gap:10px;align-items:center;margin:12px 0}.pcv-topbar form{display:flex;gap:8px;align-items:center}";
+        $css = ".pcv-topbar{display:flex;gap:10px;align-items:center;margin:12px 0}.pcv-topbar form{display:flex;gap:8px;align-items:center}.wrap .tablenav{overflow:visible}.pcv-topbar, .pcv-topbar form{flex-wrap:wrap}";
         wp_register_style('pcv-admin-inline', false);
         wp_enqueue_style('pcv-admin-inline');
         wp_add_inline_style('pcv-admin-inline', $css);
