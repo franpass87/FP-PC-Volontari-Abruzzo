@@ -24,27 +24,30 @@
   document.addEventListener('DOMContentLoaded', function(){
     var selProv = qs('#pcv_provincia');
     var selComune = qs('#pcv_comune');
-    fillProvince(selProv);
+    if (selProv) {
+      fillProvince(selProv);
 
-    selProv.addEventListener('change', function(){
-      fillComuni(selComune, selProv.value, null);
-      selComune.dispatchEvent(new Event('change'));
-    });
+      selProv.addEventListener('change', function(){
+        fillComuni(selComune, selProv.value, null);
+        if (selComune) {
+          selComune.dispatchEvent(new Event('change'));
+        }
+      });
+
+      // Se abbiamo già locale, pre-seleziona
+      if(localStorage.getItem('pcv_provincia')){
+        selProv.value = localStorage.getItem('pcv_provincia');
+        selProv.dispatchEvent(new Event('change'));
+      }
+    }
+    if(selComune && localStorage.getItem('pcv_comune') && localStorage.getItem('pcv_provincia')){
+      selComune.value = localStorage.getItem('pcv_comune');
+    }
 
     // Modal per comune (memorizza localStorage)
     var modal = qs('#pcvComuneModal');
     var storedComune = localStorage.getItem('pcv_comune')||'';
     var storedProv   = localStorage.getItem('pcv_provincia')||'';
-
-    // Se abbiamo già locale, pre-seleziona
-    if(storedProv){
-      selProv.value = storedProv;
-      selProv.dispatchEvent(new Event('change'));
-    }
-    if(storedComune && storedProv){
-      selComune.value = storedComune;
-    }
-
     if(!storedComune){
       if(modal) modal.classList.remove('pcv-hidden');
     }
