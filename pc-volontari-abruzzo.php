@@ -490,69 +490,6 @@ class PCV_Abruzzo_Plugin {
 
         require_once ABSPATH . 'wp-admin/includes/class-wp-list-table.php';
 
-        class PCV_List_Table extends WP_List_TABLE {
-            private $plugin;
-            public function __construct( $plugin_instance ) {
-                $this->plugin = $plugin_instance;
-                parent::__construct(['singular'=>'volontario','plural'=>'volontari','ajax'=>false]);
-            }
-            public function get_columns() {
-                return ['cb'=>'<input type="checkbox" />','created_at'=>'Data','nome'=>'Nome','cognome'=>'Cognome','comune'=>'Comune','provincia'=>'Provincia','email'=>'Email','telefono'=>'Telefono','privacy'=>'Privacy','partecipa'=>'Partecipa'];
-            }
-            protected function get_sortable_columns() {
-                return ['created_at'=>['created_at',true],'nome'=>['nome',false],'cognome'=>['cognome',false],'comune'=>['comune',false],'provincia'=>['provincia',false]];
-            }
-            protected function column_cb($item){ return sprintf('<input type="checkbox" name="id[]" value="%d" />',$item->id); }
-            protected function column_default($item,$col){
-                switch($col){
-                    case 'created_at': return esc_html(mysql2date('d/m/Y H:i',$item->created_at));
-                    case 'nome':case 'cognome':case 'comune':case 'provincia':case 'email':case 'telefono': return esc_html($item->$col);
-                    case 'privacy':case 'partecipa': return $item->$col ? 'Sì':'No';
-                    default: return '';
-                }
-            }
-            public function get_bulk_actions(){ return []; }
-            public function prepare_items(){
-                global $wpdb;
-                $table = $this->plugin->table_name();
-                $per_page=20; $current_page=$this->get_pagenum();
-                $orderby = $_GET['orderby'] ?? 'created_at';
-                $order   = (isset($_GET['order']) && strtolower($_GET['order'])==='asc')?'ASC':'DESC';
-                $allowed = ['created_at','nome','cognome','comune','provincia']; if(!in_array($orderby,$allowed,true)) $orderby='created_at';
-                $where='WHERE 1=1'; $params=[];
-                $f_comune = isset($_GET['f_comune'])?trim(sanitize_text_field($_GET['f_comune'])):'';
-                $f_prov   = isset($_GET['f_prov'])?trim(sanitize_text_field($_GET['f_prov'])):'';
-                $s        = isset($_GET['s'])?trim(sanitize_text_field($_GET['s'])):'';
-                if($f_comune!==''){ $where.=" AND comune LIKE %s"; $params[]='%'.$wpdb->esc_like($f_comune).'%'; }
-                if($f_prov!==''){ $where.=" AND provincia LIKE %s"; $params[]='%'.$wpdb->esc_like($f_prov).'%'; }
-                if($s!==''){ $like='%'.$wpdb->esc_like($s).'%'; $where.=" AND ( nome LIKE %s OR cognome LIKE %s OR email LIKE %s OR telefono LIKE %s )"; array_push($params,$like,$like,$like,$like); }
-                $total_items = (int)$wpdb->get_var( $wpdb->prepare("SELECT COUNT(*) FROM {$table} {$where}", $params) );
-                $offset = ($current_page-1)*$per_page;
-                $query = "SELECT * FROM {$table} {$where} ORDER BY {$orderby} {$order} LIMIT %d OFFSET %d";
-                $items = $wpdb->get_results( $wpdb->prepare($query, array_merge($params,[ $per_page,$offset ])) );
-                $this->items=$items;
-                $this->set_pagination_args(['total_items'=>$total_items,'per_page'=>$per_page,'total_pages'=>ceil($total_items/$per_page)]);
-                $this->_column_headers=[$this->get_columns(),[], $this->get_sortable_columns(),'nome'];
-            }
-            public function extra_tablenav($which){
-                if($which!=='top') return;
-                $f_comune = isset($_GET['f_comune'])?esc_attr($_GET['f_comune']):'';
-                $f_prov   = isset($_GET['f_prov'])?esc_attr($_GET['f_prov']):'';
-                $s        = isset($_GET['s'])?esc_attr($_GET['s']):'';
-                $url_no_vars = remove_query_arg(['f_comune','f_prov','s','paged']);
-                echo '<div class="pcv-topbar"><form method="get">';
-                echo '<input type="hidden" name="page" value="'.esc_attr(PCV_Abruzzo_Plugin::MENU_SLUG).'">';
-                echo '<input type="text" name="f_comune" value="'.$f_comune.'" placeholder="Filtra per Comune">';
-                echo '<input type="text" name="f_prov" value="'.$f_prov.'" placeholder="Filtra per Provincia">';
-                echo '<input type="search" name="s" value="'.$s.'" placeholder="Cerca...">';
-                submit_button('Filtra','secondary','',false);
-                echo ' <a href="'.esc_url($url_no_vars).'" class="button">Pulisci</a> ';
-                $export_url = wp_nonce_url( add_query_arg(['pcv_export'=>'csv'], admin_url('admin.php?page='.PCV_Abruzzo_Plugin::MENU_SLUG) ), 'pcv_export' );
-                echo ' <a class="button button-primary" href="'.esc_url($export_url).'">Export CSV</a>';
-                echo '</form></div>';
-            }
-        }
-
         echo '<div class="wrap"><h1 class="wp-heading-inline">Volontari Abruzzo</h1></div>';
         $table = new PCV_List_Table( $this );
         $table->prepare_items();
@@ -618,6 +555,86 @@ class PCV_Abruzzo_Plugin {
             ], ';');
         }
         fclose($out); exit;
+    }
+}
+
+/**
+ * Custom WP_List_Table implementation for managing volunteers data
+ */
+if ( ! class_exists( 'PCV_List_Table' ) ) {
+    class PCV_List_Table extends WP_List_Table {
+        private $plugin;
+        
+        public function __construct( $plugin_instance ) {
+            $this->plugin = $plugin_instance;
+            parent::__construct(['singular'=>'volontario','plural'=>'volontari','ajax'=>false]);
+        }
+        
+        public function get_columns() {
+            return ['cb'=>'<input type="checkbox" />','created_at'=>'Data','nome'=>'Nome','cognome'=>'Cognome','comune'=>'Comune','provincia'=>'Provincia','email'=>'Email','telefono'=>'Telefono','privacy'=>'Privacy','partecipa'=>'Partecipa'];
+        }
+        
+        protected function get_sortable_columns() {
+            return ['created_at'=>['created_at',true],'nome'=>['nome',false],'cognome'=>['cognome',false],'comune'=>['comune',false],'provincia'=>['provincia',false]];
+        }
+        
+        protected function column_cb($item){ 
+            return sprintf('<input type="checkbox" name="id[]" value="%d" />',$item->id); 
+        }
+        
+        protected function column_default($item,$col){
+            switch($col){
+                case 'created_at': return esc_html(mysql2date('d/m/Y H:i',$item->created_at));
+                case 'nome':case 'cognome':case 'comune':case 'provincia':case 'email':case 'telefono': return esc_html($item->$col);
+                case 'privacy':case 'partecipa': return $item->$col ? 'Sì':'No';
+                default: return '';
+            }
+        }
+        
+        public function get_bulk_actions(){ 
+            return []; 
+        }
+        
+        public function prepare_items(){
+            global $wpdb;
+            $table = $this->plugin->table_name();
+            $per_page=20; $current_page=$this->get_pagenum();
+            $orderby = $_GET['orderby'] ?? 'created_at';
+            $order   = (isset($_GET['order']) && strtolower($_GET['order'])==='asc')?'ASC':'DESC';
+            $allowed = ['created_at','nome','cognome','comune','provincia']; if(!in_array($orderby,$allowed,true)) $orderby='created_at';
+            $where='WHERE 1=1'; $params=[];
+            $f_comune = isset($_GET['f_comune'])?trim(sanitize_text_field($_GET['f_comune'])):'';
+            $f_prov   = isset($_GET['f_prov'])?trim(sanitize_text_field($_GET['f_prov'])):'';
+            $s        = isset($_GET['s'])?trim(sanitize_text_field($_GET['s'])):'';
+            if($f_comune!==''){ $where.=" AND comune LIKE %s"; $params[]='%'.$wpdb->esc_like($f_comune).'%'; }
+            if($f_prov!==''){ $where.=" AND provincia LIKE %s"; $params[]='%'.$wpdb->esc_like($f_prov).'%'; }
+            if($s!==''){ $like='%'.$wpdb->esc_like($s).'%'; $where.=" AND ( nome LIKE %s OR cognome LIKE %s OR email LIKE %s OR telefono LIKE %s )"; array_push($params,$like,$like,$like,$like); }
+            $total_items = (int)$wpdb->get_var( $wpdb->prepare("SELECT COUNT(*) FROM {$table} {$where}", $params) );
+            $offset = ($current_page-1)*$per_page;
+            $query = "SELECT * FROM {$table} {$where} ORDER BY {$orderby} {$order} LIMIT %d OFFSET %d";
+            $items = $wpdb->get_results( $wpdb->prepare($query, array_merge($params,[ $per_page,$offset ])) );
+            $this->items=$items;
+            $this->set_pagination_args(['total_items'=>$total_items,'per_page'=>$per_page,'total_pages'=>ceil($total_items/$per_page)]);
+            $this->_column_headers=[$this->get_columns(),[], $this->get_sortable_columns(),'nome'];
+        }
+        
+        public function extra_tablenav($which){
+            if($which!=='top') return;
+            $f_comune = isset($_GET['f_comune'])?esc_attr($_GET['f_comune']):'';
+            $f_prov   = isset($_GET['f_prov'])?esc_attr($_GET['f_prov']):'';
+            $s        = isset($_GET['s'])?esc_attr($_GET['s']):'';
+            $url_no_vars = remove_query_arg(['f_comune','f_prov','s','paged']);
+            echo '<div class="pcv-topbar"><form method="get">';
+            echo '<input type="hidden" name="page" value="'.esc_attr(PCV_Abruzzo_Plugin::MENU_SLUG).'">';
+            echo '<input type="text" name="f_comune" value="'.$f_comune.'" placeholder="Filtra per Comune">';
+            echo '<input type="text" name="f_prov" value="'.$f_prov.'" placeholder="Filtra per Provincia">';
+            echo '<input type="search" name="s" value="'.$s.'" placeholder="Cerca...">';
+            submit_button('Filtra','secondary','',false);
+            echo ' <a href="'.esc_url($url_no_vars).'" class="button">Pulisci</a> ';
+            $export_url = wp_nonce_url( add_query_arg(['pcv_export'=>'csv'], admin_url('admin.php?page='.PCV_Abruzzo_Plugin::MENU_SLUG) ), 'pcv_export' );
+            echo ' <a class="button button-primary" href="'.esc_url($export_url).'">Export CSV</a>';
+            echo '</form></div>';
+        }
     }
 }
 
