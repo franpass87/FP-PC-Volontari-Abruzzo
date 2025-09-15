@@ -23,7 +23,23 @@ class PCV_Abruzzo_Plugin {
     private $comuni   = [];
 
     public function __construct() {
-        $data = json_decode( file_get_contents( __DIR__ . '/data/comuni_abruzzo.json' ), true );
+        $data = ['province' => [], 'comuni' => []];
+        $file = __DIR__ . '/data/comuni_abruzzo.json';
+        if ( file_exists( $file ) && is_readable( $file ) ) {
+            $json = file_get_contents( $file );
+            if ( $json !== false ) {
+                $decoded = json_decode( $json, true );
+                if ( json_last_error() === JSON_ERROR_NONE && is_array( $decoded ) ) {
+                    $data = $decoded;
+                } else {
+                    error_log( 'PCV_Abruzzo_Plugin: JSON decode error for comuni data - ' . json_last_error_msg() );
+                }
+            } else {
+                error_log( 'PCV_Abruzzo_Plugin: unable to read comuni data file' );
+            }
+        } else {
+            error_log( 'PCV_Abruzzo_Plugin: comuni data file missing or unreadable' );
+        }
         $this->province = $data['province'] ?? [];
         $this->comuni   = $data['comuni'] ?? [];
 
