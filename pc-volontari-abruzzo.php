@@ -220,7 +220,7 @@ class PCV_Abruzzo_Plugin {
                 'body' => [
                     'secret'   => $secret,
                     'response' => $token,
-                    'remoteip' => $_SERVER['REMOTE_ADDR'] ?? '',
+                    'remoteip' => $this->get_ip(),
                 ]
             ]);
             if ( is_wp_error($resp) ) $this->redirect_with_status('err');
