@@ -18,56 +18,15 @@ class PCV_Abruzzo_Plugin {
     const OPT_RECAPTCHA_SITE = 'pcv_recaptcha_site';
     const OPT_RECAPTCHA_SECRET = 'pcv_recaptcha_secret';
 
-    /** Province fisse Abruzzo */
-    private $province = ['AQ' => "L'Aquila", 'CH' => 'Chieti', 'PE' => 'Pescara', 'TE' => 'Teramo'];
-
-    /** Elenco completo Comuni Abruzzo (per provincia) */
-    private $comuni = [
-        'AQ' => [
-            "Acciano","Aielli","Alfedena","Anversa degli Abruzzi","Ateleta","Avezzano","Balsorano","Barete","Barisciano","Bugnara",
-            "Cagnano Amiterno","Calascio","Campo di Giove","Campotosto","Canistro","Cansano","Capestrano","Capistrello","Capitignano",
-            "Caporciano","Carsoli","Castel di Ieri","Castel di Sangro","Castel del Monte","Castelvecchio Calvisio","Castelvecchio Subequo",
-            "Celano","Cerchio","Civita d'Antino","Civitella Alfedena","Civitella Roveto","Cocullo","Collarmele","Collelongo","Collepietro",
-            "Corfinio","Fagnano Alto","Fontecchio","Fossa","Gagliano Aterno","Gioia dei Marsi","Goriano Sicoli","Introdacqua","L'Aquila",
-            "Lecce nei Marsi","Luco dei Marsi","Lucoli","Magliano de' Marsi","Massa d'Albe","Molina Aterno","Montereale","Morino",
-            "Navelli","Ocre","Ofena","Opi","Oricola","Ortona dei Marsi","Ortucchio","Ortona dei Marsi (Carrito)","Pacentro","Pereto",
-            "Pescasseroli","Pescina","Pescocostanzo","Pettorano sul Gizio","Pizzoli","Poggio Picenze","Prezza","Raiano","Rivisondoli",
-            "Roccacasale","Rocca di Botte","Rocca di Cambio","Rocca di Mezzo","Roccaraso","San Benedetto dei Marsi","San Benedetto in Perillis",
-            "San Demetrio ne' Vestini","San Pio delle Camere","Sant'Eusanio Forconese","Sante Marie","Scanno","Scontrone","Scoppito","Secinaro",
-            "Sulmona","Tagliacozzo","Tione degli Abruzzi","Tornimparte","Trasacco","Villalago","Villa Santa Lucia degli Abruzzi","Villa Sant'Angelo",
-            "Villavallelonga","Villetta Barrea","Vittorito"
-        ],
-        'CH' => [
-            "Altino","Archi","Ari","Arielli","Atessa","Bomba","Borrello","Bucchianico","Canosa Sannita","Carpineto Sinello","Carunchio",
-            "Casacanditella","Casalanguida","Casalbordino","Casalincontrada","Casoli","Castel Frentano","Castelguidone","Castiglione Messer Marino",
-            "Celenza sul Trigno","Chieti","Civitaluparella","Civitella Messer Raimondo","Colledimacine","Colledimezzo","Crecchio","Cupello",
-            "Dogliola","Fara Filiorum Petri","Fara San Martino","Filetto","Fossacesia","Fraine","Francavilla al Mare","Fresagrandinaria","Frisa",
-            "Furci","Gamberale","Gessopalena","Gissi","Giuliano Teatino","Guardiagrele","Guilmi","Lama dei Peligni","Lanciano","Lentella","Lettopalena",
-            "Liscia","Miglianico","Montazzoli","Montebello sul Sangro","Monteferrante","Montelapiano","Montenerodomo","Monteodorisio","Mozzagrogna",
-            "Orsogna","Ortona","Paglieta","Palmoli","Palombaro","Pennadomo","Pennapiedimonte","Perano","Pietraferrazzana","Pizzoferrato","Poggiofiorito",
-            "Pollutri","Pretoro","Quadri","Rapino","Ripa Teatina","Roccamontepiano","Rocca San Giovanni","Roccascalegna","Roccaspinalveti","Roio del Sangro",
-            "Rosello","San Buono","San Giovanni Lipioni","San Martino sulla Marrucina","San Salvo","San Vito Chietino","Santa Maria Imbaro","Sant'Eusanio del Sangro",
-            "Scerni","Schiavi di Abruzzo","Taranta Peligna","Tollo","Torino di Sangro","Tornareccio","Torrebruna","Torrevecchia Teatina","Torricella Peligna",
-            "Treglio","Tufillo","Vacri","Vasto","Villa Santa Maria","Villalfonsina","Villamagna"
-        ],
-        'PE' => [
-            "Abbateggio","Alanno","Bolognano","Brittoli","Bussi sul Tirino","Cappelle sul Tavo","Caramanico Terme","Carpineto della Nora",
-            "Castiglione a Casauria","Catignano","Cepagatti","Città Sant'Angelo","Civitaquana","Civitella Casanova","Collecorvino","Corvara",
-            "Cugnoli","Elice","Farindola","Lettomanoppello","Loreto Aprutino","Manoppello","Montebello di Bertona","Montesilvano","Moscufo",
-            "Nocciano","Penne","Pescara","Pescosansonesco","Pianella","Picciano","Pietranico","Popoli Terme","Roccamorice","Rosciano",
-            "Salle","San Valentino in Abruzzo Citeriore","Sant'Eufemia a Maiella","Scafa","Serramonacesca","Spoltore","Tocco da Casauria",
-            "Torre de' Passeri","Turrivalignani","Vicoli","Villa Celiera"
-        ],
-        'TE' => [
-            "Alba Adriatica","Ancarano","Arsita","Atri","Basciano","Bellante","Bisenti","Campli","Canzano","Castel Castagna","Castellalto",
-            "Castelli","Castiglione Messer Raimondo","Cellino Attanasio","Cermignano","Civitella del Tronto","Colledara","Colonnella","Controguerra",
-            "Corropoli","Cortino","Crognaleto","Fano Adriano","Giulianova","Isola del Gran Sasso d'Italia","Montefino","Montorio al Vomano",
-            "Morro d'Oro","Mosciano Sant'Angelo","Nereto","Notaresco","Penna Sant'Andrea","Pineto","Rocca Santa Maria","Roseto degli Abruzzi",
-            "Sant'Egidio alla Vibrata","Sant'Omero","Silvi","Teramo","Torano Nuovo","Torricella Sicura","Tortoreto","Tossicia","Valle Castellana"
-        ]
-    ];
+    /** Province e comuni caricati da file */
+    private $province = [];
+    private $comuni   = [];
 
     public function __construct() {
+        $data = json_decode( file_get_contents( __DIR__ . '/data/comuni_abruzzo.json' ), true );
+        $this->province = $data['province'] ?? [];
+        $this->comuni   = $data['comuni'] ?? [];
+
         register_activation_hook( __FILE__, [ $this, 'activate' ] );
         add_shortcode( 'pc_volontari_form', [ $this, 'render_form_shortcode' ] );
 

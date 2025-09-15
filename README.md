@@ -81,6 +81,12 @@ Il plugin crea la tabella `wp_pcv_volontari` con i seguenti campi:
 - `privacy`, `partecipa` - Consensi
 - `ip`, `user_agent` - Dati tecnici
 
+## Personalizzazione Province e Comuni
+
+L'elenco delle Province e dei Comuni è definito nel file `data/comuni_abruzzo.json`.
+Modifica questo file (mantenendo la struttura JSON con chiavi `province` e `comuni`)
+per aggiornare rapidamente l'elenco utilizzato dal plugin.
+
 ## Licenza
 
 Questo plugin è rilasciato sotto licenza GPLv2 or later.
