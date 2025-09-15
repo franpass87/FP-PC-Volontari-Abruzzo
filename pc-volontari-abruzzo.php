@@ -641,4 +641,17 @@ if ( ! class_exists( 'PCV_List_Table' ) ) {
     }
 }
 
+/**
+ * Cleanup plugin data on uninstall
+ */
+function pcv_uninstall() {
+    global $wpdb;
+    $table = $wpdb->prefix . PCV_Abruzzo_Plugin::TABLE;
+    $wpdb->query( "DROP TABLE IF EXISTS {$table}" );
+    delete_option( PCV_Abruzzo_Plugin::OPT_RECAPTCHA_SITE );
+    delete_option( PCV_Abruzzo_Plugin::OPT_RECAPTCHA_SECRET );
+}
+
+register_uninstall_hook( __FILE__, 'pcv_uninstall' );
+
 new PCV_Abruzzo_Plugin();
