@@ -1,8 +1,9 @@
+<?php
 /**
  * Plugin Name: PC Volontari Abruzzo
  * Description: Raccolta iscrizioni volontari (Protezione Civile Abruzzo) con form via shortcode, popup comune, lista completa Comuni/Province Abruzzo, reCAPTCHA v2 e gestionale backend.
- * Version: 1.1.0
- * Author: FP
+ * Version: 1.0
+ * Author: Francesco Passeri
  * License: GPLv2 or later
  */
 
@@ -10,7 +11,7 @@ if ( ! defined('ABSPATH') ) exit;
 
 class PCV_Abruzzo_Plugin {
 
-    const VERSION   = '1.1.0';
+    const VERSION   = '1.0';
     const TABLE     = 'pcv_volontari';
     const NONCE     = 'pcv_form_nonce';
     const MENU_SLUG = 'pcv-volontari';
