@@ -74,6 +74,13 @@ Il plugin è conforme al Regolamento UE 2016/679 (GDPR):
 - PHP 7.4 o superiore
 - MySQL 5.6 o superiore
 
+## Dipendenze
+
+Il plugin utilizza asset frontend separati caricati automaticamente:
+
+- `assets/css/frontend.css` per lo stile del form e dei popup.
+- `assets/js/frontend.js` per la gestione interattiva e l'inizializzazione facoltativa di reCAPTCHA v2.
+
 ## Struttura Database
 
 Il plugin crea la tabella `wp_pcv_volontari` con i seguenti campi:

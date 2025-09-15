@@ -82,147 +82,16 @@ class PCV_Abruzzo_Plugin {
 
     /* ---------------- Frontend: assets + shortcode ---------------- */
     public function enqueue_front_assets() {
-        // CSS
-        $css = "
-        .pcv-modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:99999}
-        .pcv-modal{background:#fff;border-radius:12px;max-width:520px;width:92%;padding:22px;box-shadow:0 10px 30px rgba(0,0,0,.2)}
-        .pcv-modal h3{margin:0 0 10px;font-size:20px}
-        .pcv-modal .pcv-actions{margin-top:14px;display:flex;gap:10px;justify-content:flex-end}
-        .pcv-hidden{display:none}
-        .pcv-form .pcv-row{display:flex;gap:14px;flex-wrap:wrap}
-        .pcv-form .pcv-field{flex:1 1 240px;display:flex;flex-direction:column;margin-bottom:12px}
-        .pcv-form label{font-weight:600;margin-bottom:6px}
-        .pcv-form select,.pcv-form input[type=text],.pcv-form input[type=email],.pcv-form input[type=tel]{padding:10px;border:1px solid #dcdcdc;border-radius:6px}
-        .pcv-form .pcv-checkbox{display:flex;gap:8px;align-items:flex-start;margin:8px 0}
-        .pcv-form .pcv-submit{margin-top:8px}
-        .pcv-alert{padding:10px;border-radius:6px;margin-bottom:12px}
-        .pcv-alert.success{background:#e6ffed;border:1px solid #b7f0c3}
-        .pcv-alert.error{background:#ffecec;border:1px solid #f5b0b0}
-        ";
-        wp_register_style( 'pcv-inline', false );
-        wp_enqueue_style( 'pcv-inline' );
-        wp_add_inline_style( 'pcv-inline', $css );
+        wp_enqueue_style( 'pcv-frontend', plugins_url( 'assets/css/frontend.css', __FILE__ ), [], self::VERSION );
+        wp_enqueue_script( 'pcv-frontend', plugins_url( 'assets/js/frontend.js', __FILE__ ), [], self::VERSION, true );
 
-        // Front JS: gestione popup, province->comuni, reCAPTCHA
-        $prov = $this->province;
-        $comuni = $this->comuni;
         $data = [
-            'province' => $prov,
-            'comuni'   => $comuni,
-            'recaptcha_site' => get_option(self::OPT_RECAPTCHA_SITE, ''),
+            'province'      => $this->province,
+            'comuni'        => $this->comuni,
+            'recaptcha_site' => get_option( self::OPT_RECAPTCHA_SITE, '' ),
         ];
-        wp_register_script( 'pcv-inline', '', [], false, true );
-        wp_enqueue_script( 'pcv-inline' );
-        wp_add_inline_script( 'pcv-inline', 'window.PCV_DATA='.wp_json_encode($data).';' );
 
-        $js = <<<JS
-        (function(){
-          function qs(s,ctx){return (ctx||document).querySelector(s);}
-          function ce(t){return document.createElement(t);}
-          function fillProvince(sel){
-            sel.innerHTML = '<option value="">Seleziona provincia</option>';
-            for (var code in PCV_DATA.province){
-              var opt = ce('option');
-              opt.value = code;
-              opt.textContent = PCV_DATA.province[code] + ' ('+code+')';
-              sel.appendChild(opt);
-            }
-          }
-          function fillComuni(sel, prov, preselect){
-            sel.innerHTML = '<option value="">Seleziona comune</option>';
-            var list = PCV_DATA.comuni[prov] || [];
-            list.forEach(function(c){
-              var o = ce('option'); o.value = c; o.textContent = c;
-              sel.appendChild(o);
-            });
-            if(preselect){
-              sel.value = preselect;
-            }
-          }
-          document.addEventListener('DOMContentLoaded', function(){
-            var selProv = qs('#pcv_provincia');
-            var selComune = qs('#pcv_comune');
-            fillProvince(selProv);
-
-            selProv.addEventListener('change', function(){
-              fillComuni(selComune, selProv.value, null);
-              selComune.dispatchEvent(new Event('change'));
-            });
-
-            // Modal per comune (memorizza localStorage)
-            var modal = qs('#pcvComuneModal');
-            var storedComune = localStorage.getItem('pcv_comune')||'';
-            var storedProv   = localStorage.getItem('pcv_provincia')||'';
-
-            // Se abbiamo già locale, pre-seleziona
-            if(storedProv){
-              selProv.value = storedProv;
-              selProv.dispatchEvent(new Event('change'));
-            }
-            if(storedComune && storedProv){
-              selComune.value = storedComune;
-            }
-
-            if(!storedComune){
-              if(modal) modal.classList.remove('pcv-hidden');
-            }
-
-            var confirmBtn = qs('#pcvComuneConfirm');
-            if(confirmBtn){
-              confirmBtn.addEventListener('click', function(){
-                var inpComune = qs('#pcvComuneInput');
-                var inpProv = qs('#pcvProvinciaInput');
-                var comune = inpComune && inpComune.value ? inpComune.value.trim() : '';
-                var prov = inpProv && inpProv.value ? inpProv.value : '';
-                if(prov && comune){
-                  localStorage.setItem('pcv_provincia', prov);
-                  localStorage.setItem('pcv_comune', comune);
-                  selProv.value = prov;
-                  selProv.dispatchEvent(new Event('change'));
-                  selComune.value = comune;
-                  if(modal) modal.classList.add('pcv-hidden');
-                } else {
-                  alert('Seleziona provincia e comune.');
-                }
-              });
-            }
-            var skipBtn = qs('#pcvComuneSkip');
-            if(skipBtn){
-              skipBtn.addEventListener('click', function(){ if(modal) modal.classList.add('pcv-hidden'); });
-            }
-
-            // Selezione guidata nel popup (provincia -> comuni)
-            var popProv = qs('#pcvProvinciaInput');
-            var popComune = qs('#pcvComuneInput');
-            if(popProv && popComune){
-              // riempi province
-              for (var code in PCV_DATA.province){
-                var o = ce('option'); o.value = code; o.textContent = PCV_DATA.province[code] + ' ('+code+')'; popProv.appendChild(o);
-              }
-              popProv.addEventListener('change', function(){
-                var prov = popProv.value;
-                popComune.innerHTML = '<option value="">Seleziona comune</option>';
-                (PCV_DATA.comuni[prov]||[]).forEach(function(c){
-                  var o = ce('option'); o.value = c; o.textContent = c; popComune.appendChild(o);
-                });
-              });
-              if(storedProv){
-                popProv.value = storedProv; popProv.dispatchEvent(new Event('change'));
-                if(storedComune){ popComune.value = storedComune; }
-              }
-            }
-
-            // reCAPTCHA v2
-            if(PCV_DATA.recaptcha_site){
-              var s = document.createElement('script');
-              s.src = 'https://www.google.com/recaptcha/api.js';
-              s.async = true; s.defer = true;
-              document.head.appendChild(s);
-            }
-          });
-        })();
-        JS;
-        wp_add_inline_script( 'pcv-inline', $js );
+        wp_localize_script( 'pcv-frontend', 'PCV_DATA', $data );
     }
 
     public function render_form_shortcode( $atts ) {

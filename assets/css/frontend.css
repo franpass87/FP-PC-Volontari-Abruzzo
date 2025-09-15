@@ -1,0 +1,14 @@
+.pcv-modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:99999}
+.pcv-modal{background:#fff;border-radius:12px;max-width:520px;width:92%;padding:22px;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+.pcv-modal h3{margin:0 0 10px;font-size:20px}
+.pcv-modal .pcv-actions{margin-top:14px;display:flex;gap:10px;justify-content:flex-end}
+.pcv-hidden{display:none}
+.pcv-form .pcv-row{display:flex;gap:14px;flex-wrap:wrap}
+.pcv-form .pcv-field{flex:1 1 240px;display:flex;flex-direction:column;margin-bottom:12px}
+.pcv-form label{font-weight:600;margin-bottom:6px}
+.pcv-form select,.pcv-form input[type=text],.pcv-form input[type=email],.pcv-form input[type=tel]{padding:10px;border:1px solid #dcdcdc;border-radius:6px}
+.pcv-form .pcv-checkbox{display:flex;gap:8px;align-items:flex-start;margin:8px 0}
+.pcv-form .pcv-submit{margin-top:8px}
+.pcv-alert{padding:10px;border-radius:6px;margin-bottom:12px}
+.pcv-alert.success{background:#e6ffed;border:1px solid #b7f0c3}
+.pcv-alert.error{background:#ffecec;border:1px solid #f5b0b0}
