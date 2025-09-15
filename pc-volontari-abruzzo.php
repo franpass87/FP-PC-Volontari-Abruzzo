@@ -27,7 +27,6 @@ class PCV_Abruzzo_Plugin {
         $this->province = $data['province'] ?? [];
         $this->comuni   = $data['comuni'] ?? [];
 
-        register_activation_hook( __FILE__, [ $this, 'activate' ] );
         add_shortcode( 'pc_volontari_form', [ $this, 'render_form_shortcode' ] );
 
         // Assets
@@ -45,9 +44,9 @@ class PCV_Abruzzo_Plugin {
     }
 
     /* ---------------- Activation: create table ---------------- */
-    public function activate() {
+    public static function activate() {
         global $wpdb;
-        $table = $this->table_name();
+        $table = $wpdb->prefix . self::TABLE;
         $charset = $wpdb->get_charset_collate();
 
         $sql = "CREATE TABLE IF NOT EXISTS `{$table}` (
@@ -498,5 +497,7 @@ function pcv_uninstall() {
 }
 
 register_uninstall_hook( __FILE__, 'pcv_uninstall' );
+
+register_activation_hook( __FILE__, ['PCV_Abruzzo_Plugin', 'activate'] );
 
 new PCV_Abruzzo_Plugin();
