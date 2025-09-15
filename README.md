@@ -28,6 +28,10 @@ Plugin WordPress per la raccolta iscrizioni volontari della Protezione Civile Ab
 2. Attiva il plugin dal menu "Plugin" di WordPress
 3. Vai su "Volontari Abruzzo" nel menu amministrativo per configurare le impostazioni
 
+## Disinstallazione
+
+La disinstallazione del plugin rimuove la tabella dei volontari e le opzioni di reCAPTCHA, cancellando tutti i dati memorizzati.
+
 ## Configurazione
 
 ### reCAPTCHA (Opzionale)
