@@ -116,7 +116,7 @@ class PCV_Abruzzo_Plugin {
         dbDelta( $sql );
     }
 
-    private function table_name() {
+    public function table_name() {
         global $wpdb;
         return $wpdb->prefix . self::TABLE;
     }
