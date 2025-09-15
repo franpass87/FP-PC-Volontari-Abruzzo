@@ -561,6 +561,9 @@ class PCV_Abruzzo_Plugin {
 /**
  * Custom WP_List_Table implementation for managing volunteers data
  */
+if ( ! class_exists( 'WP_List_Table' ) ) {
+    require_once ABSPATH . 'wp-admin/includes/class-wp-list-table.php';
+}
 if ( ! class_exists( 'PCV_List_Table' ) ) {
     class PCV_List_Table extends WP_List_Table {
         private $plugin;
