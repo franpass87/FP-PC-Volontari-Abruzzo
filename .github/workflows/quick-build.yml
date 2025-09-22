@@ -1,0 +1,54 @@
+name: Quick Plugin Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      include_dev_files:
+        description: 'Include development files (.git, etc.)'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  quick-build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Build plugin ZIP
+      run: |
+        # Set plugin name and version
+        PLUGIN_NAME="pc-volontari-abruzzo"
+        VERSION="quick-$(date +%Y%m%d-%H%M%S)"
+        ZIP_NAME="${PLUGIN_NAME}-${VERSION}.zip"
+        
+        echo "Building: $ZIP_NAME"
+        
+        # Create ZIP with or without dev files
+        if [ "${{ github.event.inputs.include_dev_files }}" = "true" ]; then
+          # Include all files
+          zip -r "$ZIP_NAME" . -x "*.git*"
+        else
+          # Include only production files
+          zip -r "$ZIP_NAME" \
+            pc-volontari-abruzzo.php \
+            assets/ \
+            data/ \
+            README.md \
+            -x "*.git*" "*/.DS_Store" "*/Thumbs.db"
+        fi
+        
+        # Show ZIP contents
+        echo "=== ZIP Contents ==="
+        unzip -l "$ZIP_NAME"
+        
+        echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
+        
+    - name: Upload ZIP
+      uses: actions/upload-artifact@v4
+      with:
+        name: quick-build-${{ github.run_number }}
+        path: ${{ env.ZIP_NAME }}
+        retention-days: 7
