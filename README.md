@@ -106,6 +106,25 @@ Questo plugin è rilasciato sotto licenza GPLv2 or later.
 
 **Francesco Passeri**
 
+## Build e Distribuzione
+
+Il repository include workflow GitHub Actions per la creazione automatica di file ZIP del plugin:
+
+### Build Automatico
+- **Push su main**: Crea build di sviluppo automaticamente
+- **Tag git**: Crea release ufficiali (es. `git tag v1.1.0 && git push origin v1.1.0`)
+- **Pull Request**: Verifica build su PR
+
+### Build Manuale
+- Vai su Actions → "Build WordPress Plugin ZIP" → "Run workflow"
+- Opzionalmente specifica una versione personalizzata
+
+### Download
+- **Artifacts**: Disponibili nella pagina Actions del repository
+- **Releases**: File ZIP allegati alle release GitHub per versioni taggate
+
+Per maggiori dettagli vedere [.github/README.md](.github/README.md).
+
 ## Versione
 
 1.0

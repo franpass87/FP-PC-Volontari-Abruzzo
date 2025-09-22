@@ -1,0 +1,143 @@
+name: Build WordPress Plugin ZIP
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Plugin version (optional - will use git tag or commit hash)'
+        required: false
+        type: string
+
+jobs:
+  build-zip:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Get version information
+      id: version
+      run: |
+        # Determine version based on input, git tag, or commit
+        if [ -n "${{ github.event.inputs.version }}" ]; then
+          VERSION="${{ github.event.inputs.version }}"
+        elif [[ $GITHUB_REF == refs/tags/* ]]; then
+          VERSION=${GITHUB_REF#refs/tags/}
+        else
+          VERSION="dev-$(echo $GITHUB_SHA | cut -c1-8)"
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Plugin version: $VERSION"
+        
+    - name: Prepare plugin directory
+      run: |
+        # Create temporary build directory
+        mkdir -p build
+        PLUGIN_NAME="pc-volontari-abruzzo"
+        PLUGIN_DIR="build/$PLUGIN_NAME"
+        
+        # Copy plugin files to build directory
+        mkdir -p "$PLUGIN_DIR"
+        
+        # Copy main plugin file
+        cp pc-volontari-abruzzo.php "$PLUGIN_DIR/"
+        
+        # Copy assets directory
+        cp -r assets "$PLUGIN_DIR/"
+        
+        # Copy data directory
+        cp -r data "$PLUGIN_DIR/"
+        
+        # Copy README
+        cp README.md "$PLUGIN_DIR/"
+        
+        # Create plugin info file
+        echo "Plugin: PC Volontari Abruzzo" > "$PLUGIN_DIR/plugin-info.txt"
+        echo "Version: ${{ steps.version.outputs.version }}" >> "$PLUGIN_DIR/plugin-info.txt"
+        echo "Build Date: $(date)" >> "$PLUGIN_DIR/plugin-info.txt"
+        echo "Build Commit: $GITHUB_SHA" >> "$PLUGIN_DIR/plugin-info.txt"
+        
+        echo "PLUGIN_DIR=$PLUGIN_DIR" >> $GITHUB_ENV
+        echo "PLUGIN_NAME=$PLUGIN_NAME" >> $GITHUB_ENV
+        
+    - name: Update plugin version in main file
+      run: |
+        # Update version in plugin header if this is a tagged release
+        if [[ $GITHUB_REF == refs/tags/* ]]; then
+          sed -i "s/Version: 1.0/Version: ${{ steps.version.outputs.version }}/" "$PLUGIN_DIR/pc-volontari-abruzzo.php"
+          sed -i "s/const VERSION   = '1.0';/const VERSION   = '${{ steps.version.outputs.version }}';/" "$PLUGIN_DIR/pc-volontari-abruzzo.php"
+        fi
+        
+    - name: Validate plugin structure
+      run: |
+        echo "=== Plugin Directory Structure ==="
+        find "$PLUGIN_DIR" -type f | sort
+        echo ""
+        echo "=== Plugin Main File Header ==="
+        head -10 "$PLUGIN_DIR/pc-volontari-abruzzo.php"
+        
+    - name: Create ZIP archive
+      run: |
+        cd build
+        ZIP_NAME="${PLUGIN_NAME}-${{ steps.version.outputs.version }}.zip"
+        zip -r "$ZIP_NAME" "$PLUGIN_NAME"
+        
+        # Verify ZIP contents
+        echo "=== ZIP Contents ==="
+        unzip -l "$ZIP_NAME"
+        
+        echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
+        echo "ZIP_PATH=build/$ZIP_NAME" >> $GITHUB_ENV
+        
+    - name: Upload ZIP as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: wordpress-plugin-${{ steps.version.outputs.version }}
+        path: ${{ env.ZIP_PATH }}
+        retention-days: 30
+        
+    - name: Upload to release (if tagged)
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ${{ env.ZIP_PATH }}
+        name: PC Volontari Abruzzo ${{ steps.version.outputs.version }}
+        body: |
+          WordPress Plugin: PC Volontari Abruzzo
+          Version: ${{ steps.version.outputs.version }}
+          
+          ## Installation
+          1. Download the ZIP file
+          2. Go to WordPress Admin → Plugins → Add New → Upload Plugin
+          3. Upload the ZIP file and activate the plugin
+          
+          ## Files included
+          - Main plugin file: `pc-volontari-abruzzo.php`
+          - Frontend assets: `assets/css/frontend.css`, `assets/js/frontend.js`
+          - Municipality data: `data/comuni_abruzzo.json`
+          - Documentation: `README.md`
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Build summary
+      run: |
+        echo "## Build Complete! 🎉" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Plugin:** PC Volontari Abruzzo" >> $GITHUB_STEP_SUMMARY
+        echo "**Version:** ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+        echo "**ZIP File:** ${{ env.ZIP_NAME }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Size:** $(ls -lh ${{ env.ZIP_PATH }} | awk '{print $5}')" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "The WordPress plugin ZIP is available as an artifact and can be downloaded from the Actions page." >> $GITHUB_STEP_SUMMARY
+        if [[ $GITHUB_REF == refs/tags/* ]]; then
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🏷️ **Release created:** This ZIP has also been attached to the GitHub release." >> $GITHUB_STEP_SUMMARY
+        fi
