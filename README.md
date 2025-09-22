@@ -1,5 +1,10 @@
 # PC Volontari Abruzzo
 
+[![CI/CD](https://github.com/franpass87/FP-PC-Volontari-Abruzzo/workflows/CI%2FCD%20Pipeline/badge.svg)](https://github.com/franpass87/FP-PC-Volontari-Abruzzo/actions)
+[![Code Quality](https://github.com/franpass87/FP-PC-Volontari-Abruzzo/workflows/Code%20Quality%20%26%20Linting/badge.svg)](https://github.com/franpass87/FP-PC-Volontari-Abruzzo/actions)
+[![Release](https://github.com/franpass87/FP-PC-Volontari-Abruzzo/workflows/Release%20Management/badge.svg)](https://github.com/franpass87/FP-PC-Volontari-Abruzzo/actions)
+[![Documentation](https://github.com/franpass87/FP-PC-Volontari-Abruzzo/workflows/Documentation/badge.svg)](https://github.com/franpass87/FP-PC-Volontari-Abruzzo/actions)
+
 ## Descrizione
 
 Plugin WordPress per la raccolta iscrizioni volontari della Protezione Civile Abruzzo. Il plugin fornisce un sistema completo per la gestione delle registrazioni con form via shortcode, popup di selezione comune, lista completa dei Comuni e Province dell'Abruzzo, protezione reCAPTCHA v2 e gestionale backend.
