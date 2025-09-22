@@ -1,0 +1,114 @@
+name: Deploy to WordPress.org
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to deploy'
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    name: Deploy to WordPress.org
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          
+      - name: Get plugin version
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.tag }}"
+          else
+            VERSION="${{ github.event.release.tag_name }}"
+          fi
+          echo "version=${VERSION#v}" >> $GITHUB_OUTPUT
+          echo "Plugin version: ${VERSION#v}"
+          
+      - name: Validate plugin structure
+        run: |
+          # Check required files exist
+          if [ ! -f "pc-volontari-abruzzo.php" ]; then
+            echo "Main plugin file not found"
+            exit 1
+          fi
+          
+          if [ ! -f "README.md" ]; then
+            echo "README.md not found"
+            exit 1
+          fi
+          
+          # Check plugin version matches release
+          PLUGIN_VERSION=$(grep -oP 'Version:\s*\K[\d.]+' pc-volontari-abruzzo.php)
+          if [ "$PLUGIN_VERSION" != "${{ steps.get_version.outputs.version }}" ]; then
+            echo "Plugin version ($PLUGIN_VERSION) doesn't match release version (${{ steps.get_version.outputs.version }})"
+            exit 1
+          fi
+          
+      - name: Build plugin package
+        id: build
+        run: |
+          # Create clean build directory
+          mkdir -p build/pc-volontari-abruzzo
+          
+          # Copy plugin files (exclude development files)
+          rsync -av \
+            --exclude='.git*' \
+            --exclude='node_modules' \
+            --exclude='vendor' \
+            --exclude='build' \
+            --exclude='tests' \
+            --exclude='.github' \
+            --exclude='*.log' \
+            --exclude='*.tmp' \
+            ./ build/pc-volontari-abruzzo/
+            
+          # Create ZIP package
+          cd build
+          zip -r pc-volontari-abruzzo-${{ steps.get_version.outputs.version }}.zip pc-volontari-abruzzo/
+          
+          echo "package_path=build/pc-volontari-abruzzo-${{ steps.get_version.outputs.version }}.zip" >> $GITHUB_OUTPUT
+          
+      - name: Upload release asset
+        if: github.event_name == 'release'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ${{ steps.build.outputs.package_path }}
+          asset_name: pc-volontari-abruzzo-${{ steps.get_version.outputs.version }}.zip
+          asset_content_type: application/zip
+          
+      - name: Deploy to WordPress.org SVN
+        if: env.WP_ORG_USERNAME && env.WP_ORG_PASSWORD
+        env:
+          WP_ORG_USERNAME: ${{ secrets.WP_ORG_USERNAME }}
+          WP_ORG_PASSWORD: ${{ secrets.WP_ORG_PASSWORD }}
+        run: |
+          # This would be the WordPress.org deployment script
+          # Note: This requires WordPress.org repository access and credentials
+          echo "WordPress.org deployment would happen here"
+          echo "Version: ${{ steps.get_version.outputs.version }}"
+          echo "Package: ${{ steps.build.outputs.package_path }}"
+          
+          # Example deployment steps (commented out as they require actual WP.org access):
+          # svn co https://plugins.svn.wordpress.org/pc-volontari-abruzzo svn
+          # rsync -av build/pc-volontari-abruzzo/ svn/trunk/
+          # cd svn
+          # svn add . --force
+          # svn ci -m "Version ${{ steps.get_version.outputs.version }}"
+          # svn cp trunk tags/${{ steps.get_version.outputs.version }}
+          # svn ci -m "Tag ${{ steps.get_version.outputs.version }}"

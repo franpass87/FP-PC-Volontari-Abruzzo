@@ -1,0 +1,112 @@
+# WordPress Plugin .gitignore
+
+# WordPress files
+wp-config.php
+wp-content/uploads/
+wp-content/blogs.dir/
+wp-content/upgrade/
+wp-content/backup-db/
+wp-content/advanced-cache.php
+wp-content/wp-cache-config.php
+wp-content/cache/
+wp-content/cache/supercache/
+
+# Development files
+node_modules/
+vendor/
+composer.lock
+package-lock.json
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Build artifacts
+build/
+dist/
+*.zip
+*.tar.gz
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# Dependency directories
+jspm_packages/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# Testing
+phpunit.xml
+tests/_output/*
+tests/_data/dump.sql
+
+# Code quality reports
+phpcs-report.txt
+phpstan.neon
+.stylelintrc.json
+.eslintrc.js
+.markdownlint.json
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# WordPress specific
+error_log
+.htaccess
+
+# Plugin specific temporary files
+pc-volontari-*.zip
+PLUGIN_DOCS.md
+CHANGELOG_AUTO.md
+CONTRIBUTORS.md
+
+# CI/CD artifacts
+trivy-results.sarif
+composer-audit.json
+npm-audit.json

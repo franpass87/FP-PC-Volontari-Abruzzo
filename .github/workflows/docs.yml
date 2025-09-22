@@ -1,0 +1,259 @@
+name: Documentation
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '**.md'
+      - '**.php'
+      - 'assets/**'
+  pull_request:
+    paths:
+      - '**.md'
+  workflow_dispatch:
+
+jobs:
+  generate-docs:
+    name: Generate Documentation
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          
+      - name: Generate Plugin Documentation
+        run: |
+          echo "# Plugin Documentation" > PLUGIN_DOCS.md
+          echo "" >> PLUGIN_DOCS.md
+          
+          # Extract plugin header information
+          echo "## Plugin Information" >> PLUGIN_DOCS.md
+          echo "" >> PLUGIN_DOCS.md
+          
+          if grep -q "Plugin Name:" pc-volontari-abruzzo.php; then
+            PLUGIN_NAME=$(grep -oP 'Plugin Name:\s*\K.*' pc-volontari-abruzzo.php)
+            echo "**Name:** $PLUGIN_NAME" >> PLUGIN_DOCS.md
+          fi
+          
+          if grep -q "Description:" pc-volontari-abruzzo.php; then
+            DESCRIPTION=$(grep -oP 'Description:\s*\K.*' pc-volontari-abruzzo.php)
+            echo "**Description:** $DESCRIPTION" >> PLUGIN_DOCS.md
+          fi
+          
+          if grep -q "Version:" pc-volontari-abruzzo.php; then
+            VERSION=$(grep -oP 'Version:\s*\K.*' pc-volontari-abruzzo.php)
+            echo "**Version:** $VERSION" >> PLUGIN_DOCS.md
+          fi
+          
+          if grep -q "Author:" pc-volontari-abruzzo.php; then
+            AUTHOR=$(grep -oP 'Author:\s*\K.*' pc-volontari-abruzzo.php)
+            echo "**Author:** $AUTHOR" >> PLUGIN_DOCS.md
+          fi
+          
+          echo "" >> PLUGIN_DOCS.md
+          
+          # Extract hooks and actions
+          echo "## WordPress Hooks" >> PLUGIN_DOCS.md
+          echo "" >> PLUGIN_DOCS.md
+          
+          echo "### Actions" >> PLUGIN_DOCS.md
+          grep -n "add_action" pc-volontari-abruzzo.php | while read -r line; do
+            echo "- \`$line\`" >> PLUGIN_DOCS.md
+          done
+          echo "" >> PLUGIN_DOCS.md
+          
+          echo "### Shortcodes" >> PLUGIN_DOCS.md
+          grep -n "add_shortcode" pc-volontari-abruzzo.php | while read -r line; do
+            echo "- \`$line\`" >> PLUGIN_DOCS.md
+          done
+          echo "" >> PLUGIN_DOCS.md
+          
+          # Extract database schema
+          echo "## Database Schema" >> PLUGIN_DOCS.md
+          echo "" >> PLUGIN_DOCS.md
+          
+          if grep -A 20 "CREATE TABLE" pc-volontari-abruzzo.php > /dev/null; then
+            echo "\`\`\`sql" >> PLUGIN_DOCS.md
+            grep -A 20 "CREATE TABLE" pc-volontari-abruzzo.php | head -20 >> PLUGIN_DOCS.md
+            echo "\`\`\`" >> PLUGIN_DOCS.md
+          fi
+          
+          echo "" >> PLUGIN_DOCS.md
+          
+      - name: Generate API Documentation
+        run: |
+          echo "## API Reference" >> PLUGIN_DOCS.md
+          echo "" >> PLUGIN_DOCS.md
+          
+          # Extract public methods
+          echo "### Public Methods" >> PLUGIN_DOCS.md
+          grep -n "public function" pc-volontari-abruzzo.php | while read -r line; do
+            echo "- \`$line\`" >> PLUGIN_DOCS.md
+          done
+          echo "" >> PLUGIN_DOCS.md
+          
+          # Extract constants
+          echo "### Constants" >> PLUGIN_DOCS.md
+          grep -n "const " pc-volontari-abruzzo.php | while read -r line; do
+            echo "- \`$line\`" >> PLUGIN_DOCS.md
+          done
+          echo "" >> PLUGIN_DOCS.md
+          
+      - name: Generate Asset Documentation
+        run: |
+          echo "## Assets" >> PLUGIN_DOCS.md
+          echo "" >> PLUGIN_DOCS.md
+          
+          if [ -d "assets" ]; then
+            echo "### CSS Files" >> PLUGIN_DOCS.md
+            find assets -name "*.css" | while read -r file; do
+              echo "- \`$file\`" >> PLUGIN_DOCS.md
+            done
+            echo "" >> PLUGIN_DOCS.md
+            
+            echo "### JavaScript Files" >> PLUGIN_DOCS.md
+            find assets -name "*.js" | while read -r file; do
+              echo "- \`$file\`" >> PLUGIN_DOCS.md
+            done
+            echo "" >> PLUGIN_DOCS.md
+          fi
+          
+          if [ -d "data" ]; then
+            echo "### Data Files" >> PLUGIN_DOCS.md
+            find data -name "*" -type f | while read -r file; do
+              echo "- \`$file\`" >> PLUGIN_DOCS.md
+            done
+            echo "" >> PLUGIN_DOCS.md
+          fi
+
+  validate-readme:
+    name: Validate README
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Check README completeness
+        run: |
+          echo "Validating README.md completeness..."
+          
+          REQUIRED_SECTIONS=(
+            "# "
+            "## Descrizione"
+            "## Installazione"
+            "## Utilizzo"
+            "## Requisiti"
+          )
+          
+          for section in "${REQUIRED_SECTIONS[@]}"; do
+            if grep -q "$section" README.md; then
+              echo "✅ Found: $section"
+            else
+              echo "❌ Missing: $section"
+            fi
+          done
+          
+          # Check for installation instructions
+          if grep -q "wp-content/plugins" README.md; then
+            echo "✅ Installation instructions found"
+          else
+            echo "⚠️  Installation instructions could be clearer"
+          fi
+          
+          # Check for shortcode documentation
+          if grep -q "\[pc_volontari_form\]" README.md; then
+            echo "✅ Shortcode documentation found"
+          else
+            echo "❌ Shortcode documentation missing"
+          fi
+
+  update-documentation:
+    name: Update Documentation
+    runs-on: ubuntu-latest
+    needs: [generate-docs, validate-readme]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Update changelog
+        run: |
+          # Generate or update CHANGELOG.md
+          if [ ! -f "CHANGELOG.md" ]; then
+            echo "# Changelog" > CHANGELOG.md
+            echo "" >> CHANGELOG.md
+            echo "All notable changes to this project will be documented in this file." >> CHANGELOG.md
+            echo "" >> CHANGELOG.md
+          fi
+          
+          # Get current version
+          VERSION=$(grep -oP 'Version:\s*\K[\d.]+' pc-volontari-abruzzo.php)
+          
+          # Check if this version is already in changelog
+          if ! grep -q "## \[$VERSION\]" CHANGELOG.md; then
+            # Add new version entry
+            TEMP_FILE=$(mktemp)
+            echo "# Changelog" > "$TEMP_FILE"
+            echo "" >> "$TEMP_FILE"
+            echo "## [$VERSION] - $(date +%Y-%m-%d)" >> "$TEMP_FILE"
+            echo "" >> "$TEMP_FILE"
+            echo "### Added" >> "$TEMP_FILE"
+            echo "- New features and improvements" >> "$TEMP_FILE"
+            echo "" >> "$TEMP_FILE"
+            echo "### Changed" >> "$TEMP_FILE"
+            echo "- Updates and modifications" >> "$TEMP_FILE"
+            echo "" >> "$TEMP_FILE"
+            echo "### Fixed" >> "$TEMP_FILE"
+            echo "- Bug fixes and corrections" >> "$TEMP_FILE"
+            echo "" >> "$TEMP_FILE"
+            tail -n +2 CHANGELOG.md >> "$TEMP_FILE"
+            mv "$TEMP_FILE" CHANGELOG.md
+          fi
+          
+      - name: Generate contributor list
+        run: |
+          echo "## Contributors" > CONTRIBUTORS.md
+          echo "" >> CONTRIBUTORS.md
+          echo "Thank you to all the people who have contributed to this project:" >> CONTRIBUTORS.md
+          echo "" >> CONTRIBUTORS.md
+          
+          # Get contributors from git log
+          git log --format='%aN <%aE>' | sort -u | while read -r contributor; do
+            echo "- $contributor" >> CONTRIBUTORS.md
+          done
+          
+      - name: Commit documentation updates
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          if [ -f "PLUGIN_DOCS.md" ]; then
+            git add PLUGIN_DOCS.md
+          fi
+          
+          if [ -f "CHANGELOG.md" ]; then
+            git add CHANGELOG.md
+          fi
+          
+          if [ -f "CONTRIBUTORS.md" ]; then
+            git add CONTRIBUTORS.md
+          fi
+          
+          # Only commit if there are changes
+          if ! git diff --staged --quiet; then
+            git commit -m "docs: update automatically generated documentation"
+            git push
+          else
+            echo "No documentation changes to commit"
+          fi

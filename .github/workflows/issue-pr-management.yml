@@ -1,0 +1,241 @@
+name: Issue & PR Management
+
+on:
+  issues:
+    types: [opened, edited, labeled]
+  pull_request:
+    types: [opened, edited, labeled, ready_for_review]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+
+jobs:
+  label-management:
+    name: Auto Label Issues and PRs
+    runs-on: ubuntu-latest
+    if: github.event_name == 'issues' || github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Auto-label based on content
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const issueNumber = context.issue.number;
+            const body = context.payload.issue?.body || context.payload.pull_request?.body || '';
+            const title = context.payload.issue?.title || context.payload.pull_request?.title || '';
+            
+            const labelsToAdd = [];
+            
+            // Content-based labeling
+            if (title.toLowerCase().includes('bug') || body.toLowerCase().includes('bug')) {
+              labelsToAdd.push('bug');
+            }
+            
+            if (title.toLowerCase().includes('feature') || body.toLowerCase().includes('feature')) {
+              labelsToAdd.push('enhancement');
+            }
+            
+            if (title.toLowerCase().includes('doc') || body.toLowerCase().includes('documentation')) {
+              labelsToAdd.push('documentation');
+            }
+            
+            if (body.toLowerCase().includes('security') || title.toLowerCase().includes('security')) {
+              labelsToAdd.push('security');
+            }
+            
+            if (body.toLowerCase().includes('performance') || title.toLowerCase().includes('performance')) {
+              labelsToAdd.push('performance');
+            }
+            
+            // WordPress specific labels
+            if (body.toLowerCase().includes('wordpress') || body.toLowerCase().includes('wp-')) {
+              labelsToAdd.push('wordpress');
+            }
+            
+            if (body.toLowerCase().includes('php') || body.toLowerCase().includes('function')) {
+              labelsToAdd.push('php');
+            }
+            
+            if (body.toLowerCase().includes('javascript') || body.toLowerCase().includes('js')) {
+              labelsToAdd.push('javascript');
+            }
+            
+            if (body.toLowerCase().includes('css') || body.toLowerCase().includes('style')) {
+              labelsToAdd.push('css');
+            }
+            
+            // Add labels if any were identified
+            if (labelsToAdd.length > 0) {
+              await github.rest.issues.addLabels({
+                owner,
+                repo,
+                issue_number: issueNumber,
+                labels: labelsToAdd
+              });
+            }
+
+  welcome-message:
+    name: Welcome New Contributors
+    runs-on: ubuntu-latest
+    if: github.event_name == 'issues' && github.event.action == 'opened'
+    
+    steps:
+      - name: Check if first issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const author = context.payload.issue.user.login;
+            
+            // Get all issues by this author
+            const issues = await github.rest.issues.listForRepo({
+              owner,
+              repo,
+              creator: author,
+              state: 'all'
+            });
+            
+            // If this is their first issue, welcome them
+            if (issues.data.length === 1) {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: context.issue.number,
+                body: `👋 Ciao @${author}! Grazie per aver aperto la tua prima issue per PC Volontari Abruzzo.
+                
+                Alcune linee guida per aiutarci a risolvere il problema più velocemente:
+                
+                🐛 **Per i bug:**
+                - Descrivi i passi per riprodurre il problema
+                - Includi la versione di WordPress e PHP
+                - Aggiungi screenshot se possibile
+                
+                ✨ **Per le richieste di funzionalità:**
+                - Spiega il caso d'uso e perché sarebbe utile
+                - Fornisci esempi di come dovrebbe funzionare
+                
+                📚 **Per la documentazione:**
+                - Specifica quale parte della documentazione necessita miglioramenti
+                
+                Il team esaminerà la tua issue il prima possibile. Grazie per il tuo contributo! 🙏`
+              });
+            }
+
+  pr-checks:
+    name: PR Validation
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Validate PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const prNumber = context.payload.pull_request.number;
+            const title = context.payload.pull_request.title;
+            const body = context.payload.pull_request.body || '';
+            
+            const issues = [];
+            
+            // Check PR title format
+            const titlePattern = /^(feat|fix|docs|style|refactor|test|chore)(\(.+\))?:\s.+/;
+            if (!titlePattern.test(title)) {
+              issues.push('❌ Il titolo del PR dovrebbe seguire il formato: `type(scope): description`');
+              issues.push('   Esempi: `feat: add new feature`, `fix(auth): resolve login issue`');
+            }
+            
+            // Check if description exists
+            if (body.length < 10) {
+              issues.push('❌ Aggiungi una descrizione dettagliata del PR');
+            }
+            
+            // Check for checklist
+            if (!body.includes('- [')) {
+              issues.push('❌ Includi una checklist nella descrizione del PR');
+            }
+            
+            // Check for related issues
+            if (!body.includes('#') && !body.includes('close') && !body.includes('fix')) {
+              issues.push('⚠️  Considera di collegare questo PR a una issue esistente');
+            }
+            
+            // Post comment if issues found
+            if (issues.length > 0) {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: prNumber,
+                body: `## Validazione PR\n\n${issues.join('\n')}\n\n---\n*Questo è un messaggio automatico per aiutare a mantenere la qualità del progetto.*`
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: prNumber,
+                body: `## ✅ Validazione PR completata\n\nIl PR sembra ben formattato! Grazie per aver seguito le linee guida del progetto.`
+              });
+            }
+
+  stale-issues:
+    name: Mark Stale Issues
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    
+    steps:
+      - name: Mark stale issues and PRs
+        uses: actions/stale@v9
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          stale-issue-message: |
+            Questa issue è stata automaticamente contrassegnata come stale perché non ha avuto attività recente.
+            Verrà chiusa se non riceve ulteriore attività. Se è ancora rilevante, aggiungi un commento per mantenerla aperta.
+          stale-pr-message: |
+            Questo PR è stato automaticamente contrassegnato come stale perché non ha avuto attività recente.
+            Verrà chiuso se non riceve ulteriore attività. Se è ancora rilevante, aggiungi un commento per mantenerlo aperto.
+          close-issue-message: |
+            Questa issue è stata chiusa automaticamente per inattività.
+            Se è ancora rilevante, sentiti libero di riaprirla.
+          close-pr-message: |
+            Questo PR è stato chiuso automaticamente per inattività.
+            Se è ancora rilevante, sentiti libero di riaprirlo.
+          days-before-stale: 60
+          days-before-close: 7
+          stale-issue-label: 'stale'
+          stale-pr-label: 'stale'
+          exempt-issue-labels: 'pinned,security'
+          exempt-pr-labels: 'pinned,security'
+
+  assign-reviewers:
+    name: Auto-assign Reviewers
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.action == 'opened'
+    
+    steps:
+      - name: Auto-assign reviewers
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const prNumber = context.payload.pull_request.number;
+            const author = context.payload.pull_request.user.login;
+            
+            // Don't assign the author as reviewer
+            const potentialReviewers = ['franpass87']; // Add other maintainers
+            const reviewers = potentialReviewers.filter(reviewer => reviewer !== author);
+            
+            if (reviewers.length > 0) {
+              await github.rest.pulls.requestReviewers({
+                owner,
+                repo,
+                pull_number: prNumber,
+                reviewers: reviewers.slice(0, 2) // Assign max 2 reviewers
+              });
+            }

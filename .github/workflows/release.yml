@@ -1,0 +1,176 @@
+name: Release Management
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'pc-volontari-abruzzo.php'
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+jobs:
+  check-version:
+    name: Check Version Changes
+    runs-on: ubuntu-latest
+    outputs:
+      should_release: ${{ steps.version_check.outputs.should_release }}
+      current_version: ${{ steps.version_check.outputs.current_version }}
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          
+      - name: Check for version changes
+        id: version_check
+        run: |
+          # Get current version from plugin file
+          CURRENT_VERSION=$(grep -oP 'Version:\s*\K[\d.]+' pc-volontari-abruzzo.php)
+          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          
+          # Check if this is a manual trigger
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "should_release=true" >> $GITHUB_OUTPUT
+            echo "Manual release triggered"
+            exit 0
+          fi
+          
+          # Check if version changed in the last commit
+          if git diff HEAD~1 HEAD -- pc-volontari-abruzzo.php | grep -q "Version:"; then
+            echo "should_release=true" >> $GITHUB_OUTPUT
+            echo "Version changed in plugin file"
+          else
+            echo "should_release=false" >> $GITHUB_OUTPUT
+            echo "No version change detected"
+          fi
+
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: check-version
+    if: needs.check-version.outputs.should_release == 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Generate changelog from git commits since last tag
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          
+          if [ -z "$LAST_TAG" ]; then
+            echo "## Changes" > CHANGELOG.md
+            echo "- Initial release" >> CHANGELOG.md
+          else
+            echo "## Changes since $LAST_TAG" > CHANGELOG.md
+            git log --pretty=format:"- %s" $LAST_TAG..HEAD >> CHANGELOG.md
+          fi
+          
+          # Read changelog content
+          CHANGELOG_CONTENT=$(cat CHANGELOG.md)
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG_CONTENT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+      - name: Extract plugin metadata
+        id: metadata
+        run: |
+          # Extract metadata from plugin file
+          PLUGIN_NAME=$(grep -oP 'Plugin Name:\s*\K.*' pc-volontari-abruzzo.php)
+          DESCRIPTION=$(grep -oP 'Description:\s*\K.*' pc-volontari-abruzzo.php)
+          AUTHOR=$(grep -oP 'Author:\s*\K.*' pc-volontari-abruzzo.php)
+          
+          echo "plugin_name=$PLUGIN_NAME" >> $GITHUB_OUTPUT
+          echo "description=$DESCRIPTION" >> $GITHUB_OUTPUT
+          echo "author=$AUTHOR" >> $GITHUB_OUTPUT
+          
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ needs.check-version.outputs.current_version }}
+          release_name: ${{ steps.metadata.outputs.plugin_name }} v${{ needs.check-version.outputs.current_version }}
+          body: |
+            ## ${{ steps.metadata.outputs.plugin_name }} v${{ needs.check-version.outputs.current_version }}
+            
+            ${{ steps.metadata.outputs.description }}
+            
+            ${{ steps.changelog.outputs.changelog }}
+            
+            **Installation Instructions:**
+            1. Download the plugin ZIP file from the assets below
+            2. Upload to your WordPress site via Plugins > Add New > Upload Plugin
+            3. Activate the plugin
+            4. Configure settings under "Volontari Abruzzo" in your WordPress admin
+            
+            **Requirements:**
+            - WordPress 5.0 or higher
+            - PHP 7.4 or higher
+            - MySQL 5.6 or higher
+            
+            ---
+            *Author: ${{ steps.metadata.outputs.author }}*
+          draft: false
+          prerelease: false
+
+  update-version:
+    name: Update Version (Manual)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: Install semver
+        run: npm install -g semver
+        
+      - name: Bump version
+        id: bump
+        run: |
+          CURRENT_VERSION=$(grep -oP 'Version:\s*\K[\d.]+' pc-volontari-abruzzo.php)
+          NEW_VERSION=$(semver -i ${{ github.event.inputs.version_bump }} $CURRENT_VERSION)
+          
+          # Update version in plugin file
+          sed -i "s/Version: $CURRENT_VERSION/Version: $NEW_VERSION/" pc-volontari-abruzzo.php
+          
+          # Update version constant if it exists
+          if grep -q "const VERSION" pc-volontari-abruzzo.php; then
+            sed -i "s/const VERSION   = '[^']*'/const VERSION   = '$NEW_VERSION'/" pc-volontari-abruzzo.php
+          fi
+          
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "Updated version from $CURRENT_VERSION to $NEW_VERSION"
+          
+      - name: Commit version bump
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add pc-volontari-abruzzo.php
+          git commit -m "Bump version to ${{ steps.bump.outputs.new_version }}"
+          git push

@@ -1,0 +1,183 @@
+name: Dependency Updates
+
+on:
+  schedule:
+    # Run every Monday at 9 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+jobs:
+  update-dependencies:
+    name: Update Dependencies
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          tools: composer
+          
+      - name: Update Composer dependencies
+        if: hashFiles('composer.json') != ''
+        run: |
+          if [ -f "composer.json" ]; then
+            echo "Updating Composer dependencies..."
+            composer update --no-interaction --prefer-dist
+            
+            # Check if there are changes
+            if git diff --quiet composer.lock; then
+              echo "No Composer updates available"
+            else
+              echo "composer_updated=true" >> $GITHUB_ENV
+            fi
+          fi
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: Update NPM dependencies
+        if: hashFiles('package.json') != ''
+        run: |
+          if [ -f "package.json" ]; then
+            echo "Updating NPM dependencies..."
+            npm update
+            
+            # Check if there are changes
+            if git diff --quiet package-lock.json; then
+              echo "No NPM updates available"
+            else
+              echo "npm_updated=true" >> $GITHUB_ENV
+            fi
+          fi
+          
+      - name: Check for WordPress compatibility
+        run: |
+          # Check if WordPress version requirements need updating
+          echo "Checking WordPress compatibility..."
+          
+          # Get latest WordPress version
+          LATEST_WP=$(curl -s https://api.wordpress.org/core/version-check/1.7/ | jq -r '.offers[0].version')
+          echo "Latest WordPress version: $LATEST_WP"
+          
+          # Check current requirement in plugin
+          if grep -q "Requires at least:" pc-volontari-abruzzo.php; then
+            CURRENT_REQ=$(grep -oP 'Requires at least:\s*\K[\d.]+' pc-volontari-abruzzo.php)
+            echo "Current requirement: $CURRENT_REQ"
+          fi
+          
+      - name: Update WordPress assets
+        run: |
+          # Check for updates to common WordPress assets
+          echo "Checking for WordPress asset updates..."
+          
+          # Update jQuery references if any (example)
+          if grep -r "jquery" assets/; then
+            echo "jQuery references found in assets"
+          fi
+          
+      - name: Create Pull Request
+        if: env.composer_updated == 'true' || env.npm_updated == 'true'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: |
+            chore: update dependencies
+            
+            - Updated Composer dependencies: ${{ env.composer_updated == 'true' && 'Yes' || 'No' }}
+            - Updated NPM dependencies: ${{ env.npm_updated == 'true' && 'Yes' || 'No' }}
+          title: 'chore: Automated dependency updates'
+          body: |
+            ## Automated Dependency Updates
+            
+            This PR contains automated updates to project dependencies.
+            
+            ### Changes:
+            - Composer dependencies: ${{ env.composer_updated == 'true' && '✅ Updated' || '⚪ No changes' }}
+            - NPM dependencies: ${{ env.npm_updated == 'true' && '✅ Updated' || '⚪ No changes' }}
+            
+            ### Testing:
+            - [ ] Code quality checks pass
+            - [ ] WordPress compatibility maintained
+            - [ ] No breaking changes introduced
+            
+            Please review the changes and test thoroughly before merging.
+          branch: 'automated-dependency-updates'
+          delete-branch: true
+
+  security-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          
+      - name: Security audit with Composer
+        if: hashFiles('composer.json') != ''
+        run: |
+          if [ -f "composer.json" ]; then
+            composer audit --format=json > composer-audit.json || true
+            
+            if [ -s composer-audit.json ]; then
+              echo "Security vulnerabilities found in Composer dependencies"
+              cat composer-audit.json
+            else
+              echo "No security vulnerabilities found in Composer dependencies"
+            fi
+          fi
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: Security audit with NPM
+        if: hashFiles('package.json') != ''
+        run: |
+          if [ -f "package.json" ]; then
+            npm audit --audit-level moderate --json > npm-audit.json || true
+            
+            if [ -s npm-audit.json ]; then
+              echo "Security vulnerabilities found in NPM dependencies"
+              cat npm-audit.json
+            else
+              echo "No security vulnerabilities found in NPM dependencies"
+            fi
+          fi
+          
+      - name: WordPress Security Check
+        run: |
+          echo "Performing WordPress-specific security checks..."
+          
+          # Check for common WordPress security issues
+          echo "Checking for potential security issues..."
+          
+          # Check for direct file access protection
+          if ! grep -q "defined('ABSPATH')" pc-volontari-abruzzo.php; then
+            echo "WARNING: Missing ABSPATH check in main plugin file"
+          fi
+          
+          # Check for SQL injection protection
+          if grep -n "\$wpdb->query.*\$_" pc-volontari-abruzzo.php; then
+            echo "WARNING: Potential SQL injection vulnerability found"
+          fi
+          
+          # Check for XSS protection
+          if grep -n "echo \$_" pc-volontari-abruzzo.php; then
+            echo "WARNING: Potential XSS vulnerability found"
+          fi
+          
+          echo "Security check completed"

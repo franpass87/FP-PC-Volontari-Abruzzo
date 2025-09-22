@@ -1,0 +1,258 @@
+name: Code Quality & Linting
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  phpcs:
+    name: PHP Code Standards
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          tools: composer, phpcs
+          
+      - name: Install WordPress Coding Standards
+        run: |
+          composer global require "wp-coding-standards/wpcs:^3.0"
+          composer global require "phpcompatibility/phpcompatibility-wp:^2.1"
+          composer global require "dealerdirect/phpcodesniffer-composer-installer:^1.0"
+          
+          # Set installed paths
+          phpcs --config-set installed_paths \
+            ~/.composer/vendor/wp-coding-standards/wpcs,\
+            ~/.composer/vendor/phpcompatibility/php-compatibility,\
+            ~/.composer/vendor/phpcompatibility/phpcompatibility-wp
+            
+      - name: Run PHPCS
+        run: |
+          phpcs \
+            --standard=WordPress \
+            --extensions=php \
+            --ignore=vendor/,node_modules/ \
+            --report=full \
+            --report-file=phpcs-report.txt \
+            . || true
+            
+          # Show results
+          cat phpcs-report.txt
+          
+          # Count errors and warnings
+          ERRORS=$(grep -c "ERROR" phpcs-report.txt || echo "0")
+          WARNINGS=$(grep -c "WARNING" phpcs-report.txt || echo "0")
+          
+          echo "PHPCS Results: $ERRORS errors, $WARNINGS warnings"
+          
+          # Fail if there are errors (warnings are allowed)
+          if [ "$ERRORS" -gt "0" ]; then
+            echo "PHPCS found $ERRORS errors"
+            exit 1
+          fi
+          
+      - name: PHP Compatibility Check
+        run: |
+          phpcs \
+            --standard=PHPCompatibilityWP \
+            --runtime-set testVersion 7.4- \
+            --extensions=php \
+            --ignore=vendor/,node_modules/ \
+            . || true
+
+  eslint:
+    name: JavaScript Linting
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: Install ESLint
+        run: |
+          npm install -g eslint
+          npm install -g eslint-config-wordpress
+          
+      - name: Create ESLint config
+        run: |
+          cat > .eslintrc.js << 'EOF'
+          module.exports = {
+            "extends": ["wordpress"],
+            "env": {
+              "browser": true,
+              "jquery": true
+            },
+            "globals": {
+              "wp": "readonly",
+              "ajaxurl": "readonly",
+              "PCV_DATA": "readonly"
+            },
+            "rules": {
+              "no-console": "warn",
+              "no-unused-vars": "error",
+              "no-undef": "error"
+            }
+          };
+          EOF
+          
+      - name: Run ESLint
+        run: |
+          find . -name "*.js" -not -path "./node_modules/*" -not -path "./vendor/*" | xargs eslint || true
+
+  css-lint:
+    name: CSS Linting
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: Install Stylelint
+        run: |
+          npm install -g stylelint
+          npm install -g stylelint-config-wordpress
+          
+      - name: Create Stylelint config
+        run: |
+          cat > .stylelintrc.json << 'EOF'
+          {
+            "extends": "stylelint-config-wordpress",
+            "rules": {
+              "no-empty-source": null,
+              "declaration-property-unit-allowed-list": null
+            }
+          }
+          EOF
+          
+      - name: Run Stylelint
+        run: |
+          find . -name "*.css" -not -path "./node_modules/*" -not -path "./vendor/*" | xargs stylelint || true
+
+  json-lint:
+    name: JSON Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Validate JSON files
+        run: |
+          echo "Validating JSON files..."
+          
+          find . -name "*.json" -not -path "./node_modules/*" -not -path "./vendor/*" | while read -r file; do
+            echo "Validating: $file"
+            if ! python3 -m json.tool "$file" > /dev/null; then
+              echo "❌ Invalid JSON: $file"
+              exit 1
+            else
+              echo "✅ Valid JSON: $file"
+            fi
+          done
+
+  markdown-lint:
+    name: Markdown Linting
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: Install markdownlint
+        run: npm install -g markdownlint-cli
+        
+      - name: Create markdownlint config
+        run: |
+          cat > .markdownlint.json << 'EOF'
+          {
+            "MD013": false,
+            "MD033": false,
+            "MD041": false
+          }
+          EOF
+          
+      - name: Run markdownlint
+        run: |
+          markdownlint "**/*.md" --ignore node_modules --ignore vendor || true
+
+  php-stan:
+    name: PHP Static Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          tools: composer, phpstan
+          
+      - name: Create PHPStan config
+        run: |
+          cat > phpstan.neon << 'EOF'
+          parameters:
+            level: 5
+            paths:
+              - pc-volontari-abruzzo.php
+            ignoreErrors:
+              - '#Call to function [a-zA-Z0-9_]+\(\) with [0-9]+ parameters?, [0-9]+ required#'
+            bootstrapFiles:
+              - tests/bootstrap.php
+          includes:
+            - vendor/phpstan/phpstan/conf/bleedingEdge.neon
+          EOF
+          
+      - name: Create PHPStan bootstrap
+        run: |
+          mkdir -p tests
+          cat > tests/bootstrap.php << 'EOF'
+          <?php
+          // Mock WordPress functions for PHPStan
+          if (!function_exists('add_action')) {
+              function add_action($hook, $callback, $priority = 10, $accepted_args = 1) {}
+          }
+          if (!function_exists('add_shortcode')) {
+              function add_shortcode($tag, $callback) {}
+          }
+          if (!function_exists('wp_enqueue_script')) {
+              function wp_enqueue_script($handle, $src = '', $deps = array(), $ver = false, $in_footer = false) {}
+          }
+          if (!function_exists('wp_enqueue_style')) {
+              function wp_enqueue_style($handle, $src = '', $deps = array(), $ver = false, $media = 'all') {}
+          }
+          if (!function_exists('plugin_dir_url')) {
+              function plugin_dir_url($file) { return ''; }
+          }
+          if (!defined('ABSPATH')) {
+              define('ABSPATH', '/tmp/');
+          }
+          EOF
+          
+      - name: Run PHPStan
+        run: |
+          phpstan analyse --no-progress --error-format=table || true
