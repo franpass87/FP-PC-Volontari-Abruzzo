@@ -1,6 +1,38 @@
 (function(){
   function qs(s,ctx){return (ctx||document).querySelector(s);}
   function ce(t){return document.createElement(t);}
+  function storageSafe(){
+    var fallback = {
+      get: function(){ return null; },
+      set: function(){}
+    };
+    var storage;
+    try {
+      storage = window.localStorage;
+      if(!storage){ return fallback; }
+      var testKey = '__pcv_test__';
+      storage.setItem(testKey, '1');
+      storage.removeItem(testKey);
+      return {
+        get: function(key){
+          try {
+            return storage.getItem(key);
+          } catch (err) {
+            return null;
+          }
+        },
+        set: function(key, value){
+          try {
+            storage.setItem(key, value);
+          } catch (err) {
+            // no-op on failure
+          }
+        }
+      };
+    } catch (err) {
+      return fallback;
+    }
+  }
   function fillProvince(sel){
     sel.innerHTML = '<option value="">Seleziona provincia</option>';
     for (var code in PCV_DATA.province){
@@ -24,6 +56,9 @@
   document.addEventListener('DOMContentLoaded', function(){
     var selProv = qs('#pcv_provincia');
     var selComune = qs('#pcv_comune');
+    var storage = storageSafe();
+    var storedProv = storage.get('pcv_provincia') || '';
+    var storedComune = storage.get('pcv_comune') || '';
     if (selProv) {
       fillProvince(selProv);
 
@@ -35,19 +70,17 @@
       });
 
       // Se abbiamo già locale, pre-seleziona
-      if(localStorage.getItem('pcv_provincia')){
-        selProv.value = localStorage.getItem('pcv_provincia');
+      if(storedProv){
+        selProv.value = storedProv;
         selProv.dispatchEvent(new Event('change'));
       }
     }
-    if(selComune && localStorage.getItem('pcv_comune') && localStorage.getItem('pcv_provincia')){
-      selComune.value = localStorage.getItem('pcv_comune');
+    if(selComune && storedComune && storedProv){
+      selComune.value = storedComune;
     }
 
     // Modal per comune (memorizza localStorage)
     var modal = qs('#pcvComuneModal');
-    var storedComune = localStorage.getItem('pcv_comune')||'';
-    var storedProv   = localStorage.getItem('pcv_provincia')||'';
     if(!storedComune){
       if(modal) modal.classList.remove('pcv-hidden');
     }
@@ -60,8 +93,10 @@
         var comune = inpComune && inpComune.value ? inpComune.value.trim() : '';
         var prov = inpProv && inpProv.value ? inpProv.value : '';
         if(prov && comune){
-          localStorage.setItem('pcv_provincia', prov);
-          localStorage.setItem('pcv_comune', comune);
+          storage.set('pcv_provincia', prov);
+          storage.set('pcv_comune', comune);
+          storedProv = prov;
+          storedComune = comune;
           selProv.value = prov;
           selProv.dispatchEvent(new Event('change'));
           selComune.value = comune;
