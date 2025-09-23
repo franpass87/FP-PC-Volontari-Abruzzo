@@ -59,6 +59,7 @@ Il form raccoglie i seguenti dati obbligatori:
 - Email e Telefono
 - Consenso privacy (obbligatorio)
 - Intenzione di partecipazione all'evento (opzionale)
+- Preferenze su pernottamento e pasti (opzionali)
 
 ## Privacy e GDPR
 
@@ -90,6 +91,7 @@ Il plugin crea la tabella `wp_pcv_volontari` con i seguenti campi:
 - `comune`, `provincia` - Località
 - `email`, `telefono` - Contatti
 - `privacy`, `partecipa` - Consensi
+- `dorme`, `mangia` - Preferenze pernottamento e pasti (opzionali)
 - `ip`, `user_agent` - Dati tecnici
 
 ## Personalizzazione Province e Comuni
