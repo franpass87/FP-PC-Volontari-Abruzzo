@@ -237,24 +237,28 @@ class PCV_Abruzzo_Plugin {
                 </div>
             </div>
 
+            <div class="pcv-checkbox-group" role="group" aria-label="Opzioni facoltative">
+                <div class="pcv-checkbox">
+                    <input type="checkbox" id="pcv_partecipa" name="pcv_partecipa" value="1">
+                    <label for="pcv_partecipa">Sì, voglio partecipare all’evento</label>
+                </div>
+
+                <div class="pcv-checkbox">
+                    <input type="checkbox" id="pcv_dorme" name="pcv_dorme" value="1">
+                    <label for="pcv_dorme">Mi fermo a dormire</label>
+                </div>
+
+                <div class="pcv-checkbox">
+                    <input type="checkbox" id="pcv_mangia" name="pcv_mangia" value="1">
+                    <label for="pcv_mangia">Parteciperò ai pasti</label>
+                </div>
+            </div>
+
+            <div class="pcv-checkbox-divider" aria-hidden="true"></div>
+
             <div class="pcv-checkbox">
                 <input type="checkbox" id="pcv_privacy" name="pcv_privacy" value="1" required>
                 <label for="pcv_privacy">Ho letto e accetto l’Informativa Privacy *</label>
-            </div>
-
-            <div class="pcv-checkbox">
-                <input type="checkbox" id="pcv_partecipa" name="pcv_partecipa" value="1">
-                <label for="pcv_partecipa">Sì, voglio partecipare all’evento</label>
-            </div>
-
-            <div class="pcv-checkbox">
-                <input type="checkbox" id="pcv_dorme" name="pcv_dorme" value="1">
-                <label for="pcv_dorme">Mi fermo a dormire</label>
-            </div>
-
-            <div class="pcv-checkbox">
-                <input type="checkbox" id="pcv_mangia" name="pcv_mangia" value="1">
-                <label for="pcv_mangia">Parteciperò ai pasti</label>
             </div>
 
             <?php if ( $site_key ) : ?>
