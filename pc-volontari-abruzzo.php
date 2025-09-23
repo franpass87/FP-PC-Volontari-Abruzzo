@@ -47,6 +47,7 @@ class PCV_Abruzzo_Plugin {
 
         // Assets
         add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_front_assets' ] );
+        add_action( 'plugins_loaded', [ $this, 'maybe_upgrade_schema' ] );
 
         // Handle POST
         add_action( 'init', [ $this, 'maybe_handle_submission' ] );
@@ -65,7 +66,14 @@ class PCV_Abruzzo_Plugin {
         $table = $wpdb->prefix . self::TABLE;
         $charset = $wpdb->get_charset_collate();
 
-        $sql = "CREATE TABLE IF NOT EXISTS `{$table}` (
+        $sql = self::get_schema_sql( $table, $charset );
+
+        require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+        dbDelta( $sql );
+    }
+
+    private static function get_schema_sql( $table, $charset ) {
+        return "CREATE TABLE `{$table}` (
             id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
             created_at DATETIME NOT NULL,
             nome VARCHAR(100) NOT NULL,
@@ -76,6 +84,8 @@ class PCV_Abruzzo_Plugin {
             telefono VARCHAR(50) NOT NULL,
             privacy TINYINT(1) NOT NULL DEFAULT 0,
             partecipa TINYINT(1) NOT NULL DEFAULT 0,
+            dorme TINYINT(1) NOT NULL DEFAULT 0,
+            mangia TINYINT(1) NOT NULL DEFAULT 0,
             ip VARCHAR(45) NULL,
             user_agent TEXT NULL,
             PRIMARY KEY (id),
@@ -85,9 +95,40 @@ class PCV_Abruzzo_Plugin {
             KEY idx_provincia (provincia),
             KEY idx_created (created_at)
         ) {$charset};";
+    }
+
+    public function maybe_upgrade_schema() {
+        global $wpdb;
+
+        $table = $this->table_name();
+        $table_like = $wpdb->esc_like( $table );
+        $exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table_like ) );
+
+        if ( $exists !== $table ) {
+            self::activate();
+            return;
+        }
+
+        $needs_upgrade = false;
+        $table_sql = esc_sql( $table );
+        foreach ( [ 'dorme', 'mangia' ] as $column ) {
+            $column_exists = $wpdb->get_var(
+                $wpdb->prepare( "SHOW COLUMNS FROM `{$table_sql}` LIKE %s", $column )
+            );
+
+            if ( ! $column_exists ) {
+                $needs_upgrade = true;
+                break;
+            }
+        }
+
+        if ( ! $needs_upgrade ) {
+            return;
+        }
 
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-        dbDelta( $sql );
+        $charset = $wpdb->get_charset_collate();
+        dbDelta( self::get_schema_sql( $table, $charset ) );
     }
 
     public function table_name() {
@@ -200,6 +241,16 @@ class PCV_Abruzzo_Plugin {
                 <label for="pcv_partecipa">Sì, voglio partecipare all’evento</label>
             </div>
 
+            <div class="pcv-checkbox">
+                <input type="checkbox" id="pcv_dorme" name="pcv_dorme" value="1">
+                <label for="pcv_dorme">Mi fermo a dormire</label>
+            </div>
+
+            <div class="pcv-checkbox">
+                <input type="checkbox" id="pcv_mangia" name="pcv_mangia" value="1">
+                <label for="pcv_mangia">Parteciperò ai pasti</label>
+            </div>
+
             <?php if ( $site_key ) : ?>
                 <div class="g-recaptcha" data-sitekey="<?php echo $site_key; ?>"></div>
             <?php endif; ?>
@@ -244,14 +295,27 @@ class PCV_Abruzzo_Plugin {
             if ( empty($body['success']) ) $this->redirect_with_status('err');
         }
 
-        $nome      = $this->sanitize_name( wp_unslash( $_POST['pcv_nome'] ?? '' ) );
-        $cognome   = $this->sanitize_name( wp_unslash( $_POST['pcv_cognome'] ?? '' ) );
-        $provincia = strtoupper( trim( wp_unslash( $_POST['pcv_provincia'] ?? '' ) ) );
-        $comune    = $this->sanitize_text( wp_unslash( $_POST['pcv_comune'] ?? '' ) );
-        $email     = sanitize_email( wp_unslash( $_POST['pcv_email'] ?? '' ) );
-        $telefono  = $this->sanitize_phone( wp_unslash( $_POST['pcv_telefono'] ?? '' ) );
-        $privacy   = isset($_POST['pcv_privacy']) ? 1 : 0;
-        $partecipa = isset($_POST['pcv_partecipa']) ? 1 : 0;
+        $nome       = $this->sanitize_name( wp_unslash( $_POST['pcv_nome'] ?? '' ) );
+        $cognome    = $this->sanitize_name( wp_unslash( $_POST['pcv_cognome'] ?? '' ) );
+        $provincia  = strtoupper( trim( wp_unslash( $_POST['pcv_provincia'] ?? '' ) ) );
+        $comune     = $this->sanitize_text( wp_unslash( $_POST['pcv_comune'] ?? '' ) );
+        $email      = sanitize_email( wp_unslash( $_POST['pcv_email'] ?? '' ) );
+        $telefono   = $this->sanitize_phone( wp_unslash( $_POST['pcv_telefono'] ?? '' ) );
+        $privacy    = isset($_POST['pcv_privacy']) ? 1 : 0;
+        $partecipa  = isset($_POST['pcv_partecipa']) ? 1 : 0;
+        $dorme_raw  = isset($_POST['pcv_dorme']) ? wp_unslash( $_POST['pcv_dorme'] ) : null;
+        $mangia_raw = isset($_POST['pcv_mangia']) ? wp_unslash( $_POST['pcv_mangia'] ) : null;
+
+        if ( $dorme_raw !== null && (string) $dorme_raw !== '1' ) {
+            $this->redirect_with_status('err');
+        }
+
+        if ( $mangia_raw !== null && (string) $mangia_raw !== '1' ) {
+            $this->redirect_with_status('err');
+        }
+
+        $dorme  = $dorme_raw === '1' ? 1 : 0;
+        $mangia = $mangia_raw === '1' ? 1 : 0;
 
         // Validazioni: provincia e comune devono appartenere a liste Abruzzo
         if ( !array_key_exists($provincia, $this->province) ) $this->redirect_with_status('err');
@@ -276,10 +340,12 @@ class PCV_Abruzzo_Plugin {
                 'telefono'   => $telefono,
                 'privacy'    => $privacy,
                 'partecipa'  => $partecipa,
+                'dorme'      => $dorme,
+                'mangia'     => $mangia,
                 'ip'         => $this->get_ip(),
                 'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? ''
             ],
-            [ '%s','%s','%s','%s','%s','%s','%d','%d','%s','%s' ]
+            [ '%s','%s','%s','%s','%s','%s','%s','%d','%d','%d','%d','%s','%s' ]
         );
 
         $this->redirect_with_status( $inserted ? 'ok' : 'err' );
@@ -392,12 +458,13 @@ class PCV_Abruzzo_Plugin {
         header('Content-Disposition: attachment; filename=volontari_abruzzo_'.date('Ymd_His').'.csv');
 
         $out = fopen('php://output', 'w');
-        fputcsv($out, ['ID','Data','Nome','Cognome','Comune','Provincia','Email','Telefono','Privacy','Partecipa','IP','User Agent'], ';');
+        fputcsv($out, ['ID','Data','Nome','Cognome','Comune','Provincia','Email','Telefono','Privacy','Partecipa','Dormire','Mangiare','IP','User Agent'], ';');
 
         foreach ($rows as $r) {
             fputcsv($out, [
                 $r['id'],$r['created_at'],$r['nome'],$r['cognome'],$r['comune'],$r['provincia'],
-                $r['email'],$r['telefono'],$r['privacy'] ? '1' : '0',$r['partecipa'] ? '1' : '0',$r['ip'],$r['user_agent'],
+                $r['email'],$r['telefono'],$r['privacy'] ? '1' : '0',$r['partecipa'] ? '1' : '0',
+                ! empty($r['dorme']) ? '1' : '0',! empty($r['mangia']) ? '1' : '0',$r['ip'],$r['user_agent'],
             ], ';');
         }
         fclose($out); exit;
@@ -420,7 +487,20 @@ if ( ! class_exists( 'PCV_List_Table' ) ) {
         }
         
         public function get_columns() {
-            return ['cb'=>'<input type="checkbox" />','created_at'=>'Data','nome'=>'Nome','cognome'=>'Cognome','comune'=>'Comune','provincia'=>'Provincia','email'=>'Email','telefono'=>'Telefono','privacy'=>'Privacy','partecipa'=>'Partecipa'];
+            return [
+                'cb'         => '<input type="checkbox" />',
+                'created_at' => 'Data',
+                'nome'       => 'Nome',
+                'cognome'    => 'Cognome',
+                'comune'     => 'Comune',
+                'provincia'  => 'Provincia',
+                'email'      => 'Email',
+                'telefono'   => 'Telefono',
+                'privacy'    => 'Privacy',
+                'partecipa'  => 'Partecipa',
+                'dorme'      => 'Dormire',
+                'mangia'     => 'Mangiare',
+            ];
         }
         
         protected function get_sortable_columns() {
@@ -435,7 +515,7 @@ if ( ! class_exists( 'PCV_List_Table' ) ) {
             switch($col){
                 case 'created_at': return esc_html(mysql2date('d/m/Y H:i',$item->created_at));
                 case 'nome':case 'cognome':case 'comune':case 'provincia':case 'email':case 'telefono': return esc_html($item->$col);
-                case 'privacy':case 'partecipa': return $item->$col ? 'Sì':'No';
+                case 'privacy':case 'partecipa':case 'dorme':case 'mangia': return $item->$col ? 'Sì':'No';
                 default: return '';
             }
         }
