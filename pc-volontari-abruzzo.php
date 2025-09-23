@@ -521,7 +521,10 @@ class PCV_Abruzzo_Plugin {
             array_push($params, $like, $like, $like, $like);
         }
 
-        $rows = $wpdb->get_results( $wpdb->prepare("SELECT * FROM {$table} {$where} ORDER BY created_at DESC", $params), ARRAY_A );
+        $sql = "SELECT * FROM {$table} {$where} ORDER BY created_at DESC";
+        $rows = empty( $params )
+            ? $wpdb->get_results( $sql, ARRAY_A )
+            : $wpdb->get_results( $wpdb->prepare( $sql, $params ), ARRAY_A );
 
         nocache_headers();
         header('Content-Type: text/csv; charset=utf-8');
@@ -622,7 +625,10 @@ if ( ! class_exists( 'PCV_List_Table' ) ) {
             if($f_comune!==''){ $where.=" AND comune LIKE %s"; $params[]='%'.$wpdb->esc_like($f_comune).'%'; }
             if($f_prov!==''){ $where.=" AND provincia LIKE %s"; $params[]='%'.$wpdb->esc_like($f_prov).'%'; }
             if($s!==''){ $like='%'.$wpdb->esc_like($s).'%'; $where.=" AND ( nome LIKE %s OR cognome LIKE %s OR email LIKE %s OR telefono LIKE %s )"; array_push($params,$like,$like,$like,$like); }
-            $total_items = (int)$wpdb->get_var( $wpdb->prepare("SELECT COUNT(*) FROM {$table} {$where}", $params) );
+            $count_sql = "SELECT COUNT(*) FROM {$table} {$where}";
+            $total_items = empty($params)
+                ? (int) $wpdb->get_var( $count_sql )
+                : (int) $wpdb->get_var( $wpdb->prepare( $count_sql, $params ) );
             $offset = ($current_page-1)*$per_page;
             $query = "SELECT * FROM {$table} {$where} ORDER BY {$orderby} {$order} LIMIT %d OFFSET %d";
             $items = $wpdb->get_results( $wpdb->prepare($query, array_merge($params,[ $per_page,$offset ])) );
