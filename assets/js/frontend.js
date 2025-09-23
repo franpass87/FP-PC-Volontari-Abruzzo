@@ -59,12 +59,38 @@
     var storage = storageSafe();
     var storedProv = storage.get('pcv_provincia') || '';
     var storedComune = storage.get('pcv_comune') || '';
+    if (selComune) {
+      selComune.addEventListener('change', function(){
+        var comuneValue = selComune.value || '';
+        storage.set('pcv_comune', comuneValue);
+        storedComune = comuneValue;
+      });
+    }
+
     if (selProv) {
       fillProvince(selProv);
 
       selProv.addEventListener('change', function(){
-        fillComuni(selComune, selProv.value, null);
+        var newProv = selProv.value || '';
+        var previousProv = storedProv;
+        var shouldResetComune = (newProv !== previousProv) || !newProv;
+
+        fillComuni(selComune, newProv, shouldResetComune ? null : storedComune);
+
+        storage.set('pcv_provincia', newProv);
+        storedProv = newProv;
+
+        if (shouldResetComune) {
+          storedComune = '';
+          storage.set('pcv_comune', '');
+        }
+
         if (selComune) {
+          if (shouldResetComune) {
+            selComune.value = '';
+          } else if (storedComune) {
+            selComune.value = storedComune;
+          }
           selComune.dispatchEvent(new Event('change'));
         }
       });
