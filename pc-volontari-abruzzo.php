@@ -15,9 +15,10 @@ class PCV_Abruzzo_Plugin {
     const TABLE     = 'pcv_volontari';
     const NONCE     = 'pcv_form_nonce';
     const MENU_SLUG = 'pcv-volontari';
-    const OPT_RECAPTCHA_SITE = 'pcv_recaptcha_site';
-    const OPT_RECAPTCHA_SECRET = 'pcv_recaptcha_secret';
-    const OPT_PRIVACY_NOTICE = 'pcv_privacy_notice';
+    const OPT_RECAPTCHA_SITE    = 'pcv_recaptcha_site';
+    const OPT_RECAPTCHA_SECRET  = 'pcv_recaptcha_secret';
+    const OPT_PRIVACY_NOTICE    = 'pcv_privacy_notice';
+    const DEFAULT_PRIVACY_NOTICE = "I dati saranno trattati ai sensi del Reg. UE 2016/679 (GDPR) per la gestione dell’evento e finalità organizzative. Titolare del trattamento: [inserire].";
 
     /** Province e comuni caricati da file */
     private $province = [];
@@ -168,7 +169,7 @@ class PCV_Abruzzo_Plugin {
         $site_key = esc_attr( get_option(self::OPT_RECAPTCHA_SITE, '') );
         $privacy_notice = get_option( self::OPT_PRIVACY_NOTICE, '' );
         if ( ! $privacy_notice ) {
-            $privacy_notice = 'I dati saranno trattati ai sensi del Reg. UE 2016/679 (GDPR) per la gestione dell’evento e finalità organizzative. Titolare del trattamento: [inserire].';
+            $privacy_notice = self::DEFAULT_PRIVACY_NOTICE;
         }
 
         ob_start(); ?>
@@ -265,7 +266,7 @@ class PCV_Abruzzo_Plugin {
             </div>
 
             <div class="pcv-privacy-notice" style="font-size:12px;color:#666;margin-top:10px;">
-                <?php echo wp_kses_post( wpautop( $privacy_notice ) ); ?>
+                <?php echo wpautop( wp_kses_post( $privacy_notice ) ); ?>
             </div>
         </form>
         <?php
@@ -427,6 +428,9 @@ class PCV_Abruzzo_Plugin {
         $site = esc_attr( get_option(self::OPT_RECAPTCHA_SITE, '') );
         $secret = esc_attr( get_option(self::OPT_RECAPTCHA_SECRET, '') );
         $privacy_notice = get_option(self::OPT_PRIVACY_NOTICE, '');
+        if ( ! $privacy_notice ) {
+            $privacy_notice = self::DEFAULT_PRIVACY_NOTICE;
+        }
 
         echo '<div class="wrap"><h1>Impostazioni reCAPTCHA</h1>';
         echo '<form method="post">';
