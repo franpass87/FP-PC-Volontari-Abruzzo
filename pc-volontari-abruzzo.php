@@ -54,7 +54,7 @@ class PCV_Abruzzo_Plugin {
         add_shortcode( 'pc_volontari_form', [ $this, 'render_form_shortcode' ] );
 
         // Assets
-        add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_front_assets' ] );
+        add_action( 'wp_enqueue_scripts', [ $this, 'register_front_assets' ] );
         add_action( 'plugins_loaded', [ $this, 'maybe_upgrade_schema' ] );
 
         // Handle POST
@@ -158,22 +158,25 @@ class PCV_Abruzzo_Plugin {
     }
 
     /* ---------------- Frontend: assets + shortcode ---------------- */
-    public function enqueue_front_assets() {
-        wp_enqueue_style( 'pcv-frontend', plugins_url( 'assets/css/frontend.css', __FILE__ ), [], self::VERSION );
-        wp_enqueue_script( 'pcv-frontend', plugins_url( 'assets/js/frontend.js', __FILE__ ), [], self::VERSION, true );
-
-        $data = [
-            'province'      => $this->province,
-            'comuni'        => $this->comuni,
-            'recaptcha_site' => get_option( self::OPT_RECAPTCHA_SITE, '' ),
-        ];
-
-        wp_localize_script( 'pcv-frontend', 'PCV_DATA', $data );
+    public function register_front_assets() {
+        wp_register_style( 'pcv-frontend', plugins_url( 'assets/css/frontend.css', __FILE__ ), [], self::VERSION );
+        wp_register_script( 'pcv-frontend', plugins_url( 'assets/js/frontend.js', __FILE__ ), [], self::VERSION, true );
     }
 
     public function render_form_shortcode( $atts ) {
         $atts = shortcode_atts( [], $atts, 'pc_volontari_form' );
         $out = '';
+
+        wp_enqueue_style( 'pcv-frontend' );
+        wp_enqueue_script( 'pcv-frontend' );
+
+        $data = [
+            'province'       => $this->province,
+            'comuni'         => $this->comuni,
+            'recaptcha_site' => get_option( self::OPT_RECAPTCHA_SITE, '' ),
+        ];
+
+        wp_localize_script( 'pcv-frontend', 'PCV_DATA', $data );
 
         // Messaggi post-submit via query var
         if ( isset($_GET['pcv_status']) ) {
