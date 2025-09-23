@@ -15,10 +15,16 @@ class PCV_Abruzzo_Plugin {
     const TABLE     = 'pcv_volontari';
     const NONCE     = 'pcv_form_nonce';
     const MENU_SLUG = 'pcv-volontari';
-    const OPT_RECAPTCHA_SITE    = 'pcv_recaptcha_site';
-    const OPT_RECAPTCHA_SECRET  = 'pcv_recaptcha_secret';
-    const OPT_PRIVACY_NOTICE    = 'pcv_privacy_notice';
-    const DEFAULT_PRIVACY_NOTICE = "I dati saranno trattati ai sensi del Reg. UE 2016/679 (GDPR) per la gestione dell’evento e finalità organizzative. Titolare del trattamento: [inserire].";
+    const OPT_RECAPTCHA_SITE      = 'pcv_recaptcha_site';
+    const OPT_RECAPTCHA_SECRET    = 'pcv_recaptcha_secret';
+    const OPT_PRIVACY_NOTICE      = 'pcv_privacy_notice';
+    const OPT_PARTICIPATION_LABEL = 'pcv_label_partecipa';
+    const OPT_OVERNIGHT_LABEL     = 'pcv_label_dorme';
+    const OPT_MEALS_LABEL         = 'pcv_label_mangia';
+    const DEFAULT_PRIVACY_NOTICE  = "I dati saranno trattati ai sensi del Reg. UE 2016/679 (GDPR) per la gestione dell’evento e finalità organizzative. Titolare del trattamento: [inserire].";
+    const DEFAULT_PARTICIPATION_LABEL = 'Sì, voglio partecipare all’evento';
+    const DEFAULT_OVERNIGHT_LABEL     = 'Mi fermo a dormire';
+    const DEFAULT_MEALS_LABEL         = 'Parteciperò ai pasti';
 
     /** Province e comuni caricati da file */
     private $province = [];
@@ -172,6 +178,21 @@ class PCV_Abruzzo_Plugin {
             $privacy_notice = self::DEFAULT_PRIVACY_NOTICE;
         }
 
+        $participation_label = get_option( self::OPT_PARTICIPATION_LABEL, '' );
+        if ( ! is_string( $participation_label ) || $participation_label === '' ) {
+            $participation_label = self::DEFAULT_PARTICIPATION_LABEL;
+        }
+
+        $overnight_label = get_option( self::OPT_OVERNIGHT_LABEL, '' );
+        if ( ! is_string( $overnight_label ) || $overnight_label === '' ) {
+            $overnight_label = self::DEFAULT_OVERNIGHT_LABEL;
+        }
+
+        $meals_label = get_option( self::OPT_MEALS_LABEL, '' );
+        if ( ! is_string( $meals_label ) || $meals_label === '' ) {
+            $meals_label = self::DEFAULT_MEALS_LABEL;
+        }
+
         ob_start(); ?>
         <!-- Modal Provincia/Comune -->
         <div id="pcvComuneModal" class="pcv-modal-backdrop pcv-hidden" role="dialog" aria-modal="true">
@@ -240,17 +261,17 @@ class PCV_Abruzzo_Plugin {
             <div class="pcv-checkbox-group" role="group" aria-label="Opzioni facoltative">
                 <div class="pcv-checkbox">
                     <input type="checkbox" id="pcv_partecipa" name="pcv_partecipa" value="1">
-                    <label for="pcv_partecipa">Sì, voglio partecipare all’evento</label>
+                    <label for="pcv_partecipa"><?php echo esc_html( $participation_label ); ?></label>
                 </div>
 
                 <div class="pcv-checkbox">
                     <input type="checkbox" id="pcv_dorme" name="pcv_dorme" value="1">
-                    <label for="pcv_dorme">Mi fermo a dormire</label>
+                    <label for="pcv_dorme"><?php echo esc_html( $overnight_label ); ?></label>
                 </div>
 
                 <div class="pcv-checkbox">
                     <input type="checkbox" id="pcv_mangia" name="pcv_mangia" value="1">
-                    <label for="pcv_mangia">Parteciperò ai pasti</label>
+                    <label for="pcv_mangia"><?php echo esc_html( $meals_label ); ?></label>
                 </div>
             </div>
 
@@ -312,9 +333,13 @@ class PCV_Abruzzo_Plugin {
         $email      = sanitize_email( wp_unslash( $_POST['pcv_email'] ?? '' ) );
         $telefono   = $this->sanitize_phone( wp_unslash( $_POST['pcv_telefono'] ?? '' ) );
         $privacy    = isset($_POST['pcv_privacy']) ? 1 : 0;
-        $partecipa  = isset($_POST['pcv_partecipa']) ? 1 : 0;
+        $partecipa_raw = isset($_POST['pcv_partecipa']) ? wp_unslash( $_POST['pcv_partecipa'] ) : null;
         $dorme_raw  = isset($_POST['pcv_dorme']) ? wp_unslash( $_POST['pcv_dorme'] ) : null;
         $mangia_raw = isset($_POST['pcv_mangia']) ? wp_unslash( $_POST['pcv_mangia'] ) : null;
+
+        if ( $partecipa_raw !== null && (string) $partecipa_raw !== '1' ) {
+            $this->redirect_with_status('err');
+        }
 
         if ( $dorme_raw !== null && (string) $dorme_raw !== '1' ) {
             $this->redirect_with_status('err');
@@ -324,6 +349,7 @@ class PCV_Abruzzo_Plugin {
             $this->redirect_with_status('err');
         }
 
+        $partecipa = $partecipa_raw === '1' ? 1 : 0;
         $dorme  = $dorme_raw === '1' ? 1 : 0;
         $mangia = $mangia_raw === '1' ? 1 : 0;
 
@@ -422,9 +448,18 @@ class PCV_Abruzzo_Plugin {
         if ( ! current_user_can('manage_options') ) return;
 
         if ( isset($_POST['pcv_save_keys']) && check_admin_referer('pcv_save_keys_nonce') ) {
-            update_option(self::OPT_RECAPTCHA_SITE, sanitize_text_field($_POST['pcv_site_key'] ?? ''));
-            update_option(self::OPT_RECAPTCHA_SECRET, sanitize_text_field($_POST['pcv_secret_key'] ?? ''));
+            $site_value = isset($_POST['pcv_site_key']) ? sanitize_text_field( wp_unslash( $_POST['pcv_site_key'] ) ) : '';
+            $secret_value = isset($_POST['pcv_secret_key']) ? sanitize_text_field( wp_unslash( $_POST['pcv_secret_key'] ) ) : '';
+            $participation_label_value = isset($_POST['pcv_label_partecipa']) ? sanitize_text_field( wp_unslash( $_POST['pcv_label_partecipa'] ) ) : '';
+            $overnight_label_value = isset($_POST['pcv_label_dorme']) ? sanitize_text_field( wp_unslash( $_POST['pcv_label_dorme'] ) ) : '';
+            $meals_label_value = isset($_POST['pcv_label_mangia']) ? sanitize_text_field( wp_unslash( $_POST['pcv_label_mangia'] ) ) : '';
             $privacy_notice_value = isset($_POST['pcv_privacy_notice']) ? wp_kses_post( wp_unslash( $_POST['pcv_privacy_notice'] ) ) : '';
+
+            update_option(self::OPT_RECAPTCHA_SITE, $site_value);
+            update_option(self::OPT_RECAPTCHA_SECRET, $secret_value);
+            update_option(self::OPT_PARTICIPATION_LABEL, $participation_label_value);
+            update_option(self::OPT_OVERNIGHT_LABEL, $overnight_label_value);
+            update_option(self::OPT_MEALS_LABEL, $meals_label_value);
             update_option(self::OPT_PRIVACY_NOTICE, $privacy_notice_value);
             echo '<div class="updated notice"><p>Impostazioni salvate.</p></div>';
         }
@@ -436,12 +471,30 @@ class PCV_Abruzzo_Plugin {
             $privacy_notice = self::DEFAULT_PRIVACY_NOTICE;
         }
 
+        $participation_label = get_option(self::OPT_PARTICIPATION_LABEL, '');
+        if ( ! is_string($participation_label) || $participation_label === '' ) {
+            $participation_label = self::DEFAULT_PARTICIPATION_LABEL;
+        }
+
+        $overnight_label = get_option(self::OPT_OVERNIGHT_LABEL, '');
+        if ( ! is_string($overnight_label) || $overnight_label === '' ) {
+            $overnight_label = self::DEFAULT_OVERNIGHT_LABEL;
+        }
+
+        $meals_label = get_option(self::OPT_MEALS_LABEL, '');
+        if ( ! is_string($meals_label) || $meals_label === '' ) {
+            $meals_label = self::DEFAULT_MEALS_LABEL;
+        }
+
         echo '<div class="wrap"><h1>Impostazioni reCAPTCHA</h1>';
         echo '<form method="post">';
         wp_nonce_field('pcv_save_keys_nonce');
         echo '<table class="form-table">';
         echo '<tr><th scope="row"><label for="pcv_site_key">Site Key</label></th><td><input type="text" id="pcv_site_key" name="pcv_site_key" value="'.$site.'" class="regular-text"></td></tr>';
         echo '<tr><th scope="row"><label for="pcv_secret_key">Secret Key</label></th><td><input type="text" id="pcv_secret_key" name="pcv_secret_key" value="'.$secret.'" class="regular-text"></td></tr>';
+        echo '<tr><th scope="row"><label for="pcv_label_partecipa">Etichetta partecipazione</label></th><td><input type="text" id="pcv_label_partecipa" name="pcv_label_partecipa" value="'.esc_attr($participation_label).'" class="regular-text"><p class="description">Testo mostrato accanto all’opzione di partecipazione.</p></td></tr>';
+        echo '<tr><th scope="row"><label for="pcv_label_dorme">Etichetta pernottamento</label></th><td><input type="text" id="pcv_label_dorme" name="pcv_label_dorme" value="'.esc_attr($overnight_label).'" class="regular-text"><p class="description">Testo mostrato accanto all’opzione di pernottamento.</p></td></tr>';
+        echo '<tr><th scope="row"><label for="pcv_label_mangia">Etichetta pasti</label></th><td><input type="text" id="pcv_label_mangia" name="pcv_label_mangia" value="'.esc_attr($meals_label).'" class="regular-text"><p class="description">Testo mostrato accanto all’opzione relativa ai pasti.</p></td></tr>';
         echo '<tr><th scope="row"><label for="pcv_privacy_notice">Informativa Privacy</label></th><td><textarea id="pcv_privacy_notice" name="pcv_privacy_notice" rows="6" class="large-text code">'.esc_textarea($privacy_notice).'</textarea><p class="description">Inserisci l’informativa privacy completa, includendo il Titolare del trattamento e le eventuali note legali.</p></td></tr>';
         echo '</table>';
         submit_button('Salva impostazioni', 'primary', 'pcv_save_keys');
@@ -608,6 +661,9 @@ function pcv_uninstall() {
     delete_option( PCV_Abruzzo_Plugin::OPT_RECAPTCHA_SITE );
     delete_option( PCV_Abruzzo_Plugin::OPT_RECAPTCHA_SECRET );
     delete_option( PCV_Abruzzo_Plugin::OPT_PRIVACY_NOTICE );
+    delete_option( PCV_Abruzzo_Plugin::OPT_PARTICIPATION_LABEL );
+    delete_option( PCV_Abruzzo_Plugin::OPT_OVERNIGHT_LABEL );
+    delete_option( PCV_Abruzzo_Plugin::OPT_MEALS_LABEL );
 }
 
 register_uninstall_hook( __FILE__, 'pcv_uninstall' );
