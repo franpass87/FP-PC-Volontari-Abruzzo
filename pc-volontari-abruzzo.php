@@ -17,6 +17,7 @@ class PCV_Abruzzo_Plugin {
     const MENU_SLUG = 'pcv-volontari';
     const OPT_RECAPTCHA_SITE = 'pcv_recaptcha_site';
     const OPT_RECAPTCHA_SECRET = 'pcv_recaptcha_secret';
+    const OPT_PRIVACY_NOTICE = 'pcv_privacy_notice';
 
     /** Province e comuni caricati da file */
     private $province = [];
@@ -165,6 +166,10 @@ class PCV_Abruzzo_Plugin {
 
         $nonce = wp_create_nonce( self::NONCE );
         $site_key = esc_attr( get_option(self::OPT_RECAPTCHA_SITE, '') );
+        $privacy_notice = get_option( self::OPT_PRIVACY_NOTICE, '' );
+        if ( ! $privacy_notice ) {
+            $privacy_notice = 'I dati saranno trattati ai sensi del Reg. UE 2016/679 (GDPR) per la gestione dell’evento e finalità organizzative. Titolare del trattamento: [inserire].';
+        }
 
         ob_start(); ?>
         <!-- Modal Provincia/Comune -->
@@ -259,9 +264,9 @@ class PCV_Abruzzo_Plugin {
                 <button type="submit" class="button button-primary">Invia iscrizione</button>
             </div>
 
-            <p style="font-size:12px;color:#666;margin-top:10px;">
-                I dati saranno trattati ai sensi del Reg. UE 2016/679 (GDPR) per la gestione dell’evento e finalità organizzative. Titolare del trattamento: [inserire]. 
-            </p>
+            <div class="pcv-privacy-notice" style="font-size:12px;color:#666;margin-top:10px;">
+                <?php echo wp_kses_post( wpautop( $privacy_notice ) ); ?>
+            </div>
         </form>
         <?php
         return $out . ob_get_clean();
@@ -414,11 +419,14 @@ class PCV_Abruzzo_Plugin {
         if ( isset($_POST['pcv_save_keys']) && check_admin_referer('pcv_save_keys_nonce') ) {
             update_option(self::OPT_RECAPTCHA_SITE, sanitize_text_field($_POST['pcv_site_key'] ?? ''));
             update_option(self::OPT_RECAPTCHA_SECRET, sanitize_text_field($_POST['pcv_secret_key'] ?? ''));
+            $privacy_notice_value = isset($_POST['pcv_privacy_notice']) ? wp_kses_post( wp_unslash( $_POST['pcv_privacy_notice'] ) ) : '';
+            update_option(self::OPT_PRIVACY_NOTICE, $privacy_notice_value);
             echo '<div class="updated notice"><p>Impostazioni salvate.</p></div>';
         }
 
         $site = esc_attr( get_option(self::OPT_RECAPTCHA_SITE, '') );
         $secret = esc_attr( get_option(self::OPT_RECAPTCHA_SECRET, '') );
+        $privacy_notice = get_option(self::OPT_PRIVACY_NOTICE, '');
 
         echo '<div class="wrap"><h1>Impostazioni reCAPTCHA</h1>';
         echo '<form method="post">';
@@ -426,6 +434,7 @@ class PCV_Abruzzo_Plugin {
         echo '<table class="form-table">';
         echo '<tr><th scope="row"><label for="pcv_site_key">Site Key</label></th><td><input type="text" id="pcv_site_key" name="pcv_site_key" value="'.$site.'" class="regular-text"></td></tr>';
         echo '<tr><th scope="row"><label for="pcv_secret_key">Secret Key</label></th><td><input type="text" id="pcv_secret_key" name="pcv_secret_key" value="'.$secret.'" class="regular-text"></td></tr>';
+        echo '<tr><th scope="row"><label for="pcv_privacy_notice">Informativa Privacy</label></th><td><textarea id="pcv_privacy_notice" name="pcv_privacy_notice" rows="6" class="large-text code">'.esc_textarea($privacy_notice).'</textarea><p class="description">Inserisci l’informativa privacy completa, includendo il Titolare del trattamento e le eventuali note legali.</p></td></tr>';
         echo '</table>';
         submit_button('Salva impostazioni', 'primary', 'pcv_save_keys');
         echo '</form></div>';
@@ -590,6 +599,7 @@ function pcv_uninstall() {
     $wpdb->query( "DROP TABLE IF EXISTS {$table}" );
     delete_option( PCV_Abruzzo_Plugin::OPT_RECAPTCHA_SITE );
     delete_option( PCV_Abruzzo_Plugin::OPT_RECAPTCHA_SECRET );
+    delete_option( PCV_Abruzzo_Plugin::OPT_PRIVACY_NOTICE );
 }
 
 register_uninstall_hook( __FILE__, 'pcv_uninstall' );
