@@ -8,6 +8,9 @@
 .pcv-form label{font-weight:600;margin-bottom:6px}
 .pcv-form select,.pcv-form input[type=text],.pcv-form input[type=email],.pcv-form input[type=tel]{padding:10px;border:1px solid #dcdcdc;border-radius:6px}
 .pcv-form .pcv-checkbox{display:flex;gap:8px;align-items:flex-start;margin:8px 0}
+.pcv-form .pcv-checkbox-group{margin:16px 0;padding:12px 14px;border:1px solid #dcdcdc;border-radius:8px;display:flex;flex-direction:column;gap:8px;background-color:#f9f9f9}
+.pcv-form .pcv-checkbox-group .pcv-checkbox{margin:0}
+.pcv-form .pcv-checkbox-divider{border-top:1px solid #dcdcdc;margin:20px 0 16px}
 .pcv-form .pcv-submit{margin-top:8px}
 .pcv-alert{padding:10px;border-radius:6px;margin-bottom:12px}
 .pcv-alert.success{background:#e6ffed;border:1px solid #b7f0c3}
