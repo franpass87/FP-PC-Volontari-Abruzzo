@@ -144,6 +144,19 @@ class PCV_Abruzzo_Plugin {
         return $wpdb->prefix . self::TABLE;
     }
 
+    private function csv_text_guard( $value ) {
+        if ( ! is_string( $value ) || $value === '' ) {
+            return $value;
+        }
+
+        $first_char = $value[0];
+        if ( in_array( $first_char, ['=', '+', '-', '@'], true ) ) {
+            return "'" . $value;
+        }
+
+        return $value;
+    }
+
     /* ---------------- Frontend: assets + shortcode ---------------- */
     public function enqueue_front_assets() {
         wp_enqueue_style( 'pcv-frontend', plugins_url( 'assets/css/frontend.css', __FILE__ ), [], self::VERSION );
@@ -551,9 +564,20 @@ class PCV_Abruzzo_Plugin {
 
         foreach ($rows as $r) {
             fputcsv($out, [
-                $r['id'],$r['created_at'],$r['nome'],$r['cognome'],$r['comune'],$r['provincia'],
-                $r['email'],$r['telefono'],$r['privacy'] ? '1' : '0',$r['partecipa'] ? '1' : '0',
-                ! empty($r['dorme']) ? '1' : '0',! empty($r['mangia']) ? '1' : '0',$r['ip'],$r['user_agent'],
+                $r['id'],
+                $r['created_at'],
+                $this->csv_text_guard( $r['nome'] ),
+                $this->csv_text_guard( $r['cognome'] ),
+                $this->csv_text_guard( $r['comune'] ),
+                $this->csv_text_guard( $r['provincia'] ),
+                $this->csv_text_guard( $r['email'] ),
+                $this->csv_text_guard( $r['telefono'] ),
+                $r['privacy'] ? '1' : '0',
+                $r['partecipa'] ? '1' : '0',
+                ! empty($r['dorme']) ? '1' : '0',
+                ! empty($r['mangia']) ? '1' : '0',
+                $this->csv_text_guard( $r['ip'] ),
+                $this->csv_text_guard( $r['user_agent'] ),
             ], ';');
         }
         fclose($out); exit;
