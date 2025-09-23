@@ -322,8 +322,24 @@ class PCV_Abruzzo_Plugin {
             ]);
             if ( is_wp_error($resp) ) $this->redirect_with_status('err');
 
-            $body = json_decode( wp_remote_retrieve_body($resp), true );
-            if ( empty($body['success']) ) $this->redirect_with_status('err');
+            $body_raw = wp_remote_retrieve_body( $resp );
+            $body = json_decode( $body_raw, true );
+            $json_error = json_last_error();
+            $raw_snippet = is_string( $body_raw ) ? substr( $body_raw, 0, 200 ) : '[non-string response]';
+
+            if ( JSON_ERROR_NONE !== $json_error ) {
+                error_log( 'PCV_Abruzzo_Plugin: reCAPTCHA JSON decode error - ' . json_last_error_msg() . '. Raw response: ' . $raw_snippet );
+                $this->redirect_with_status('err');
+            }
+
+            if ( ! is_array( $body ) || ! array_key_exists( 'success', $body ) ) {
+                error_log( 'PCV_Abruzzo_Plugin: Unexpected reCAPTCHA response structure. Raw response: ' . $raw_snippet );
+                $this->redirect_with_status('err');
+            }
+
+            if ( empty( $body['success'] ) ) {
+                $this->redirect_with_status('err');
+            }
         }
 
         $nome       = $this->sanitize_name( wp_unslash( $_POST['pcv_nome'] ?? '' ) );
