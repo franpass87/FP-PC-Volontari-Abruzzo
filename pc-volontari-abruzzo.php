@@ -68,6 +68,33 @@ class PCV_Abruzzo_Plugin {
         add_action( 'admin_init', [ $this, 'maybe_export_csv' ] );
     }
 
+    public function get_province_data() {
+        return $this->province;
+    }
+
+    public function get_comuni_data() {
+        return $this->comuni;
+    }
+
+    public function get_all_comuni() {
+        $all = [];
+        foreach ( $this->comuni as $province_comuni ) {
+            if ( ! is_array( $province_comuni ) ) {
+                continue;
+            }
+            foreach ( $province_comuni as $comune_name ) {
+                if ( is_string( $comune_name ) && $comune_name !== '' ) {
+                    $all[ $comune_name ] = $comune_name;
+                }
+            }
+        }
+
+        $values = array_values( $all );
+        sort( $values, SORT_NATURAL | SORT_FLAG_CASE );
+
+        return $values;
+    }
+
     /* ---------------- Activation: create table ---------------- */
     public static function activate() {
         global $wpdb;
@@ -456,10 +483,34 @@ class PCV_Abruzzo_Plugin {
 
     public function admin_assets($hook) {
         if ( strpos($hook, self::MENU_SLUG) === false ) return;
-        $css = ".pcv-topbar{display:flex;gap:10px;align-items:center;margin:12px 0}.pcv-topbar form{display:flex;gap:8px;align-items:center}.wrap .tablenav{overflow:visible}.pcv-topbar, .pcv-topbar form{flex-wrap:wrap}";
+        $css = ".pcv-topbar{display:flex;gap:10px;align-items:center;margin:12px 0}.pcv-topbar form{display:flex;gap:8px;align-items:center}.wrap .tablenav{overflow:visible}.pcv-topbar, .pcv-topbar form{flex-wrap:wrap}.pcv-topbar select{min-width:180px}";
         wp_register_style('pcv-admin-inline', false);
         wp_enqueue_style('pcv-admin-inline');
         wp_add_inline_style('pcv-admin-inline', $css);
+
+        $selected_prov = isset($_GET['f_prov']) ? strtoupper( sanitize_text_field( wp_unslash( $_GET['f_prov'] ) ) ) : '';
+        if ( ! array_key_exists( $selected_prov, $this->province ) ) {
+            $selected_prov = '';
+        }
+        $selected_comune = isset($_GET['f_comune']) ? sanitize_text_field( wp_unslash( $_GET['f_comune'] ) ) : '';
+
+        $all_comuni = $this->get_all_comuni();
+        if ( $selected_comune !== '' && ! in_array( $selected_comune, $all_comuni, true ) ) {
+            $selected_comune = '';
+        }
+
+        wp_register_script( 'pcv-admin', plugins_url( 'assets/js/admin.js', __FILE__ ), [], self::VERSION, true );
+        wp_localize_script( 'pcv-admin', 'PCV_ADMIN_DATA', [
+            'province'           => $this->province,
+            'comuni'             => $this->comuni,
+            'allComuni'          => $all_comuni,
+            'selectedProvincia'  => $selected_prov,
+            'selectedComune'     => $selected_comune,
+            'labels'             => [
+                'placeholderComune' => 'Tutti i comuni',
+            ],
+        ] );
+        wp_enqueue_script( 'pcv-admin' );
     }
 
     public function render_admin_page() {
@@ -682,15 +733,59 @@ if ( ! class_exists( 'PCV_List_Table' ) ) {
         
         public function extra_tablenav($which){
             if($which!=='top') return;
-            $f_comune = isset($_GET['f_comune'])?esc_attr($_GET['f_comune']):'';
-            $f_prov   = isset($_GET['f_prov'])?esc_attr($_GET['f_prov']):'';
-            $s        = isset($_GET['s'])?esc_attr($_GET['s']):'';
+
+            $f_comune_raw = isset($_GET['f_comune']) ? wp_unslash($_GET['f_comune']) : '';
+            $f_comune = sanitize_text_field( $f_comune_raw );
+            $f_prov_raw = isset($_GET['f_prov']) ? wp_unslash($_GET['f_prov']) : '';
+            $f_prov = strtoupper( sanitize_text_field( $f_prov_raw ) );
+            $s_raw = isset($_GET['s']) ? wp_unslash($_GET['s']) : '';
+            $s = sanitize_text_field( $s_raw );
+
+            $province = $this->plugin->get_province_data();
+            if ( ! array_key_exists( $f_prov, $province ) ) {
+                $f_prov = '';
+            }
+
+            $comuni_map = $this->plugin->get_comuni_data();
+            $all_comuni = $this->plugin->get_all_comuni();
+            if ( $f_comune !== '' && ! in_array( $f_comune, $all_comuni, true ) ) {
+                $f_comune = '';
+            }
+
+            if ( $f_prov && isset( $comuni_map[ $f_prov ] ) ) {
+                $comuni_options = array_values( $comuni_map[ $f_prov ] );
+            } else {
+                $comuni_options = $all_comuni;
+            }
+
+            $comuni_options = array_filter( $comuni_options, 'is_string' );
+            $comuni_options = array_values( array_unique( $comuni_options ) );
+            sort( $comuni_options, SORT_NATURAL | SORT_FLAG_CASE );
+
             $url_no_vars = remove_query_arg(['f_comune','f_prov','s','paged']);
             echo '<div class="pcv-topbar"><form method="get">';
             echo '<input type="hidden" name="page" value="'.esc_attr(PCV_Abruzzo_Plugin::MENU_SLUG).'">';
-            echo '<input type="text" name="f_comune" value="'.$f_comune.'" placeholder="Filtra per Comune">';
-            echo '<input type="text" name="f_prov" value="'.$f_prov.'" placeholder="Filtra per Provincia">';
-            echo '<input type="search" name="s" value="'.$s.'" placeholder="Cerca...">';
+
+            echo '<label class="screen-reader-text" for="pcv-admin-provincia">Filtra per Provincia</label>';
+            echo '<select name="f_prov" id="pcv-admin-provincia">';
+            echo '<option value="">Tutte le province</option>';
+            foreach ($province as $code => $label) {
+                $selected_attr = selected( $f_prov, $code, false );
+                $option_label = sprintf( '%s (%s)', $label, $code );
+                echo '<option value="'.esc_attr($code).'"'.$selected_attr.'>'.esc_html($option_label).'</option>';
+            }
+            echo '</select>';
+
+            echo '<label class="screen-reader-text" for="pcv-admin-comune">Filtra per Comune</label>';
+            echo '<select name="f_comune" id="pcv-admin-comune" data-selected="'.esc_attr($f_comune).'">';
+            echo '<option value="">Tutti i comuni</option>';
+            foreach ($comuni_options as $comune_name) {
+                $selected_attr = selected( $f_comune, $comune_name, false );
+                echo '<option value="'.esc_attr($comune_name).'"'.$selected_attr.'>'.esc_html($comune_name).'</option>';
+            }
+            echo '</select>';
+
+            echo '<input type="search" name="s" value="'.esc_attr($s).'" placeholder="Cerca...">';
             submit_button('Filtra','secondary','',false);
             echo ' <a href="'.esc_url($url_no_vars).'" class="button">Pulisci</a> ';
             $export_url = wp_nonce_url( add_query_arg(['pcv_export'=>'csv'], admin_url('admin.php?page='.PCV_Abruzzo_Plugin::MENU_SLUG) ), 'pcv_export' );
