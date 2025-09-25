@@ -6,6 +6,7 @@
  * Author: Francesco Passeri
  * Author URI: https://francescopasseri.com
  * License: GPLv2 or later
+ * Text Domain: pc-volontari-abruzzo
  */
 
 if ( ! defined('ABSPATH') ) exit;
@@ -13,6 +14,7 @@ if ( ! defined('ABSPATH') ) exit;
 class PCV_Abruzzo_Plugin {
 
     const VERSION   = '1.0.1';
+    const TEXT_DOMAIN = 'pc-volontari-abruzzo';
     const TABLE     = 'pcv_volontari';
     const NONCE     = 'pcv_form_nonce';
     const MENU_SLUG = 'pcv-volontari';
@@ -77,6 +79,8 @@ class PCV_Abruzzo_Plugin {
         $this->comuni   = $data['comuni'] ?? [];
 
         add_shortcode( 'pc_volontari_form', [ $this, 'render_form_shortcode' ] );
+
+        add_action( 'init', [ $this, 'load_textdomain' ] );
 
         // Assets
         add_action( 'wp_enqueue_scripts', [ $this, 'register_front_assets' ] );
@@ -212,10 +216,14 @@ class PCV_Abruzzo_Plugin {
     private function get_label_value( $option, $default ) {
         $value = get_option( $option, '' );
         if ( ! is_string( $value ) || $value === '' ) {
-            return $default;
+            return __( $default, self::TEXT_DOMAIN );
         }
 
         return $value;
+    }
+
+    public function load_textdomain() {
+        load_plugin_textdomain( self::TEXT_DOMAIN, false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
     }
 
     /* ---------------- Frontend: assets + shortcode ---------------- */
@@ -244,6 +252,11 @@ class PCV_Abruzzo_Plugin {
                 'selectComune'   => $comune_placeholder,
                 'modalAlert'     => $modal_alert_label,
             ],
+            'fallbacks'      => [
+                'selectProvince' => __( 'Seleziona provincia', self::TEXT_DOMAIN ),
+                'selectComune'   => __( 'Seleziona comune', self::TEXT_DOMAIN ),
+                'modalAlert'     => __( 'Seleziona provincia e comune.', self::TEXT_DOMAIN ),
+            ],
         ];
 
         wp_localize_script( 'pcv-frontend', 'PCV_DATA', $data );
@@ -251,9 +264,9 @@ class PCV_Abruzzo_Plugin {
         // Messaggi post-submit via query var
         if ( isset($_GET['pcv_status']) ) {
             if ( $_GET['pcv_status'] === 'ok' ) {
-                $out .= '<div class="pcv-alert success">Grazie! La tua registrazione è stata inviata correttamente.</div>';
+                $out .= '<div class="pcv-alert success">' . esc_html__( 'Grazie! La tua registrazione è stata inviata correttamente.', self::TEXT_DOMAIN ) . '</div>';
             } elseif ( $_GET['pcv_status'] === 'err' ) {
-                $out .= '<div class="pcv-alert error">Si è verificato un errore. Verifica i campi e riprova.</div>';
+                $out .= '<div class="pcv-alert error">' . esc_html__( 'Si è verificato un errore. Verifica i campi e riprova.', self::TEXT_DOMAIN ) . '</div>';
             }
         }
 
@@ -261,7 +274,7 @@ class PCV_Abruzzo_Plugin {
         $site_key = esc_attr( get_option(self::OPT_RECAPTCHA_SITE, '') );
         $privacy_notice = get_option( self::OPT_PRIVACY_NOTICE, '' );
         if ( ! $privacy_notice ) {
-            $privacy_notice = self::DEFAULT_PRIVACY_NOTICE;
+            $privacy_notice = __( self::DEFAULT_PRIVACY_NOTICE, self::TEXT_DOMAIN );
         }
 
         $participation_label = $this->get_label_value( self::OPT_PARTICIPATION_LABEL, self::DEFAULT_PARTICIPATION_LABEL );
@@ -281,22 +294,22 @@ class PCV_Abruzzo_Plugin {
         <!-- Modal Provincia/Comune -->
         <div id="pcvComuneModal" class="pcv-modal-backdrop pcv-hidden" role="dialog" aria-modal="true">
           <div class="pcv-modal">
-            <h3>Seleziona <strong>Provincia</strong> e <strong>Comune</strong></h3>
-            <p>Li useremo per precompilare il form. Puoi modificarli dopo.</p>
+            <h3><?php printf( esc_html__( 'Seleziona %1$sProvincia%2$s e %1$sComune%2$s', self::TEXT_DOMAIN ), '<strong>', '</strong>' ); ?></h3>
+            <p><?php esc_html_e( 'Li useremo per precompilare il form. Puoi modificarli dopo.', self::TEXT_DOMAIN ); ?></p>
 
-            <label for="pcvProvinciaInput" style="font-weight:600;margin-top:8px;">Provincia</label>
+            <label for="pcvProvinciaInput" style="font-weight:600;margin-top:8px;"><?php esc_html_e( 'Provincia', self::TEXT_DOMAIN ); ?></label>
             <select id="pcvProvinciaInput" style="width:100%;padding:10px;border:1px solid #dcdcdc;border-radius:6px;margin-top:6px;">
               <option value=""><?php echo esc_html( $province_placeholder ); ?></option>
             </select>
 
-            <label for="pcvComuneInput" style="font-weight:600;margin-top:8px;">Comune</label>
+            <label for="pcvComuneInput" style="font-weight:600;margin-top:8px;"><?php esc_html_e( 'Comune', self::TEXT_DOMAIN ); ?></label>
             <select id="pcvComuneInput" style="width:100%;padding:10px;border:1px solid #dcdcdc;border-radius:6px;margin-top:6px;">
               <option value=""><?php echo esc_html( $comune_placeholder ); ?></option>
             </select>
 
             <div class="pcv-actions">
-              <button type="button" id="pcvComuneSkip" class="button">Salta</button>
-              <button type="button" id="pcvComuneConfirm" class="button button-primary">Conferma</button>
+              <button type="button" id="pcvComuneSkip" class="button"><?php esc_html_e( 'Salta', self::TEXT_DOMAIN ); ?></button>
+              <button type="button" id="pcvComuneConfirm" class="button button-primary"><?php esc_html_e( 'Conferma', self::TEXT_DOMAIN ); ?></button>
             </div>
           </div>
         </div>
@@ -504,8 +517,8 @@ class PCV_Abruzzo_Plugin {
     /* ---------------- Admin: menu + table + settings reCAPTCHA ---------------- */
     public function register_admin_menu() {
         add_menu_page(
-            'Volontari Abruzzo',
-            'Volontari Abruzzo',
+            __( 'Volontari Abruzzo', self::TEXT_DOMAIN ),
+            __( 'Volontari Abruzzo', self::TEXT_DOMAIN ),
             'manage_options',
             self::MENU_SLUG,
             [ $this, 'render_admin_page' ],
@@ -514,8 +527,8 @@ class PCV_Abruzzo_Plugin {
         );
         add_submenu_page(
             self::MENU_SLUG,
-            'Impostazioni reCAPTCHA',
-            'Impostazioni',
+            __( 'Impostazioni reCAPTCHA', self::TEXT_DOMAIN ),
+            __( 'Impostazioni', self::TEXT_DOMAIN ),
             'manage_options',
             self::MENU_SLUG.'-settings',
             [ $this, 'render_settings_page' ]
@@ -548,7 +561,10 @@ class PCV_Abruzzo_Plugin {
             'selectedProvincia'  => $selected_prov,
             'selectedComune'     => $selected_comune,
             'labels'             => [
-                'placeholderComune' => 'Tutti i comuni',
+                'placeholderComune' => __( 'Tutti i comuni', self::TEXT_DOMAIN ),
+            ],
+            'fallbacks'          => [
+                'placeholderComune' => __( 'Tutti i comuni', self::TEXT_DOMAIN ),
             ],
         ] );
         wp_enqueue_script( 'pcv-admin' );
@@ -559,7 +575,10 @@ class PCV_Abruzzo_Plugin {
 
         require_once ABSPATH . 'wp-admin/includes/class-wp-list-table.php';
 
-        echo '<div class="wrap"><h1 class="wp-heading-inline">Volontari Abruzzo</h1></div>';
+        printf(
+            '<div class="wrap"><h1 class="wp-heading-inline">%s</h1></div>',
+            esc_html__( 'Volontari Abruzzo', self::TEXT_DOMAIN )
+        );
         $table = new PCV_List_Table( $this );
         $table->prepare_items();
         echo '<form method="post">';
@@ -573,92 +592,92 @@ class PCV_Abruzzo_Plugin {
 
         $label_fields = [
             self::OPT_NAME_LABEL => [
-                'label'       => 'Etichetta campo Nome',
-                'description' => 'Testo mostrato accanto al campo Nome nel form pubblico.',
+                'label'       => __( 'Etichetta campo Nome', self::TEXT_DOMAIN ),
+                'description' => __( 'Testo mostrato accanto al campo Nome nel form pubblico.', self::TEXT_DOMAIN ),
                 'default'     => self::DEFAULT_NAME_LABEL,
                 'sanitize'    => 'sanitize_text_field',
             ],
             self::OPT_SURNAME_LABEL => [
-                'label'       => 'Etichetta campo Cognome',
-                'description' => 'Testo mostrato accanto al campo Cognome nel form pubblico.',
+                'label'       => __( 'Etichetta campo Cognome', self::TEXT_DOMAIN ),
+                'description' => __( 'Testo mostrato accanto al campo Cognome nel form pubblico.', self::TEXT_DOMAIN ),
                 'default'     => self::DEFAULT_SURNAME_LABEL,
                 'sanitize'    => 'sanitize_text_field',
             ],
             self::OPT_PROVINCE_LABEL => [
-                'label'       => 'Etichetta campo Provincia',
-                'description' => 'Testo mostrato accanto alla select della Provincia.',
+                'label'       => __( 'Etichetta campo Provincia', self::TEXT_DOMAIN ),
+                'description' => __( 'Testo mostrato accanto alla select della Provincia.', self::TEXT_DOMAIN ),
                 'default'     => self::DEFAULT_PROVINCE_LABEL,
                 'sanitize'    => 'sanitize_text_field',
             ],
             self::OPT_PROVINCE_PLACEHOLDER => [
-                'label'       => 'Testo predefinito select Provincia',
-                'description' => 'Prima opzione vuota mostrata nelle select della Provincia (form e popup).',
+                'label'       => __( 'Testo predefinito select Provincia', self::TEXT_DOMAIN ),
+                'description' => __( 'Prima opzione vuota mostrata nelle select della Provincia (form e popup).', self::TEXT_DOMAIN ),
                 'default'     => self::DEFAULT_PROVINCE_PLACEHOLDER,
                 'sanitize'    => 'sanitize_text_field',
             ],
             self::OPT_COMUNE_LABEL => [
-                'label'       => 'Etichetta campo Comune',
-                'description' => 'Testo mostrato accanto alla select del Comune.',
+                'label'       => __( 'Etichetta campo Comune', self::TEXT_DOMAIN ),
+                'description' => __( 'Testo mostrato accanto alla select del Comune.', self::TEXT_DOMAIN ),
                 'default'     => self::DEFAULT_COMUNE_LABEL,
                 'sanitize'    => 'sanitize_text_field',
             ],
             self::OPT_COMUNE_PLACEHOLDER => [
-                'label'       => 'Testo predefinito select Comune',
-                'description' => 'Prima opzione vuota mostrata nelle select del Comune (form e popup).',
+                'label'       => __( 'Testo predefinito select Comune', self::TEXT_DOMAIN ),
+                'description' => __( 'Prima opzione vuota mostrata nelle select del Comune (form e popup).', self::TEXT_DOMAIN ),
                 'default'     => self::DEFAULT_COMUNE_PLACEHOLDER,
                 'sanitize'    => 'sanitize_text_field',
             ],
             self::OPT_EMAIL_LABEL => [
-                'label'       => 'Etichetta campo Email',
-                'description' => 'Testo mostrato accanto al campo Email.',
+                'label'       => __( 'Etichetta campo Email', self::TEXT_DOMAIN ),
+                'description' => __( 'Testo mostrato accanto al campo Email.', self::TEXT_DOMAIN ),
                 'default'     => self::DEFAULT_EMAIL_LABEL,
                 'sanitize'    => 'sanitize_text_field',
             ],
             self::OPT_PHONE_LABEL => [
-                'label'       => 'Etichetta campo Telefono',
-                'description' => 'Testo mostrato accanto al campo Telefono.',
+                'label'       => __( 'Etichetta campo Telefono', self::TEXT_DOMAIN ),
+                'description' => __( 'Testo mostrato accanto al campo Telefono.', self::TEXT_DOMAIN ),
                 'default'     => self::DEFAULT_PHONE_LABEL,
                 'sanitize'    => 'sanitize_text_field',
             ],
             self::OPT_PARTICIPATION_LABEL => [
-                'label'       => 'Etichetta partecipazione',
-                'description' => 'Testo mostrato accanto all’opzione di partecipazione.',
+                'label'       => __( 'Etichetta partecipazione', self::TEXT_DOMAIN ),
+                'description' => __( 'Testo mostrato accanto all’opzione di partecipazione.', self::TEXT_DOMAIN ),
                 'default'     => self::DEFAULT_PARTICIPATION_LABEL,
                 'sanitize'    => 'sanitize_text_field',
             ],
             self::OPT_OVERNIGHT_LABEL => [
-                'label'       => 'Etichetta pernottamento',
-                'description' => 'Testo mostrato accanto all’opzione di pernottamento.',
+                'label'       => __( 'Etichetta pernottamento', self::TEXT_DOMAIN ),
+                'description' => __( 'Testo mostrato accanto all’opzione di pernottamento.', self::TEXT_DOMAIN ),
                 'default'     => self::DEFAULT_OVERNIGHT_LABEL,
                 'sanitize'    => 'sanitize_text_field',
             ],
             self::OPT_MEALS_LABEL => [
-                'label'       => 'Etichetta pasti',
-                'description' => 'Testo mostrato accanto all’opzione relativa ai pasti.',
+                'label'       => __( 'Etichetta pasti', self::TEXT_DOMAIN ),
+                'description' => __( 'Testo mostrato accanto all’opzione relativa ai pasti.', self::TEXT_DOMAIN ),
                 'default'     => self::DEFAULT_MEALS_LABEL,
                 'sanitize'    => 'sanitize_text_field',
             ],
             self::OPT_PRIVACY_FIELD_LABEL => [
-                'label'       => 'Etichetta consenso privacy',
-                'description' => 'Testo mostrato accanto alla casella di consenso privacy. Puoi includere un link usando HTML.',
+                'label'       => __( 'Etichetta consenso privacy', self::TEXT_DOMAIN ),
+                'description' => __( 'Testo mostrato accanto alla casella di consenso privacy. Puoi includere un link usando HTML.', self::TEXT_DOMAIN ),
                 'default'     => self::DEFAULT_PRIVACY_FIELD_LABEL,
                 'sanitize'    => 'wp_kses_post',
             ],
             self::OPT_OPTIONAL_GROUP_ARIA => [
-                'label'       => 'Descrizione gruppo opzioni facoltative',
-                'description' => 'Testo utilizzato per l’attributo aria-label del gruppo di checkbox facoltative.',
+                'label'       => __( 'Descrizione gruppo opzioni facoltative', self::TEXT_DOMAIN ),
+                'description' => __( 'Testo utilizzato per l’attributo aria-label del gruppo di checkbox facoltative.', self::TEXT_DOMAIN ),
                 'default'     => self::DEFAULT_OPTIONAL_GROUP_ARIA,
                 'sanitize'    => 'sanitize_text_field',
             ],
             self::OPT_SUBMIT_LABEL => [
-                'label'       => 'Testo pulsante invio',
-                'description' => 'Testo del pulsante di invio del form.',
+                'label'       => __( 'Testo pulsante invio', self::TEXT_DOMAIN ),
+                'description' => __( 'Testo del pulsante di invio del form.', self::TEXT_DOMAIN ),
                 'default'     => self::DEFAULT_SUBMIT_LABEL,
                 'sanitize'    => 'sanitize_text_field',
             ],
             self::OPT_MODAL_ALERT => [
-                'label'       => 'Messaggio popup Provincia/Comune',
-                'description' => 'Avviso mostrato nel popup se non vengono selezionati Provincia e Comune.',
+                'label'       => __( 'Messaggio popup Provincia/Comune', self::TEXT_DOMAIN ),
+                'description' => __( 'Avviso mostrato nel popup se non vengono selezionati Provincia e Comune.', self::TEXT_DOMAIN ),
                 'default'     => self::DEFAULT_MODAL_ALERT,
                 'sanitize'    => 'sanitize_text_field',
             ],
@@ -683,14 +702,14 @@ class PCV_Abruzzo_Plugin {
                 }
                 update_option( $option_key, $clean_value );
             }
-            echo '<div class="updated notice"><p>Impostazioni salvate.</p></div>';
+            echo '<div class="updated notice"><p>' . esc_html__( 'Impostazioni salvate.', self::TEXT_DOMAIN ) . '</p></div>';
         }
 
         $site = esc_attr( get_option(self::OPT_RECAPTCHA_SITE, '') );
         $secret = esc_attr( get_option(self::OPT_RECAPTCHA_SECRET, '') );
         $privacy_notice = get_option(self::OPT_PRIVACY_NOTICE, '');
         if ( ! $privacy_notice ) {
-            $privacy_notice = self::DEFAULT_PRIVACY_NOTICE;
+            $privacy_notice = __( self::DEFAULT_PRIVACY_NOTICE, self::TEXT_DOMAIN );
         }
 
         $label_values = [];
@@ -702,12 +721,12 @@ class PCV_Abruzzo_Plugin {
             $label_values[ $option_key ] = $value;
         }
 
-        echo '<div class="wrap"><h1>Impostazioni modulo Volontari</h1>';
+        echo '<div class="wrap"><h1>' . esc_html__( 'Impostazioni modulo Volontari', self::TEXT_DOMAIN ) . '</h1>';
         echo '<form method="post">';
         wp_nonce_field('pcv_save_keys_nonce');
         echo '<table class="form-table">';
-        echo '<tr><th scope="row"><label for="pcv_site_key">Site Key</label></th><td><input type="text" id="pcv_site_key" name="pcv_site_key" value="'.$site.'" class="regular-text"></td></tr>';
-        echo '<tr><th scope="row"><label for="pcv_secret_key">Secret Key</label></th><td><input type="text" id="pcv_secret_key" name="pcv_secret_key" value="'.$secret.'" class="regular-text"></td></tr>';
+        echo '<tr><th scope="row"><label for="pcv_site_key">' . esc_html__( 'Site Key', self::TEXT_DOMAIN ) . '</label></th><td><input type="text" id="pcv_site_key" name="pcv_site_key" value="'.$site.'" class="regular-text"></td></tr>';
+        echo '<tr><th scope="row"><label for="pcv_secret_key">' . esc_html__( 'Secret Key', self::TEXT_DOMAIN ) . '</label></th><td><input type="text" id="pcv_secret_key" name="pcv_secret_key" value="'.$secret.'" class="regular-text"></td></tr>';
         foreach ( $label_fields as $option_key => $field ) {
             $value = $label_values[ $option_key ];
             $field_id = esc_attr( $option_key );
@@ -715,9 +734,9 @@ class PCV_Abruzzo_Plugin {
             $description = isset( $field['description'] ) && $field['description'] !== '' ? '<p class="description">'.esc_html( $field['description'] ).'</p>' : '';
             echo '<tr><th scope="row"><label for="'.$field_id.'">'.$label.'</label></th><td><input type="text" id="'.$field_id.'" name="'.$field_id.'" value="'.esc_attr( $value ).'" class="regular-text">'.$description.'</td></tr>';
         }
-        echo '<tr><th scope="row"><label for="pcv_privacy_notice">Informativa Privacy</label></th><td><textarea id="pcv_privacy_notice" name="pcv_privacy_notice" rows="6" class="large-text code">'.esc_textarea($privacy_notice).'</textarea><p class="description">Inserisci l’informativa privacy completa, includendo il Titolare del trattamento e le eventuali note legali.</p></td></tr>';
+        echo '<tr><th scope="row"><label for="pcv_privacy_notice">' . esc_html__( 'Informativa Privacy', self::TEXT_DOMAIN ) . '</label></th><td><textarea id="pcv_privacy_notice" name="pcv_privacy_notice" rows="6" class="large-text code">'.esc_textarea($privacy_notice).'</textarea><p class="description">' . esc_html__( 'Inserisci l’informativa privacy completa, includendo il Titolare del trattamento e le eventuali note legali.', self::TEXT_DOMAIN ) . '</p></td></tr>';
         echo '</table>';
-        submit_button('Salva impostazioni', 'primary', 'pcv_save_keys');
+        submit_button( __( 'Salva impostazioni', self::TEXT_DOMAIN ), 'primary', 'pcv_save_keys' );
         echo '</form></div>';
     }
 
@@ -727,7 +746,9 @@ class PCV_Abruzzo_Plugin {
         if ( ! isset($_GET['page']) || $_GET['page'] !== self::MENU_SLUG ) return;
         if ( ! isset($_GET['pcv_export']) || $_GET['pcv_export'] !== 'csv' ) return;
         if ( ! current_user_can('manage_options') ) return;
-        if ( ! wp_verify_nonce( $_GET['_wpnonce'] ?? '', 'pcv_export' ) ) wp_die('Nonce non valido');
+        if ( ! wp_verify_nonce( $_GET['_wpnonce'] ?? '', 'pcv_export' ) ) {
+            wp_die( esc_html__( 'Nonce non valido', self::TEXT_DOMAIN ) );
+        }
 
         global $wpdb;
         $table = $this->table_name();
@@ -751,7 +772,23 @@ class PCV_Abruzzo_Plugin {
         header('Content-Disposition: attachment; filename=volontari_abruzzo_'.date('Ymd_His').'.csv');
 
         $out = fopen('php://output', 'w');
-        fputcsv($out, ['ID','Data','Nome','Cognome','Comune','Provincia','Email','Telefono','Privacy','Partecipa','Dormire','Mangiare','IP','User Agent'], ';');
+        $headers = [
+            __( 'ID', self::TEXT_DOMAIN ),
+            __( 'Data', self::TEXT_DOMAIN ),
+            __( 'Nome', self::TEXT_DOMAIN ),
+            __( 'Cognome', self::TEXT_DOMAIN ),
+            __( 'Comune', self::TEXT_DOMAIN ),
+            __( 'Provincia', self::TEXT_DOMAIN ),
+            __( 'Email', self::TEXT_DOMAIN ),
+            __( 'Telefono', self::TEXT_DOMAIN ),
+            __( 'Privacy', self::TEXT_DOMAIN ),
+            __( 'Partecipa', self::TEXT_DOMAIN ),
+            __( 'Pernotta', self::TEXT_DOMAIN ),
+            __( 'Pasti', self::TEXT_DOMAIN ),
+            __( 'IP', self::TEXT_DOMAIN ),
+            __( 'User Agent', self::TEXT_DOMAIN ),
+        ];
+        fputcsv( $out, $headers, ';' );
 
         foreach ($rows as $r) {
             fputcsv($out, [
@@ -787,23 +824,27 @@ if ( ! class_exists( 'PCV_List_Table' ) ) {
         
         public function __construct( $plugin_instance ) {
             $this->plugin = $plugin_instance;
-            parent::__construct(['singular'=>'volontario','plural'=>'volontari','ajax'=>false]);
+            parent::__construct([
+                'singular' => __( 'volontario', PCV_Abruzzo_Plugin::TEXT_DOMAIN ),
+                'plural'   => __( 'volontari', PCV_Abruzzo_Plugin::TEXT_DOMAIN ),
+                'ajax'     => false,
+            ]);
         }
-        
+
         public function get_columns() {
             return [
                 'cb'         => '<input type="checkbox" />',
-                'created_at' => 'Data',
-                'nome'       => 'Nome',
-                'cognome'    => 'Cognome',
-                'comune'     => 'Comune',
-                'provincia'  => 'Provincia',
-                'email'      => 'Email',
-                'telefono'   => 'Telefono',
-                'privacy'    => 'Privacy',
-                'partecipa'  => 'Partecipa',
-                'dorme'      => 'Dormire',
-                'mangia'     => 'Mangiare',
+                'created_at' => esc_html__( 'Data', PCV_Abruzzo_Plugin::TEXT_DOMAIN ),
+                'nome'       => esc_html__( 'Nome', PCV_Abruzzo_Plugin::TEXT_DOMAIN ),
+                'cognome'    => esc_html__( 'Cognome', PCV_Abruzzo_Plugin::TEXT_DOMAIN ),
+                'comune'     => esc_html__( 'Comune', PCV_Abruzzo_Plugin::TEXT_DOMAIN ),
+                'provincia'  => esc_html__( 'Provincia', PCV_Abruzzo_Plugin::TEXT_DOMAIN ),
+                'email'      => esc_html__( 'Email', PCV_Abruzzo_Plugin::TEXT_DOMAIN ),
+                'telefono'   => esc_html__( 'Telefono', PCV_Abruzzo_Plugin::TEXT_DOMAIN ),
+                'privacy'    => esc_html__( 'Privacy', PCV_Abruzzo_Plugin::TEXT_DOMAIN ),
+                'partecipa'  => esc_html__( 'Partecipa', PCV_Abruzzo_Plugin::TEXT_DOMAIN ),
+                'dorme'      => esc_html__( 'Pernotta', PCV_Abruzzo_Plugin::TEXT_DOMAIN ),
+                'mangia'     => esc_html__( 'Pasti', PCV_Abruzzo_Plugin::TEXT_DOMAIN ),
             ];
         }
         
@@ -819,13 +860,14 @@ if ( ! class_exists( 'PCV_List_Table' ) ) {
             switch($col){
                 case 'created_at': return esc_html(mysql2date('d/m/Y H:i',$item->created_at));
                 case 'nome':case 'cognome':case 'comune':case 'provincia':case 'email':case 'telefono': return esc_html($item->$col);
-                case 'privacy':case 'partecipa':case 'dorme':case 'mangia': return $item->$col ? 'Sì':'No';
+                case 'privacy':case 'partecipa':case 'dorme':case 'mangia':
+                    return $item->$col ? esc_html__( 'Sì', PCV_Abruzzo_Plugin::TEXT_DOMAIN ) : esc_html__( 'No', PCV_Abruzzo_Plugin::TEXT_DOMAIN );
                 default: return '';
             }
         }
-        
+
         public function get_bulk_actions(){
-            return ['delete' => 'Elimina'];
+            return ['delete' => esc_html__( 'Elimina', PCV_Abruzzo_Plugin::TEXT_DOMAIN )];
         }
 
         public function process_bulk_action(){
@@ -903,9 +945,9 @@ if ( ! class_exists( 'PCV_List_Table' ) ) {
             echo '<div class="pcv-topbar"><form method="get">';
             echo '<input type="hidden" name="page" value="'.esc_attr(PCV_Abruzzo_Plugin::MENU_SLUG).'">';
 
-            echo '<label class="screen-reader-text" for="pcv-admin-provincia">Filtra per Provincia</label>';
+            echo '<label class="screen-reader-text" for="pcv-admin-provincia">' . esc_html__( 'Filtra per Provincia', self::TEXT_DOMAIN ) . '</label>';
             echo '<select name="f_prov" id="pcv-admin-provincia">';
-            echo '<option value="">Tutte le province</option>';
+            echo '<option value="">' . esc_html__( 'Tutte le province', self::TEXT_DOMAIN ) . '</option>';
             foreach ($province as $code => $label) {
                 $selected_attr = selected( $f_prov, $code, false );
                 $option_label = sprintf( '%s (%s)', $label, $code );
@@ -913,20 +955,20 @@ if ( ! class_exists( 'PCV_List_Table' ) ) {
             }
             echo '</select>';
 
-            echo '<label class="screen-reader-text" for="pcv-admin-comune">Filtra per Comune</label>';
+            echo '<label class="screen-reader-text" for="pcv-admin-comune">' . esc_html__( 'Filtra per Comune', self::TEXT_DOMAIN ) . '</label>';
             echo '<select name="f_comune" id="pcv-admin-comune" data-selected="'.esc_attr($f_comune).'">';
-            echo '<option value="">Tutti i comuni</option>';
+            echo '<option value="">' . esc_html__( 'Tutti i comuni', self::TEXT_DOMAIN ) . '</option>';
             foreach ($comuni_options as $comune_name) {
                 $selected_attr = selected( $f_comune, $comune_name, false );
                 echo '<option value="'.esc_attr($comune_name).'"'.$selected_attr.'>'.esc_html($comune_name).'</option>';
             }
             echo '</select>';
 
-            echo '<input type="search" name="s" value="'.esc_attr($s).'" placeholder="Cerca...">';
-            submit_button('Filtra','secondary','',false);
-            echo ' <a href="'.esc_url($url_no_vars).'" class="button">Pulisci</a> ';
+            echo '<input type="search" name="s" value="'.esc_attr($s).'" placeholder="' . esc_attr__( 'Cerca…', self::TEXT_DOMAIN ) . '">';
+            submit_button( __( 'Filtra', self::TEXT_DOMAIN ), 'secondary', '', false );
+            echo ' <a href="'.esc_url($url_no_vars).'" class="button">' . esc_html__( 'Pulisci', self::TEXT_DOMAIN ) . '</a> ';
             $export_url = wp_nonce_url( add_query_arg(['pcv_export'=>'csv'], admin_url('admin.php?page='.PCV_Abruzzo_Plugin::MENU_SLUG) ), 'pcv_export' );
-            echo ' <a class="button button-primary" href="'.esc_url($export_url).'">Export CSV</a>';
+            echo ' <a class="button button-primary" href="'.esc_url($export_url).'">' . esc_html__( 'Export CSV', self::TEXT_DOMAIN ) . '</a>';
             echo '</form></div>';
         }
     }

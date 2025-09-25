@@ -33,8 +33,13 @@
       return fallback;
     }
   }
+  var FALLBACKS = (typeof window.PCV_DATA !== 'undefined' && window.PCV_DATA && window.PCV_DATA.fallbacks) ? window.PCV_DATA.fallbacks : {
+    selectProvince: 'Seleziona provincia',
+    selectComune: 'Seleziona comune',
+    modalAlert: 'Seleziona provincia e comune.'
+  };
   function getLabel(key, fallback){
-    if (typeof PCV_DATA !== 'undefined' && PCV_DATA && PCV_DATA.labels && typeof PCV_DATA.labels[key] === 'string'){ 
+    if (typeof PCV_DATA !== 'undefined' && PCV_DATA && PCV_DATA.labels && typeof PCV_DATA.labels[key] === 'string'){
       var value = PCV_DATA.labels[key];
       if (value){
         return value;
@@ -43,7 +48,7 @@
     return fallback;
   }
   function fillProvince(sel){
-    var selectProvinceText = getLabel('selectProvince', 'Seleziona provincia');
+    var selectProvinceText = getLabel('selectProvince', FALLBACKS.selectProvince);
     sel.innerHTML = '<option value="">' + selectProvinceText + '</option>';
     for (var code in PCV_DATA.province){
       var opt = ce('option');
@@ -53,7 +58,7 @@
     }
   }
   function fillComuni(sel, prov, preselect){
-    var selectComuneText = getLabel('selectComune', 'Seleziona comune');
+    var selectComuneText = getLabel('selectComune', FALLBACKS.selectComune);
     sel.innerHTML = '<option value="">' + selectComuneText + '</option>';
     var list = PCV_DATA.comuni[prov] || [];
     list.forEach(function(c){
@@ -139,7 +144,7 @@
           selComune.value = comune;
           if(modal) modal.classList.add('pcv-hidden');
         } else {
-          alert(getLabel('modalAlert', 'Seleziona provincia e comune.'));
+          alert(getLabel('modalAlert', FALLBACKS.modalAlert));
         }
       });
     }
@@ -158,7 +163,7 @@
       }
       popProv.addEventListener('change', function(){
         var prov = popProv.value;
-        var selectComuneText = getLabel('selectComune', 'Seleziona comune');
+        var selectComuneText = getLabel('selectComune', FALLBACKS.selectComune);
         popComune.innerHTML = '<option value="">' + selectComuneText + '</option>';
         (PCV_DATA.comuni[prov]||[]).forEach(function(c){
           var o = ce('option'); o.value = c; o.textContent = c; popComune.appendChild(o);

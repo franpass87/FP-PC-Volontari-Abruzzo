@@ -20,7 +20,8 @@
     }
 
     var allComuni = toArray(data.allComuni);
-    var placeholderText = (data.labels && data.labels.placeholderComune) ? data.labels.placeholderComune : 'Tutti i comuni';
+    var fallbackPlaceholder = (data.fallbacks && data.fallbacks.placeholderComune) ? data.fallbacks.placeholderComune : 'Tutti i comuni';
+    var placeholderText = (data.labels && data.labels.placeholderComune) ? data.labels.placeholderComune : fallbackPlaceholder;
     var selectedComune = data.selectedComune || comuneSelect.value || '';
 
     function buildOptions(list, selectedValue){
