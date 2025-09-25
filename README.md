@@ -135,7 +135,7 @@ Consulta il file [CHANGELOG.md](CHANGELOG.md) per lo storico completo delle vers
 
 ## Versione
 
-Attuale: **1.0.1**
+Attuale: **1.0.2**
 
 ## Build e distribuzione
 
