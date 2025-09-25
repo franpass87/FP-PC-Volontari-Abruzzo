@@ -409,10 +409,14 @@ class PCV_Abruzzo_Plugin {
 
         // Messaggi post-submit via query var
         if ( isset($_GET['pcv_status']) ) {
-            if ( $_GET['pcv_status'] === 'ok' ) {
-                $out .= '<div class="pcv-alert success">' . esc_html__( 'Grazie! La tua registrazione è stata inviata correttamente.', self::TEXT_DOMAIN ) . '</div>';
-            } elseif ( $_GET['pcv_status'] === 'err' ) {
-                $out .= '<div class="pcv-alert error">' . esc_html__( 'Si è verificato un errore. Verifica i campi e riprova.', self::TEXT_DOMAIN ) . '</div>';
+            $status = sanitize_key( wp_unslash( $_GET['pcv_status'] ) );
+
+            if ( $status === 'ok' ) {
+                $message = esc_html__( 'Grazie! La tua registrazione è stata inviata correttamente.', self::TEXT_DOMAIN );
+                $out    .= '<div class="pcv-alert success" role="status" aria-live="polite"><span class="pcv-alert-icon" aria-hidden="true">✓</span><div class="pcv-alert-message">' . $message . '</div></div>';
+            } elseif ( $status === 'err' ) {
+                $message = esc_html__( 'Si è verificato un errore. Verifica i campi e riprova.', self::TEXT_DOMAIN );
+                $out    .= '<div class="pcv-alert error" role="alert" aria-live="assertive"><span class="pcv-alert-icon" aria-hidden="true">!</span><div class="pcv-alert-message">' . $message . '</div></div>';
             }
         }
 
@@ -440,27 +444,35 @@ class PCV_Abruzzo_Plugin {
         <!-- Modal Provincia/Comune -->
         <div id="pcvComuneModal" class="pcv-modal-backdrop pcv-hidden" role="dialog" aria-modal="true">
           <div class="pcv-modal">
-            <h3><?php printf( esc_html__( 'Seleziona %1$sProvincia%2$s e %1$sComune%2$s', self::TEXT_DOMAIN ), '<strong>', '</strong>' ); ?></h3>
-            <p><?php esc_html_e( 'Li useremo per precompilare il form. Puoi modificarli dopo.', self::TEXT_DOMAIN ); ?></p>
+            <div class="pcv-modal-header">
+              <span class="pcv-modal-icon" aria-hidden="true">📍</span>
+              <div>
+                <h3><?php printf( esc_html__( 'Seleziona %1$sProvincia%2$s e %1$sComune%2$s', self::TEXT_DOMAIN ), '<strong>', '</strong>' ); ?></h3>
+                <p><?php esc_html_e( 'Li useremo per precompilare il form. Puoi modificarli dopo.', self::TEXT_DOMAIN ); ?></p>
+              </div>
+            </div>
 
-            <label for="pcvProvinciaInput" style="font-weight:600;margin-top:8px;"><?php esc_html_e( 'Provincia', self::TEXT_DOMAIN ); ?></label>
-            <select id="pcvProvinciaInput" style="width:100%;padding:10px;border:1px solid #dcdcdc;border-radius:6px;margin-top:6px;">
-              <option value=""><?php echo esc_html( $province_placeholder ); ?></option>
-            </select>
+            <div class="pcv-modal-body">
+              <label for="pcvProvinciaInput" class="pcv-modal-label"><?php esc_html_e( 'Provincia', self::TEXT_DOMAIN ); ?></label>
+              <select id="pcvProvinciaInput" class="pcv-modal-select">
+                <option value=""><?php echo esc_html( $province_placeholder ); ?></option>
+              </select>
 
-            <label for="pcvComuneInput" style="font-weight:600;margin-top:8px;"><?php esc_html_e( 'Comune', self::TEXT_DOMAIN ); ?></label>
-            <select id="pcvComuneInput" style="width:100%;padding:10px;border:1px solid #dcdcdc;border-radius:6px;margin-top:6px;">
-              <option value=""><?php echo esc_html( $comune_placeholder ); ?></option>
-            </select>
+              <label for="pcvComuneInput" class="pcv-modal-label"><?php esc_html_e( 'Comune', self::TEXT_DOMAIN ); ?></label>
+              <select id="pcvComuneInput" class="pcv-modal-select">
+                <option value=""><?php echo esc_html( $comune_placeholder ); ?></option>
+              </select>
+            </div>
 
             <div class="pcv-actions">
-              <button type="button" id="pcvComuneSkip" class="button"><?php esc_html_e( 'Salta', self::TEXT_DOMAIN ); ?></button>
+              <button type="button" id="pcvComuneSkip" class="button button-secondary"><?php esc_html_e( 'Salta', self::TEXT_DOMAIN ); ?></button>
               <button type="button" id="pcvComuneConfirm" class="button button-primary"><?php esc_html_e( 'Conferma', self::TEXT_DOMAIN ); ?></button>
             </div>
           </div>
         </div>
 
-        <form class="pcv-form" method="post">
+        <div class="pcv-form-shell">
+            <form class="pcv-form" method="post">
             <input type="hidden" name="pcv_submit" value="1">
             <input type="hidden" name="pcv_nonce" value="<?php echo esc_attr($nonce); ?>">
 
@@ -502,6 +514,11 @@ class PCV_Abruzzo_Plugin {
             </div>
 
             <div class="pcv-checkbox-group" role="group" aria-label="<?php echo esc_attr( $optional_group_aria ); ?>">
+                <div class="pcv-optional-heading">
+                    <h4 class="pcv-optional-heading-title"><?php echo esc_html( $optional_group_aria ); ?></h4>
+                    <p class="pcv-optional-heading-subtitle"><?php esc_html_e( 'Indica le tue preferenze per organizzare al meglio la partecipazione.', self::TEXT_DOMAIN ); ?></p>
+                </div>
+
                 <div class="pcv-checkbox">
                     <input type="checkbox" id="pcv_partecipa" name="pcv_partecipa" value="1">
                     <label for="pcv_partecipa"><?php echo esc_html( $participation_label ); ?></label>
@@ -533,10 +550,11 @@ class PCV_Abruzzo_Plugin {
                 <button type="submit" class="button button-primary"><?php echo esc_html( $submit_label ); ?></button>
             </div>
 
-            <div class="pcv-privacy-notice" style="font-size:12px;color:#666;margin-top:10px;">
+            <div class="pcv-privacy-notice">
                 <?php echo wpautop( wp_kses_post( $privacy_notice ) ); ?>
             </div>
-        </form>
+            </form>
+        </div>
         <?php
         return $out . ob_get_clean();
     }
