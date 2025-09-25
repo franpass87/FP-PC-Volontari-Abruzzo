@@ -39,6 +39,14 @@ class PCV_Abruzzo_Plugin {
     const OPT_NOTIFY_ENABLED      = 'pcv_notify_enabled';
     const OPT_NOTIFY_RECIPIENTS   = 'pcv_notify_recipients';
     const OPT_NOTIFY_SUBJECT      = 'pcv_notify_subject';
+    const IMPORT_EXPECTED_COLUMNS = [
+        'nome',
+        'cognome',
+        'comune',
+        'provincia',
+        'email',
+        'telefono',
+    ];
     const DEFAULT_PRIVACY_NOTICE  = "I dati saranno trattati ai sensi del Reg. UE 2016/679 (GDPR) per la gestione dell’evento e finalità organizzative. Titolare del trattamento: [inserire].";
     const DEFAULT_PARTICIPATION_LABEL = 'Sì, voglio partecipare all’evento';
     const DEFAULT_OVERNIGHT_LABEL     = 'Mi fermo a dormire';
@@ -150,6 +158,7 @@ class PCV_Abruzzo_Plugin {
             provincia VARCHAR(10) NOT NULL,
             email VARCHAR(190) NOT NULL,
             telefono VARCHAR(50) NOT NULL,
+            categoria VARCHAR(150) NOT NULL DEFAULT '',
             privacy TINYINT(1) NOT NULL DEFAULT 0,
             partecipa TINYINT(1) NOT NULL DEFAULT 0,
             dorme TINYINT(1) NOT NULL DEFAULT 0,
@@ -179,7 +188,7 @@ class PCV_Abruzzo_Plugin {
 
         $needs_upgrade = false;
         $table_sql = esc_sql( $table );
-        foreach ( [ 'dorme', 'mangia' ] as $column ) {
+        foreach ( [ 'dorme', 'mangia', 'categoria' ] as $column ) {
             $column_exists = $wpdb->get_var(
                 $wpdb->prepare( "SHOW COLUMNS FROM `{$table_sql}` LIKE %s", $column )
             );
@@ -320,6 +329,7 @@ class PCV_Abruzzo_Plugin {
             sprintf( '%s: %s', __( 'Telefono', self::TEXT_DOMAIN ), $record['telefono'] ),
             sprintf( '%s: %s', __( 'Comune', self::TEXT_DOMAIN ), $record['comune'] ),
             sprintf( '%s: %s', __( 'Provincia', self::TEXT_DOMAIN ), $record['provincia'] ),
+            ! empty( $record['categoria'] ) ? sprintf( '%s: %s', __( 'Categoria', self::TEXT_DOMAIN ), $record['categoria'] ) : '',
             sprintf( '%s: %s', __( 'Partecipa', self::TEXT_DOMAIN ), $record['partecipa'] ? __( 'Sì', self::TEXT_DOMAIN ) : __( 'No', self::TEXT_DOMAIN ) ),
             sprintf( '%s: %s', __( 'Pernotta', self::TEXT_DOMAIN ), $record['dorme'] ? __( 'Sì', self::TEXT_DOMAIN ) : __( 'No', self::TEXT_DOMAIN ) ),
             sprintf( '%s: %s', __( 'Pasti', self::TEXT_DOMAIN ), $record['mangia'] ? __( 'Sì', self::TEXT_DOMAIN ) : __( 'No', self::TEXT_DOMAIN ) ),
@@ -334,6 +344,10 @@ class PCV_Abruzzo_Plugin {
          * @param string $message Testo dell'email.
          * @param array  $record  Dati del volontario registrato.
          */
+        $lines = array_values( array_filter( $lines, static function( $line ) {
+            return $line !== '';
+        } ) );
+
         return apply_filters( 'pcv_notification_email_message', implode( "\n", $lines ), $record );
     }
 
@@ -602,6 +616,7 @@ class PCV_Abruzzo_Plugin {
         $ip_address = $this->get_ip();
         $user_agent_raw = isset( $_SERVER['HTTP_USER_AGENT'] ) ? wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) : '';
         $user_agent = $user_agent_raw !== '' ? mb_substr( sanitize_text_field( $user_agent_raw ), 0, 255 ) : '';
+        $category = 'Volontari';
 
         // Validazioni: provincia e comune devono appartenere a liste Abruzzo
         if ( !array_key_exists($provincia, $this->province) ) $this->redirect_with_status('err');
@@ -624,6 +639,7 @@ class PCV_Abruzzo_Plugin {
                 'provincia'  => $provincia,
                 'email'      => $email,
                 'telefono'   => $telefono,
+                'categoria'  => $category,
                 'privacy'    => $privacy,
                 'partecipa'  => $partecipa,
                 'dorme'      => $dorme,
@@ -631,7 +647,7 @@ class PCV_Abruzzo_Plugin {
                 'ip'         => $ip_address,
                 'user_agent' => $user_agent,
             ],
-            [ '%s','%s','%s','%s','%s','%s','%s','%d','%d','%d','%d','%s','%s' ]
+            [ '%s','%s','%s','%s','%s','%s','%s','%s','%d','%d','%d','%d','%s','%s' ]
         );
 
         if ( $inserted ) {
@@ -644,6 +660,7 @@ class PCV_Abruzzo_Plugin {
                 'provincia'  => $provincia,
                 'email'      => $email,
                 'telefono'   => $telefono,
+                'categoria'  => $category,
                 'privacy'    => $privacy,
                 'partecipa'  => $partecipa,
                 'dorme'      => $dorme,
@@ -697,6 +714,14 @@ class PCV_Abruzzo_Plugin {
             'manage_options',
             self::MENU_SLUG.'-settings',
             [ $this, 'render_settings_page' ]
+        );
+        add_submenu_page(
+            self::MENU_SLUG,
+            __( 'Importazione volontari', self::TEXT_DOMAIN ),
+            __( 'Importa', self::TEXT_DOMAIN ),
+            'manage_options',
+            self::MENU_SLUG.'-import',
+            [ $this, 'render_import_page' ]
         );
     }
 
@@ -926,6 +951,979 @@ class PCV_Abruzzo_Plugin {
         echo '</form></div>';
     }
 
+    public function render_import_page() {
+        if ( ! current_user_can('manage_options') ) return;
+
+        $messages = [];
+        $stage = 'upload';
+        $mapping_args = [];
+
+        if ( isset( $_POST['pcv_import_submit'] ) || isset( $_POST['pcv_import_confirm'] ) ) {
+            $result = $this->handle_import_submission();
+            if ( isset( $result['messages'] ) && is_array( $result['messages'] ) ) {
+                $messages = array_merge( $messages, $result['messages'] );
+            }
+            if ( isset( $result['stage'] ) && $result['stage'] === 'map' ) {
+                $stage = 'map';
+                $mapping_args = $result;
+            }
+        }
+
+        echo '<div class="wrap">';
+        echo '<h1>' . esc_html__( 'Importa volontari', self::TEXT_DOMAIN ) . '</h1>';
+
+        foreach ( $messages as $message ) {
+            $type = isset( $message['type'] ) && $message['type'] === 'error' ? 'error' : 'updated';
+            $text = isset( $message['text'] ) ? $message['text'] : '';
+            if ( $text === '' ) {
+                continue;
+            }
+            echo '<div class="notice ' . esc_attr( $type ) . '"><p>' . wp_kses_post( $text ) . '</p></div>';
+        }
+
+        if ( $stage === 'map' && ! empty( $mapping_args ) ) {
+            $this->render_import_mapping_form( $mapping_args );
+        } else {
+            echo '<p>' . esc_html__( 'Carica un file CSV o Excel (.xlsx) con i dati dei volontari da importare.', self::TEXT_DOMAIN ) . '</p>';
+            echo '<p>' . esc_html__( 'Assicurati che la prima riga contenga le intestazioni (Nome, Cognome, Comune, Provincia, Email, Telefono). I campi Privacy, Partecipa, Pernotta e Pasti sono opzionali.', self::TEXT_DOMAIN ) . '</p>';
+
+            echo '<form method="post" enctype="multipart/form-data">';
+            wp_nonce_field( 'pcv_import_nonce' );
+            echo '<input type="hidden" name="pcv_import_stage" value="upload">';
+            echo '<table class="form-table">';
+            echo '<tr>'; // File field row
+            echo '<th scope="row"><label for="pcv_import_file">' . esc_html__( 'File da importare', self::TEXT_DOMAIN ) . '</label></th>';
+            echo '<td><input type="file" id="pcv_import_file" name="pcv_import_file" accept=".csv, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required></td>';
+            echo '</tr>';
+            echo '</table>';
+            submit_button( __( 'Carica e scegli colonne', self::TEXT_DOMAIN ), 'primary', 'pcv_import_submit' );
+            echo '</form>';
+        }
+
+        echo '</div>';
+    }
+
+    private function render_import_mapping_form( array $args ) {
+        $headers = isset( $args['headers'] ) && is_array( $args['headers'] ) ? $args['headers'] : [];
+        $preview_rows = isset( $args['preview_rows'] ) && is_array( $args['preview_rows'] ) ? $args['preview_rows'] : [];
+        $token = isset( $args['token'] ) ? sanitize_text_field( $args['token'] ) : '';
+        $selected_map = isset( $args['selected_map'] ) && is_array( $args['selected_map'] ) ? $args['selected_map'] : [];
+
+        $field_definitions = $this->get_import_field_definitions();
+        $selected_category = isset( $args['selected_category'] ) ? sanitize_text_field( $args['selected_category'] ) : '';
+
+        echo '<p>' . esc_html__( 'Associa le colonne del file ai campi del gestionale. I campi contrassegnati come obbligatori devono essere sempre mappati.', self::TEXT_DOMAIN ) . '</p>';
+
+        echo '<form method="post">';
+        wp_nonce_field( 'pcv_import_nonce' );
+        echo '<input type="hidden" name="pcv_import_stage" value="map">';
+        echo '<input type="hidden" name="pcv_import_token" value="' . esc_attr( $token ) . '">';
+        echo '<table class="form-table">';
+
+        echo '<tr>';
+        echo '<th scope="row"><label for="pcv_import_category">' . esc_html__( 'Categoria elenco', self::TEXT_DOMAIN ) . ' <span class="description" style="font-weight: normal;">' . esc_html__( '(obbligatorio)', self::TEXT_DOMAIN ) . '</span></label></th>';
+        echo '<td>';
+        echo '<input type="text" id="pcv_import_category" name="pcv_import_category" class="regular-text" value="' . esc_attr( $selected_category ) . '" required>';
+        echo '<p class="description">' . esc_html__( 'Specifica a quale gruppo o contesto appartiene l’elenco importato (es. Sindaci, Volontari 2024).', self::TEXT_DOMAIN ) . '</p>';
+        echo '</td>';
+        echo '</tr>';
+
+        foreach ( $field_definitions as $field_key => $definition ) {
+            $label = isset( $definition['label'] ) ? $definition['label'] : $field_key;
+            $required = ! empty( $definition['required'] );
+            $description = isset( $definition['description'] ) ? $definition['description'] : '';
+            $select_id = 'pcv_import_map_' . $field_key;
+            $current_value = '';
+            if ( isset( $selected_map[ $field_key ] ) && $selected_map[ $field_key ] !== null && $selected_map[ $field_key ] !== '' ) {
+                $current_value = (string) $selected_map[ $field_key ];
+            }
+
+            echo '<tr>';
+            echo '<th scope="row"><label for="' . esc_attr( $select_id ) . '">' . esc_html( $label );
+            if ( $required ) {
+                echo ' <span class="description" style="font-weight: normal;">' . esc_html__( '(obbligatorio)', self::TEXT_DOMAIN ) . '</span>';
+            }
+            echo '</label></th>';
+            echo '<td>';
+            echo '<select id="' . esc_attr( $select_id ) . '" name="pcv_import_map[' . esc_attr( $field_key ) . ']">';
+            echo '<option value="">' . esc_html__( 'Non importare', self::TEXT_DOMAIN ) . '</option>';
+            foreach ( $headers as $index => $header_label ) {
+                $option_value = (string) $index;
+                $selected_attr = selected( $current_value, $option_value, false );
+                echo '<option value="' . esc_attr( $option_value ) . '" ' . $selected_attr . '>' . esc_html( $header_label ) . '</option>';
+            }
+            echo '</select>';
+            if ( $description !== '' ) {
+                echo '<p class="description">' . esc_html( $description ) . '</p>';
+            }
+            echo '</td>';
+            echo '</tr>';
+        }
+
+        echo '</table>';
+        submit_button( __( 'Avvia importazione', self::TEXT_DOMAIN ), 'primary', 'pcv_import_confirm' );
+
+        $cancel_url = menu_page_url( self::MENU_SLUG . '-importa', false );
+        if ( $cancel_url ) {
+            echo '<a href="' . esc_url( $cancel_url ) . '" class="button button-secondary" style="margin-left:10px;">' . esc_html__( 'Annulla', self::TEXT_DOMAIN ) . '</a>';
+        }
+
+        echo '</form>';
+
+        if ( ! empty( $headers ) && ! empty( $preview_rows ) ) {
+            echo '<h2>' . esc_html__( 'Anteprima dati', self::TEXT_DOMAIN ) . '</h2>';
+            echo '<table class="widefat striped">';
+            echo '<thead><tr>';
+            foreach ( $headers as $header_label ) {
+                echo '<th>' . esc_html( $header_label ) . '</th>';
+            }
+            echo '</tr></thead>';
+            echo '<tbody>';
+            foreach ( $preview_rows as $row ) {
+                if ( ! is_array( $row ) ) {
+                    continue;
+                }
+                echo '<tr>';
+                foreach ( array_keys( $headers ) as $index ) {
+                    $value = isset( $row[ $index ] ) ? $row[ $index ] : '';
+                    echo '<td>' . esc_html( $value ) . '</td>';
+                }
+                echo '</tr>';
+            }
+            echo '</tbody>';
+            echo '</table>';
+        }
+    }
+
+    private function get_import_field_definitions() {
+        return [
+            'nome' => [
+                'label'     => __( 'Nome', self::TEXT_DOMAIN ),
+                'required'  => true,
+            ],
+            'cognome' => [
+                'label'     => __( 'Cognome', self::TEXT_DOMAIN ),
+                'required'  => true,
+            ],
+            'comune' => [
+                'label'     => __( 'Comune', self::TEXT_DOMAIN ),
+                'required'  => true,
+            ],
+            'provincia' => [
+                'label'     => __( 'Provincia', self::TEXT_DOMAIN ),
+                'required'  => true,
+            ],
+            'email' => [
+                'label'     => __( 'Email', self::TEXT_DOMAIN ),
+                'required'  => true,
+            ],
+            'telefono' => [
+                'label'     => __( 'Telefono', self::TEXT_DOMAIN ),
+                'required'  => true,
+            ],
+            'privacy' => [
+                'label'       => __( 'Consenso privacy', self::TEXT_DOMAIN ),
+                'required'    => false,
+                'description' => __( 'Valori ammessi: 1/0, si/no, true/false.', self::TEXT_DOMAIN ),
+            ],
+            'partecipa' => [
+                'label'       => __( 'Partecipa', self::TEXT_DOMAIN ),
+                'required'    => false,
+                'description' => __( 'Indica la partecipazione all’evento (1/0, si/no, true/false).', self::TEXT_DOMAIN ),
+            ],
+            'dorme' => [
+                'label'       => __( 'Pernotta', self::TEXT_DOMAIN ),
+                'required'    => false,
+                'description' => __( 'Specifica se il volontario pernotta (1/0, si/no, true/false).', self::TEXT_DOMAIN ),
+            ],
+            'mangia' => [
+                'label'       => __( 'Pasti', self::TEXT_DOMAIN ),
+                'required'    => false,
+                'description' => __( 'Indica se il volontario consumerà i pasti (1/0, si/no, true/false).', self::TEXT_DOMAIN ),
+            ],
+            'created_at' => [
+                'label'       => __( 'Data iscrizione', self::TEXT_DOMAIN ),
+                'required'    => false,
+                'description' => __( 'Formato consigliato: YYYY-MM-DD HH:MM:SS.', self::TEXT_DOMAIN ),
+            ],
+            'ip' => [
+                'label'       => __( 'Indirizzo IP', self::TEXT_DOMAIN ),
+                'required'    => false,
+            ],
+            'user_agent' => [
+                'label'       => __( 'User Agent', self::TEXT_DOMAIN ),
+                'required'    => false,
+            ],
+        ];
+    }
+
+    private function handle_import_submission() {
+        $messages = [];
+
+        if ( ! check_admin_referer( 'pcv_import_nonce' ) ) {
+            $messages[] = [
+                'type' => 'error',
+                'text' => esc_html__( 'Nonce non valido. Riprova.', self::TEXT_DOMAIN ),
+            ];
+
+            return [ 'messages' => $messages ];
+        }
+
+        $stage = isset( $_POST['pcv_import_stage'] ) ? sanitize_text_field( wp_unslash( $_POST['pcv_import_stage'] ) ) : 'upload';
+
+        if ( $stage === 'map' ) {
+            return $this->process_import_mapping_stage( $messages );
+        }
+
+        return $this->process_import_upload_stage( $messages );
+    }
+
+    private function process_import_upload_stage( array $messages ) {
+        if ( empty( $_FILES['pcv_import_file'] ) || ! is_array( $_FILES['pcv_import_file'] ) ) {
+            $messages[] = [
+                'type' => 'error',
+                'text' => esc_html__( 'Nessun file selezionato.', self::TEXT_DOMAIN ),
+            ];
+
+            return [ 'messages' => $messages ];
+        }
+
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+
+        $file = $_FILES['pcv_import_file'];
+        $overrides = [
+            'test_form' => false,
+            'mimes'     => [
+                'csv'  => 'text/csv',
+                'txt'  => 'text/plain',
+                'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'xls'  => 'application/vnd.ms-excel',
+            ],
+        ];
+
+        $uploaded = wp_handle_upload( $file, $overrides );
+
+        if ( isset( $uploaded['error'] ) ) {
+            $messages[] = [
+                'type' => 'error',
+                'text' => esc_html( $uploaded['error'] ),
+            ];
+
+            return [ 'messages' => $messages ];
+        }
+
+        $path = $uploaded['file'];
+
+        $dataset = $this->parse_import_file( $path );
+
+        if ( file_exists( $path ) ) {
+            unlink( $path );
+        }
+
+        if ( is_wp_error( $dataset ) ) {
+            $messages[] = [
+                'type' => 'error',
+                'text' => esc_html( $dataset->get_error_message() ),
+            ];
+
+            return [ 'messages' => $messages ];
+        }
+
+        if ( empty( $dataset ) || empty( $dataset['rows'] ) ) {
+            $messages[] = [
+                'type' => 'error',
+                'text' => esc_html__( 'Il file non contiene dati da importare.', self::TEXT_DOMAIN ),
+            ];
+
+            return [ 'messages' => $messages ];
+        }
+
+        $token = $this->store_import_dataset( $dataset );
+        if ( is_wp_error( $token ) ) {
+            $messages[] = [
+                'type' => 'error',
+                'text' => esc_html( $token->get_error_message() ),
+            ];
+
+            return [ 'messages' => $messages ];
+        }
+
+        $preview_rows = array_slice( $dataset['rows'], 0, 5 );
+        $default_map = $this->build_default_import_map( $dataset );
+
+        $messages[] = [
+            'type' => 'updated',
+            'text' => esc_html__( 'File caricato correttamente. Associa le colonne e conferma per avviare l’importazione.', self::TEXT_DOMAIN ),
+        ];
+
+        return [
+            'messages'           => $messages,
+            'stage'              => 'map',
+            'headers'            => $dataset['headers'],
+            'preview_rows'       => $preview_rows,
+            'selected_map'       => $default_map,
+            'selected_category'  => '',
+            'token'              => $token,
+        ];
+    }
+
+    private function process_import_mapping_stage( array $messages ) {
+        $token = isset( $_POST['pcv_import_token'] ) ? sanitize_text_field( wp_unslash( $_POST['pcv_import_token'] ) ) : '';
+
+        if ( $token === '' ) {
+            $messages[] = [
+                'type' => 'error',
+                'text' => esc_html__( 'Sessione di importazione non valida o scaduta. Carica nuovamente il file.', self::TEXT_DOMAIN ),
+            ];
+
+            return [ 'messages' => $messages ];
+        }
+
+        $dataset = $this->get_import_dataset( $token );
+
+        if ( empty( $dataset ) || ! is_array( $dataset ) ) {
+            $messages[] = [
+                'type' => 'error',
+                'text' => esc_html__( 'Sessione di importazione non trovata. Carica nuovamente il file.', self::TEXT_DOMAIN ),
+            ];
+
+            return [ 'messages' => $messages ];
+        }
+
+        $headers = isset( $dataset['headers'] ) && is_array( $dataset['headers'] ) ? $dataset['headers'] : [];
+        $preview_rows = array_slice( isset( $dataset['rows'] ) && is_array( $dataset['rows'] ) ? $dataset['rows'] : [], 0, 5 );
+
+        $raw_map = isset( $_POST['pcv_import_map'] ) && is_array( $_POST['pcv_import_map'] ) ? wp_unslash( $_POST['pcv_import_map'] ) : [];
+        $sanitized_map = $this->sanitize_import_map( $raw_map, count( $headers ) );
+        $raw_category = isset( $_POST['pcv_import_category'] ) ? wp_unslash( $_POST['pcv_import_category'] ) : '';
+        $category = $this->sanitize_text( $raw_category );
+
+        $missing_required = [];
+        foreach ( self::IMPORT_EXPECTED_COLUMNS as $required_field ) {
+            if ( ! isset( $sanitized_map[ $required_field ] ) || $sanitized_map[ $required_field ] === null ) {
+                $missing_required[] = $required_field;
+            }
+        }
+
+        if ( ! empty( $missing_required ) ) {
+            $messages[] = [
+                'type' => 'error',
+                'text' => esc_html__( 'Completa la mappatura di tutti i campi obbligatori prima di procedere.', self::TEXT_DOMAIN ),
+            ];
+
+            return [
+                'messages'           => $messages,
+                'stage'              => 'map',
+                'headers'            => $headers,
+                'preview_rows'       => $preview_rows,
+                'selected_map'       => $sanitized_map,
+                'selected_category'  => $category,
+                'token'              => $token,
+            ];
+        }
+
+        if ( $category === '' ) {
+            $messages[] = [
+                'type' => 'error',
+                'text' => esc_html__( 'Indica una categoria per l’elenco che stai importando.', self::TEXT_DOMAIN ),
+            ];
+
+            return [
+                'messages'           => $messages,
+                'stage'              => 'map',
+                'headers'            => $headers,
+                'preview_rows'       => $preview_rows,
+                'selected_map'       => $sanitized_map,
+                'selected_category'  => $category,
+                'token'              => $token,
+            ];
+        }
+
+        $rows = $this->apply_import_mapping( $dataset, $sanitized_map );
+        $result = $this->import_rows( $rows, $category );
+
+        $this->delete_import_dataset( $token );
+
+        if ( $result['imported'] > 0 ) {
+            $messages[] = [
+                'type' => 'success',
+                'text' => esc_html( sprintf( __( 'Importazione completata: %1$d righe inserite, %2$d righe saltate.', self::TEXT_DOMAIN ), $result['imported'], $result['skipped'] ) ),
+            ];
+        }
+
+        if ( ! empty( $result['errors'] ) ) {
+            $error_list = '<ul>';
+            foreach ( $result['errors'] as $error ) {
+                $error_list .= '<li>' . esc_html( $error ) . '</li>';
+            }
+            $error_list .= '</ul>';
+            $messages[] = [
+                'type' => 'error',
+                'text' => __( 'Alcune righe non sono state importate:', self::TEXT_DOMAIN ) . $error_list,
+            ];
+        }
+
+        if ( empty( $messages ) ) {
+            $messages[] = [
+                'type' => 'error',
+                'text' => esc_html__( 'Si è verificato un errore durante l\'importazione.', self::TEXT_DOMAIN ),
+            ];
+        }
+
+        return [ 'messages' => $messages ];
+    }
+
+    private function store_import_dataset( array $dataset ) {
+        $token = wp_generate_password( 20, false, false );
+        $key = 'pcv_import_' . $token;
+
+        $stored = set_transient( $key, $dataset, 30 * MINUTE_IN_SECONDS );
+
+        if ( ! $stored ) {
+            return new WP_Error( 'pcv_import_store_failed', __( 'Impossibile inizializzare la sessione di importazione. Riprova.', self::TEXT_DOMAIN ) );
+        }
+
+        return $token;
+    }
+
+    private function get_import_dataset( $token ) {
+        if ( $token === '' ) {
+            return null;
+        }
+
+        $dataset = get_transient( 'pcv_import_' . $token );
+
+        if ( ! is_array( $dataset ) || empty( $dataset['headers'] ) || ! isset( $dataset['rows'] ) ) {
+            return null;
+        }
+
+        return $dataset;
+    }
+
+    private function delete_import_dataset( $token ) {
+        if ( $token === '' ) {
+            return;
+        }
+
+        delete_transient( 'pcv_import_' . $token );
+    }
+
+    private function build_default_import_map( array $dataset ) {
+        $field_definitions = $this->get_import_field_definitions();
+        $fields = array_keys( $field_definitions );
+        $map = array_fill_keys( $fields, null );
+
+        $normalized_headers = isset( $dataset['normalized_headers'] ) && is_array( $dataset['normalized_headers'] ) ? $dataset['normalized_headers'] : [];
+
+        foreach ( $normalized_headers as $index => $normalized ) {
+            if ( $normalized === '' ) {
+                continue;
+            }
+
+            if ( array_key_exists( $normalized, $map ) && $map[ $normalized ] === null ) {
+                $map[ $normalized ] = $index;
+            }
+        }
+
+        return $map;
+    }
+
+    private function sanitize_import_map( array $raw_map, $headers_count ) {
+        $field_definitions = $this->get_import_field_definitions();
+        $clean_map = array_fill_keys( array_keys( $field_definitions ), null );
+
+        foreach ( $raw_map as $field => $value ) {
+            if ( ! array_key_exists( $field, $clean_map ) ) {
+                continue;
+            }
+
+            if ( is_string( $value ) ) {
+                $value = trim( $value );
+            }
+
+            if ( $value === '' || $value === null ) {
+                $clean_map[ $field ] = null;
+                continue;
+            }
+
+            if ( is_numeric( $value ) ) {
+                $index = (int) $value;
+                if ( $index >= 0 && $index < $headers_count ) {
+                    $clean_map[ $field ] = $index;
+                }
+            }
+        }
+
+        return $clean_map;
+    }
+
+    private function apply_import_mapping( array $dataset, array $map ) {
+        $rows = [];
+        $data_rows = isset( $dataset['rows'] ) && is_array( $dataset['rows'] ) ? $dataset['rows'] : [];
+        $field_definitions = $this->get_import_field_definitions();
+
+        foreach ( $data_rows as $row_values ) {
+            if ( ! is_array( $row_values ) ) {
+                continue;
+            }
+
+            $mapped = [];
+            foreach ( $map as $field => $index ) {
+                if ( $index === null || ! isset( $field_definitions[ $field ] ) ) {
+                    continue;
+                }
+
+                $value = isset( $row_values[ $index ] ) ? $row_values[ $index ] : '';
+                $mapped[ $field ] = $value;
+            }
+
+            if ( ! empty( $mapped ) ) {
+                $rows[] = $mapped;
+            }
+        }
+
+        return $rows;
+    }
+
+    private function parse_import_file( $path ) {
+        $extension = strtolower( pathinfo( $path, PATHINFO_EXTENSION ) );
+
+        if ( $extension === 'csv' || $extension === 'txt' ) {
+            return $this->parse_import_csv( $path );
+        }
+
+        if ( $extension === 'xlsx' ) {
+            return $this->parse_import_xlsx( $path );
+        }
+
+        if ( $extension === 'xls' ) {
+            return new WP_Error( 'pcv_import_invalid_extension', __( 'I file Excel in formato .xls non sono supportati. Converti il file in formato .xlsx e riprova.', self::TEXT_DOMAIN ) );
+        }
+
+        return new WP_Error( 'pcv_import_invalid_extension', __( 'Formato file non supportato. Carica un file CSV o Excel (.xlsx).', self::TEXT_DOMAIN ) );
+    }
+
+    private function parse_import_csv( $path ) {
+        $handle = fopen( $path, 'r' );
+
+        if ( ! $handle ) {
+            return new WP_Error( 'pcv_import_csv_open', __( 'Impossibile leggere il file CSV.', self::TEXT_DOMAIN ) );
+        }
+
+        $first_line = fgets( $handle );
+        if ( $first_line === false ) {
+            fclose( $handle );
+
+            return [
+                'headers'             => [],
+                'normalized_headers' => [],
+                'rows'                => [],
+            ];
+        }
+
+        $delimiters = [ ';', ',', "\t" ];
+        $delimiter = ';';
+        $max_count = 0;
+        foreach ( $delimiters as $candidate ) {
+            $count = substr_count( $first_line, $candidate );
+            if ( $count > $max_count ) {
+                $max_count = $count;
+                $delimiter = $candidate;
+            }
+        }
+
+        rewind( $handle );
+
+        $headers = fgetcsv( $handle, 0, $delimiter );
+        if ( ! is_array( $headers ) ) {
+            fclose( $handle );
+
+            return new WP_Error( 'pcv_import_csv_header', __( 'Intestazioni CSV non valide.', self::TEXT_DOMAIN ) );
+        }
+
+        $rows = [];
+        while ( ( $data = fgetcsv( $handle, 0, $delimiter ) ) !== false ) {
+            if ( $data === null ) {
+                continue;
+            }
+
+            $rows[] = $data;
+        }
+
+        fclose( $handle );
+
+        return $this->prepare_import_dataset( $headers, $rows );
+    }
+
+    private function parse_import_xlsx( $path ) {
+        if ( ! class_exists( 'ZipArchive' ) ) {
+            return new WP_Error( 'pcv_import_zip_missing', __( 'Il server non supporta l\'apertura dei file Excel (.xlsx).', self::TEXT_DOMAIN ) );
+        }
+
+        $zip = new ZipArchive();
+        if ( $zip->open( $path ) !== true ) {
+            return new WP_Error( 'pcv_import_xlsx_open', __( 'Impossibile aprire il file Excel.', self::TEXT_DOMAIN ) );
+        }
+
+        $sheet_path = 'xl/worksheets/sheet1.xml';
+        $workbook = $zip->getFromName( 'xl/workbook.xml' );
+        $rels = $zip->getFromName( 'xl/_rels/workbook.xml.rels' );
+
+        if ( $workbook && $rels ) {
+            $sheet_path = $this->get_first_sheet_path_from_workbook( $workbook, $rels );
+        }
+
+        $sheet_xml = $zip->getFromName( $sheet_path );
+        if ( ! $sheet_xml ) {
+            $zip->close();
+
+            return new WP_Error( 'pcv_import_xlsx_sheet', __( 'Impossibile trovare il foglio di lavoro nel file Excel.', self::TEXT_DOMAIN ) );
+        }
+
+        $shared_strings = [];
+        $shared_xml = $zip->getFromName( 'xl/sharedStrings.xml' );
+        if ( $shared_xml ) {
+            $shared = simplexml_load_string( $shared_xml );
+            if ( $shared ) {
+                foreach ( $shared->si as $si ) {
+                    if ( isset( $si->t ) ) {
+                        $shared_strings[] = (string) $si->t;
+                    } elseif ( isset( $si->r ) ) {
+                        $text = '';
+                        foreach ( $si->r as $run ) {
+                            $text .= (string) $run->t;
+                        }
+                        $shared_strings[] = $text;
+                    } else {
+                        $shared_strings[] = '';
+                    }
+                }
+            }
+        }
+
+        $zip->close();
+
+        $sheet = simplexml_load_string( $sheet_xml );
+        if ( ! $sheet || ! isset( $sheet->sheetData ) ) {
+            return new WP_Error( 'pcv_import_xlsx_parse', __( 'Formato Excel non valido.', self::TEXT_DOMAIN ) );
+        }
+
+        $rows = [];
+        foreach ( $sheet->sheetData->row as $row ) {
+            $row_values = [];
+            foreach ( $row->c as $cell ) {
+                $ref = isset( $cell['r'] ) ? (string) $cell['r'] : '';
+                $column_index = $ref !== '' ? $this->column_reference_to_index( $ref ) : count( $row_values );
+                if ( $column_index === null ) {
+                    $column_index = count( $row_values );
+                }
+
+                $type = isset( $cell['t'] ) ? (string) $cell['t'] : '';
+                $value = '';
+                if ( $type === 's' ) {
+                    $idx = isset( $cell->v ) ? (int) $cell->v : -1;
+                    $value = $idx >= 0 && isset( $shared_strings[ $idx ] ) ? $shared_strings[ $idx ] : '';
+                } elseif ( $type === 'inlineStr' ) {
+                    $value = isset( $cell->is->t ) ? (string) $cell->is->t : '';
+                } else {
+                    $value = isset( $cell->v ) ? (string) $cell->v : '';
+                }
+
+                $row_values[ $column_index ] = trim( $value );
+            }
+
+            if ( ! empty( $row_values ) ) {
+                ksort( $row_values );
+                $rows[] = array_values( $row_values );
+            }
+        }
+
+        if ( empty( $rows ) ) {
+            return [
+                'headers'             => [],
+                'normalized_headers' => [],
+                'rows'                => [],
+            ];
+        }
+
+        $headers = array_shift( $rows );
+        return $this->prepare_import_dataset( $headers, $rows );
+    }
+
+    private function prepare_import_dataset( array $headers, array $raw_rows ) {
+        $clean_headers = [];
+        $normalized_headers = [];
+
+        foreach ( $headers as $index => $header ) {
+            $original_header = (string) $header;
+            if ( $index === 0 ) {
+                $original_header = preg_replace( '/^\xEF\xBB\xBF/', '', $original_header );
+            }
+
+            $label = trim( $original_header );
+            if ( $label === '' ) {
+                $label = sprintf( __( 'Colonna %d', self::TEXT_DOMAIN ), $index + 1 );
+            }
+
+            $clean_headers[ $index ] = $label;
+            $normalized_headers[ $index ] = $this->normalize_import_header( $original_header );
+        }
+
+        $rows = [];
+        foreach ( $raw_rows as $row ) {
+            if ( ! is_array( $row ) ) {
+                continue;
+            }
+
+            $values = [];
+            $has_value = false;
+            foreach ( $clean_headers as $index => $label ) {
+                $value = isset( $row[ $index ] ) ? trim( (string) $row[ $index ] ) : '';
+                if ( $value !== '' ) {
+                    $has_value = true;
+                }
+                $values[ $index ] = $value;
+            }
+
+            if ( $has_value ) {
+                $rows[] = $values;
+            }
+        }
+
+        return [
+            'headers'             => array_values( $clean_headers ),
+            'normalized_headers' => array_values( $normalized_headers ),
+            'rows'                => $rows,
+        ];
+    }
+
+    private function get_first_sheet_path_from_workbook( $workbook_xml, $rels_xml ) {
+        $sheet_path = 'xl/worksheets/sheet1.xml';
+
+        $workbook = simplexml_load_string( $workbook_xml );
+        $rels = simplexml_load_string( $rels_xml );
+
+        if ( ! $workbook || ! isset( $workbook->sheets->sheet ) || ! $rels ) {
+            return $sheet_path;
+        }
+
+        $relationships = [];
+        foreach ( $rels->Relationship as $rel ) {
+            $id = isset( $rel['Id'] ) ? (string) $rel['Id'] : '';
+            $target = isset( $rel['Target'] ) ? (string) $rel['Target'] : '';
+            if ( $id && $target ) {
+                $relationships[ $id ] = $target;
+            }
+        }
+
+        foreach ( $workbook->sheets->sheet as $sheet ) {
+            $r_id = isset( $sheet['r:id'] ) ? (string) $sheet['r:id'] : '';
+            if ( $r_id && isset( $relationships[ $r_id ] ) ) {
+                $target = $relationships[ $r_id ];
+                if ( strpos( $target, '/' ) === 0 ) {
+                    $target = ltrim( $target, '/' );
+                }
+
+                if ( strpos( $target, 'xl/' ) === 0 ) {
+                    return $target;
+                }
+
+                return 'xl/' . $target;
+            }
+
+            break;
+        }
+
+        return $sheet_path;
+    }
+
+    private function column_reference_to_index( $reference ) {
+        if ( ! preg_match( '/^([A-Z]+)[0-9]+$/i', $reference, $matches ) ) {
+            return null;
+        }
+
+        $letters = strtoupper( $matches[1] );
+        $length = strlen( $letters );
+        $index = 0;
+        for ( $i = 0; $i < $length; $i++ ) {
+            $index = $index * 26 + ( ord( $letters[ $i ] ) - 64 );
+        }
+
+        return $index - 1;
+    }
+
+    private function normalize_import_header( $header ) {
+        $header = strtolower( trim( (string) $header ) );
+        $header = str_replace( [ 'à', 'è', 'é', 'ì', 'ò', 'ù' ], [ 'a', 'e', 'e', 'i', 'o', 'u' ], $header );
+        $header = preg_replace( '/[^a-z0-9]+/', '_', $header );
+        $header = trim( $header, '_' );
+
+        $map = [
+            'nome'       => 'nome',
+            'cognome'    => 'cognome',
+            'comune'     => 'comune',
+            'provincia'  => 'provincia',
+            'email'      => 'email',
+            'telefono'   => 'telefono',
+            'privacy'    => 'privacy',
+            'partecipa'  => 'partecipa',
+            'pasti'      => 'mangia',
+            'mangia'     => 'mangia',
+            'pernotta'   => 'dorme',
+            'dorme'      => 'dorme',
+            'created_at' => 'created_at',
+            'data'       => 'created_at',
+            'ip'         => 'ip',
+            'user_agent' => 'user_agent',
+        ];
+
+        if ( isset( $map[ $header ] ) ) {
+            return $map[ $header ];
+        }
+
+        return '';
+    }
+
+    private function import_rows( array $rows, $category = '' ) {
+        global $wpdb;
+
+        $table = $this->table_name();
+        $imported = 0;
+        $skipped = 0;
+        $errors = [];
+        $row_index = 1;
+        $category = $this->sanitize_text( $category );
+
+        foreach ( $rows as $row ) {
+            $row_index++;
+
+            $nome      = $this->sanitize_name( $row['nome'] ?? '' );
+            $cognome   = $this->sanitize_name( $row['cognome'] ?? '' );
+            $comune    = $this->sanitize_text( $row['comune'] ?? '' );
+            $provincia = $this->normalize_province_input( $row['provincia'] ?? '' );
+            $email_raw = isset( $row['email'] ) ? sanitize_email( $row['email'] ) : '';
+            $telefono  = $this->sanitize_phone( $row['telefono'] ?? '' );
+
+            if ( $nome === '' || $cognome === '' || $comune === '' || $provincia === '' || $email_raw === '' || $telefono === '' ) {
+                $errors[] = sprintf( __( 'Riga %d: dati obbligatori mancanti o non validi.', self::TEXT_DOMAIN ), $row_index );
+                $skipped++;
+                continue;
+            }
+
+            if ( ! is_email( $email_raw ) ) {
+                $errors[] = sprintf( __( 'Riga %d: indirizzo email non valido.', self::TEXT_DOMAIN ), $row_index );
+                $skipped++;
+                continue;
+            }
+
+            $privacy   = $this->normalize_boolean_input( $row['privacy'] ?? '1' );
+            $partecipa = $this->normalize_boolean_input( $row['partecipa'] ?? '0' );
+            $dorme     = $this->normalize_boolean_input( $row['dorme'] ?? '0' );
+            $mangia    = $this->normalize_boolean_input( $row['mangia'] ?? ( $row['pasti'] ?? '0' ) );
+
+            $created_at = $this->normalize_datetime_input( $row['created_at'] ?? ( $row['data'] ?? '' ) );
+            $ip         = isset( $row['ip'] ) ? sanitize_text_field( $row['ip'] ) : '';
+            $user_agent = isset( $row['user_agent'] ) ? wp_strip_all_tags( $row['user_agent'] ) : '';
+
+            $inserted = $wpdb->insert(
+                $table,
+                [
+                    'created_at' => $created_at,
+                    'nome'       => $nome,
+                    'cognome'    => $cognome,
+                    'comune'     => $comune,
+                    'provincia'  => $provincia,
+                    'email'      => $email_raw,
+                    'telefono'   => $telefono,
+                    'categoria'  => $category,
+                    'privacy'    => $privacy,
+                    'partecipa'  => $partecipa,
+                    'dorme'      => $dorme,
+                    'mangia'     => $mangia,
+                    'ip'         => $ip,
+                    'user_agent' => $user_agent,
+                ],
+                [ '%s','%s','%s','%s','%s','%s','%s','%s','%d','%d','%d','%d','%s','%s' ]
+            );
+
+            if ( $inserted ) {
+                $imported++;
+            } else {
+                $errors[] = sprintf( __( 'Riga %d: errore durante il salvataggio nel database.', self::TEXT_DOMAIN ), $row_index );
+                $skipped++;
+            }
+        }
+
+        return [
+            'imported' => $imported,
+            'skipped'  => $skipped,
+            'errors'   => $errors,
+        ];
+    }
+
+    private function normalize_boolean_input( $value ) {
+        if ( is_string( $value ) ) {
+            $value = strtolower( trim( $value ) );
+        }
+
+        if ( is_numeric( $value ) ) {
+            return (int) ( (int) $value ? 1 : 0 );
+        }
+
+        $truthy = [ '1', 'true', 'si', 'sì', 'yes', 'y', 'on', 'x' ];
+        $falsy  = [ '0', 'false', 'no', 'n', '' ];
+
+        if ( is_string( $value ) ) {
+            if ( in_array( $value, $truthy, true ) ) {
+                return 1;
+            }
+
+            if ( in_array( $value, $falsy, true ) ) {
+                return 0;
+            }
+        }
+
+        return empty( $value ) ? 0 : 1;
+    }
+
+    private function normalize_province_input( $value ) {
+        $value = strtoupper( trim( (string) $value ) );
+
+        if ( $value === '' ) {
+            return '';
+        }
+
+        if ( isset( $this->province[ $value ] ) ) {
+            return $value;
+        }
+
+        foreach ( $this->province as $code => $label ) {
+            if ( strcasecmp( $label, $value ) === 0 ) {
+                return $code;
+            }
+        }
+
+        return '';
+    }
+
+    private function normalize_datetime_input( $value ) {
+        $value = trim( (string) $value );
+
+        if ( $value === '' ) {
+            return current_time( 'mysql' );
+        }
+
+        $timestamp = strtotime( $value );
+        if ( $timestamp === false ) {
+            return current_time( 'mysql' );
+        }
+
+        $offset = get_option( 'gmt_offset', 0 );
+        $timestamp += $offset * HOUR_IN_SECONDS;
+
+        return gmdate( 'Y-m-d H:i:s', $timestamp );
+    }
+
     /* ---------------- Export CSV ---------------- */
     public function maybe_export_csv() {
         if ( ! is_admin() ) return;
@@ -967,6 +1965,7 @@ class PCV_Abruzzo_Plugin {
             __( 'Provincia', self::TEXT_DOMAIN ),
             __( 'Email', self::TEXT_DOMAIN ),
             __( 'Telefono', self::TEXT_DOMAIN ),
+            __( 'Categoria', self::TEXT_DOMAIN ),
             __( 'Privacy', self::TEXT_DOMAIN ),
             __( 'Partecipa', self::TEXT_DOMAIN ),
             __( 'Pernotta', self::TEXT_DOMAIN ),
@@ -986,6 +1985,7 @@ class PCV_Abruzzo_Plugin {
                 $this->csv_text_guard( $r['provincia'] ),
                 $this->csv_text_guard( $r['email'] ),
                 $this->csv_text_guard( $r['telefono'] ),
+                $this->csv_text_guard( isset( $r['categoria'] ) ? $r['categoria'] : '' ),
                 $r['privacy'] ? '1' : '0',
                 $r['partecipa'] ? '1' : '0',
                 ! empty($r['dorme']) ? '1' : '0',
@@ -1027,6 +2027,7 @@ if ( ! class_exists( 'PCV_List_Table' ) ) {
                 'provincia'  => esc_html__( 'Provincia', PCV_Abruzzo_Plugin::TEXT_DOMAIN ),
                 'email'      => esc_html__( 'Email', PCV_Abruzzo_Plugin::TEXT_DOMAIN ),
                 'telefono'   => esc_html__( 'Telefono', PCV_Abruzzo_Plugin::TEXT_DOMAIN ),
+                'categoria'  => esc_html__( 'Categoria', PCV_Abruzzo_Plugin::TEXT_DOMAIN ),
                 'privacy'    => esc_html__( 'Privacy', PCV_Abruzzo_Plugin::TEXT_DOMAIN ),
                 'partecipa'  => esc_html__( 'Partecipa', PCV_Abruzzo_Plugin::TEXT_DOMAIN ),
                 'dorme'      => esc_html__( 'Pernotta', PCV_Abruzzo_Plugin::TEXT_DOMAIN ),
@@ -1035,7 +2036,7 @@ if ( ! class_exists( 'PCV_List_Table' ) ) {
         }
         
         protected function get_sortable_columns() {
-            return ['created_at'=>['created_at',true],'nome'=>['nome',false],'cognome'=>['cognome',false],'comune'=>['comune',false],'provincia'=>['provincia',false]];
+            return ['created_at'=>['created_at',true],'nome'=>['nome',false],'cognome'=>['cognome',false],'comune'=>['comune',false],'provincia'=>['provincia',false],'categoria'=>['categoria',false]];
         }
         
         protected function column_cb($item){ 
@@ -1045,7 +2046,7 @@ if ( ! class_exists( 'PCV_List_Table' ) ) {
         protected function column_default($item,$col){
             switch($col){
                 case 'created_at': return esc_html(mysql2date('d/m/Y H:i',$item->created_at));
-                case 'nome':case 'cognome':case 'comune':case 'provincia':case 'email':case 'telefono': return esc_html($item->$col);
+                case 'nome':case 'cognome':case 'comune':case 'provincia':case 'email':case 'telefono':case 'categoria': return esc_html($item->$col);
                 case 'privacy':case 'partecipa':case 'dorme':case 'mangia':
                     return $item->$col ? esc_html__( 'Sì', PCV_Abruzzo_Plugin::TEXT_DOMAIN ) : esc_html__( 'No', PCV_Abruzzo_Plugin::TEXT_DOMAIN );
                 default: return '';
@@ -1076,14 +2077,14 @@ if ( ! class_exists( 'PCV_List_Table' ) ) {
             $per_page=20; $current_page=$this->get_pagenum();
             $orderby = $_GET['orderby'] ?? 'created_at';
             $order   = (isset($_GET['order']) && strtolower($_GET['order'])==='asc')?'ASC':'DESC';
-            $allowed = ['created_at','nome','cognome','comune','provincia']; if(!in_array($orderby,$allowed,true)) $orderby='created_at';
+            $allowed = ['created_at','nome','cognome','comune','provincia','categoria']; if(!in_array($orderby,$allowed,true)) $orderby='created_at';
             $where='WHERE 1=1'; $params=[];
             $f_comune = isset($_GET['f_comune'])?trim(sanitize_text_field($_GET['f_comune'])):'';
             $f_prov   = isset($_GET['f_prov'])?trim(sanitize_text_field($_GET['f_prov'])):'';
             $s        = isset($_GET['s'])?trim(sanitize_text_field($_GET['s'])):'';
             if($f_comune!==''){ $where.=" AND comune LIKE %s"; $params[]='%'.$wpdb->esc_like($f_comune).'%'; }
             if($f_prov!==''){ $where.=" AND provincia LIKE %s"; $params[]='%'.$wpdb->esc_like($f_prov).'%'; }
-            if($s!==''){ $like='%'.$wpdb->esc_like($s).'%'; $where.=" AND ( nome LIKE %s OR cognome LIKE %s OR email LIKE %s OR telefono LIKE %s )"; array_push($params,$like,$like,$like,$like); }
+            if($s!==''){ $like='%'.$wpdb->esc_like($s).'%'; $where.=" AND ( nome LIKE %s OR cognome LIKE %s OR email LIKE %s OR telefono LIKE %s OR categoria LIKE %s )"; array_push($params,$like,$like,$like,$like,$like); }
             $count_sql = "SELECT COUNT(*) FROM {$table} {$where}";
             $total_items = empty($params)
                 ? (int) $wpdb->get_var( $count_sql )
