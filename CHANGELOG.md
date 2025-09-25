@@ -2,6 +2,13 @@
 
 Tutte le modifiche rilevanti del plugin **PC Volontari Abruzzo**.
 
+## [1.1.0] - 2025-09-30
+### Novità
+- Aggiunta la possibilità di inviare notifiche email configurabili ai referenti quando viene registrato un nuovo volontario.
+- Introdotto un hook (`pcv_volunteer_registered`) per integrare workflow personalizzati dopo il salvataggio dei dati.
+### Miglioramenti
+- Sanitizzazione avanzata dell'User Agent memorizzato con ogni iscrizione.
+
 ## [1.0.2] - 2025-09-26
 ### Correzioni
 - Risolto un errore fatale nell'interfaccia di amministrazione sostituendo riferimenti errati al dominio di traduzione nella tabella dei volontari.

@@ -33,6 +33,7 @@ Plugin WordPress per la raccolta delle iscrizioni dei volontari della Protezione
 - Esportazione CSV dei dati raccolti.
 - Configurazione reCAPTCHA dall'interfaccia admin.
 - Personalizzazione delle etichette principali del form.
+- Notifiche email configurabili per avvisare i referenti ad ogni nuova iscrizione.
 - Gestione completa degli stati della tabella (paginazione, ordinamento, ricerca libera).
 
 ## Architettura del plugin
@@ -77,6 +78,11 @@ La disinstallazione del plugin rimuove la tabella dei volontari e le opzioni di 
 3. Copia Site Key e Secret Key.
 4. In WordPress vai su **Volontari Abruzzo → Impostazioni**.
 5. Inserisci le chiavi e salva.
+
+### Notifiche email
+- Attiva l'opzione **Notifiche email** per ricevere un avviso ad ogni nuova iscrizione.
+- Inserisci uno o più destinatari separati da invio, virgola o punto e virgola (se vuoto verrà usata l'email amministratore di WordPress).
+- Personalizza l'oggetto dell'email per riconoscere rapidamente le comunicazioni in arrivo.
 
 ### Personalizzazione del form
 - Modifica le etichette e i testi direttamente dall'interfaccia admin.
@@ -135,7 +141,7 @@ Consulta il file [CHANGELOG.md](CHANGELOG.md) per lo storico completo delle vers
 
 ## Versione
 
-Attuale: **1.0.2**
+Attuale: **1.1.0**
 
 ## Build e distribuzione
 
