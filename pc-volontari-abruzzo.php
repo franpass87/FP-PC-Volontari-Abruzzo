@@ -2,7 +2,7 @@
 /**
  * Plugin Name: PC Volontari Abruzzo
  * Description: Raccolta iscrizioni volontari (Protezione Civile Abruzzo) con form via shortcode, popup comune, lista completa Comuni/Province Abruzzo, reCAPTCHA v2 e gestionale backend.
- * Version: 1.0.1
+ * Version: 1.0.2
  * Author: Francesco Passeri
  * Author URI: https://francescopasseri.com
  * License: GPLv2 or later
@@ -13,7 +13,7 @@ if ( ! defined('ABSPATH') ) exit;
 
 class PCV_Abruzzo_Plugin {
 
-    const VERSION   = '1.0.1';
+    const VERSION   = '1.0.2';
     const TEXT_DOMAIN = 'pc-volontari-abruzzo';
     const TABLE     = 'pcv_volontari';
     const NONCE     = 'pcv_form_nonce';
@@ -945,9 +945,9 @@ if ( ! class_exists( 'PCV_List_Table' ) ) {
             echo '<div class="pcv-topbar"><form method="get">';
             echo '<input type="hidden" name="page" value="'.esc_attr(PCV_Abruzzo_Plugin::MENU_SLUG).'">';
 
-            echo '<label class="screen-reader-text" for="pcv-admin-provincia">' . esc_html__( 'Filtra per Provincia', self::TEXT_DOMAIN ) . '</label>';
+            echo '<label class="screen-reader-text" for="pcv-admin-provincia">' . esc_html__( 'Filtra per Provincia', PCV_Abruzzo_Plugin::TEXT_DOMAIN ) . '</label>';
             echo '<select name="f_prov" id="pcv-admin-provincia">';
-            echo '<option value="">' . esc_html__( 'Tutte le province', self::TEXT_DOMAIN ) . '</option>';
+            echo '<option value="">' . esc_html__( 'Tutte le province', PCV_Abruzzo_Plugin::TEXT_DOMAIN ) . '</option>';
             foreach ($province as $code => $label) {
                 $selected_attr = selected( $f_prov, $code, false );
                 $option_label = sprintf( '%s (%s)', $label, $code );
@@ -955,20 +955,20 @@ if ( ! class_exists( 'PCV_List_Table' ) ) {
             }
             echo '</select>';
 
-            echo '<label class="screen-reader-text" for="pcv-admin-comune">' . esc_html__( 'Filtra per Comune', self::TEXT_DOMAIN ) . '</label>';
+            echo '<label class="screen-reader-text" for="pcv-admin-comune">' . esc_html__( 'Filtra per Comune', PCV_Abruzzo_Plugin::TEXT_DOMAIN ) . '</label>';
             echo '<select name="f_comune" id="pcv-admin-comune" data-selected="'.esc_attr($f_comune).'">';
-            echo '<option value="">' . esc_html__( 'Tutti i comuni', self::TEXT_DOMAIN ) . '</option>';
+            echo '<option value="">' . esc_html__( 'Tutti i comuni', PCV_Abruzzo_Plugin::TEXT_DOMAIN ) . '</option>';
             foreach ($comuni_options as $comune_name) {
                 $selected_attr = selected( $f_comune, $comune_name, false );
                 echo '<option value="'.esc_attr($comune_name).'"'.$selected_attr.'>'.esc_html($comune_name).'</option>';
             }
             echo '</select>';
 
-            echo '<input type="search" name="s" value="'.esc_attr($s).'" placeholder="' . esc_attr__( 'Cerca…', self::TEXT_DOMAIN ) . '">';
-            submit_button( __( 'Filtra', self::TEXT_DOMAIN ), 'secondary', '', false );
-            echo ' <a href="'.esc_url($url_no_vars).'" class="button">' . esc_html__( 'Pulisci', self::TEXT_DOMAIN ) . '</a> ';
+            echo '<input type="search" name="s" value="'.esc_attr($s).'" placeholder="' . esc_attr__( 'Cerca…', PCV_Abruzzo_Plugin::TEXT_DOMAIN ) . '">';
+            submit_button( __( 'Filtra', PCV_Abruzzo_Plugin::TEXT_DOMAIN ), 'secondary', '', false );
+            echo ' <a href="'.esc_url($url_no_vars).'" class="button">' . esc_html__( 'Pulisci', PCV_Abruzzo_Plugin::TEXT_DOMAIN ) . '</a> ';
             $export_url = wp_nonce_url( add_query_arg(['pcv_export'=>'csv'], admin_url('admin.php?page='.PCV_Abruzzo_Plugin::MENU_SLUG) ), 'pcv_export' );
-            echo ' <a class="button button-primary" href="'.esc_url($export_url).'">' . esc_html__( 'Export CSV', self::TEXT_DOMAIN ) . '</a>';
+            echo ' <a class="button button-primary" href="'.esc_url($export_url).'">' . esc_html__( 'Export CSV', PCV_Abruzzo_Plugin::TEXT_DOMAIN ) . '</a>';
             echo '</form></div>';
         }
     }
