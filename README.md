@@ -1,32 +1,69 @@
 # PC Volontari Abruzzo
 
-## Descrizione
+Plugin WordPress per la raccolta delle iscrizioni dei volontari della Protezione Civile Abruzzo. Offre un flusso completo dalla compilazione del form pubblico alla consultazione e all'esportazione dei dati dall'area amministrativa.
 
-Plugin WordPress per la raccolta iscrizioni volontari della Protezione Civile Abruzzo. Il plugin fornisce un sistema completo per la gestione delle registrazioni con form via shortcode, popup di selezione comune, lista completa dei Comuni e Province dell'Abruzzo, protezione reCAPTCHA v2 e gestionale backend.
+## Sommario
+- [Caratteristiche principali](#caratteristiche-principali)
+- [Architettura del plugin](#architettura-del-plugin)
+- [Installazione](#installazione)
+- [Aggiornamento del plugin](#aggiornamento-del-plugin)
+- [Disinstallazione](#disinstallazione)
+- [Configurazione](#configurazione)
+- [Utilizzo](#utilizzo)
+- [Dati raccolti](#dati-raccolti)
+- [Privacy e GDPR](#privacy-e-gdpr)
+- [Requisiti tecnici](#requisiti-tecnici)
+- [Supporto](#supporto)
+- [Autore](#autore)
+- [Changelog](#changelog)
 
-## Funzionalità
+## Caratteristiche principali
 
 ### Frontend
-- **Form di registrazione** tramite shortcode `[pc_volontari_form]`
-- **Popup interattivo** per la selezione di Provincia e Comune
-- **Lista completa** di tutti i Comuni e Province dell'Abruzzo
-- **Validazione client-side** con JavaScript
-- **Protezione reCAPTCHA v2** (opzionale)
-- **Memorizzazione locale** delle preferenze utente (localStorage)
-- **Design responsive** e moderno
+- Form di registrazione tramite shortcode `[pc_volontari_form]`.
+- Popup interattivo per la scelta di provincia e comune.
+- Ricerca istantanea all'interno della lista di Comuni e Province dell'Abruzzo.
+- Validazione client-side con JavaScript e messaggi di errore contestuali.
+- Protezione facoltativa con reCAPTCHA v2.
+- Memorizzazione locale delle preferenze (localStorage) per facilitare compilazioni successive.
+- Layout responsive compatibile con i principali temi WordPress.
 
 ### Backend
-- **Gestionale completo** con tabella dati
-- **Sistema di filtri** per Comune, Provincia e ricerca libera
-- **Export CSV** dei dati raccolti
-- **Configurazione reCAPTCHA** tramite interfaccia admin
-- **Paginazione** e ordinamento dei risultati
+- Gestionale dedicato in "Volontari Abruzzo" con tabella, ricerca, filtri e ordinamenti.
+- Esportazione CSV dei dati raccolti.
+- Configurazione reCAPTCHA dall'interfaccia admin.
+- Personalizzazione delle etichette principali del form.
+- Gestione completa degli stati della tabella (paginazione, ordinamento, ricerca libera).
+
+## Architettura del plugin
+
+- `pc-volontari-abruzzo.php`: file principale, registra hook, shortcode, admin menu e gestisce il database.
+- `assets/css/frontend.css`: stili per form e popup frontend.
+- `assets/js/frontend.js`: logica interattiva per il form pubblico (inclusa l'inizializzazione di reCAPTCHA).
+- `assets/js/admin.js`: supporto JavaScript per le schermate amministrative.
+- `data/comuni_abruzzo.json`: elenco di Province e Comuni dell'Abruzzo (province e comuni associati).
+
+Il plugin crea la tabella `wp_pcv_volontari` (prefisso variabile in base all'installazione) con i campi:
+- `id`, `created_at`
+- `nome`, `cognome`
+- `comune`, `provincia`
+- `email`, `telefono`
+- `privacy`, `partecipa`
+- `dorme`, `mangia`
+- `ip`, `user_agent`
 
 ## Installazione
 
-1. Carica la cartella del plugin nella directory `/wp-content/plugins/`
-2. Attiva il plugin dal menu "Plugin" di WordPress
-3. Vai su "Volontari Abruzzo" nel menu amministrativo per configurare le impostazioni
+1. Copia la cartella `pc-volontari-abruzzo` in `wp-content/plugins/`.
+2. Accedi a WordPress e attiva "PC Volontari Abruzzo" dal menu **Plugin**.
+3. Apri il menu **Volontari Abruzzo** per completare la configurazione.
+
+## Aggiornamento del plugin
+
+1. Effettua un backup del database WordPress.
+2. Sostituisci i file del plugin con la nuova versione.
+3. Verifica la voce **Volontari Abruzzo → Impostazioni** per confermare le configurazioni.
+4. Controlla il [changelog](#changelog) per le novità della versione installata.
 
 ## Disinstallazione
 
@@ -34,103 +71,86 @@ La disinstallazione del plugin rimuove la tabella dei volontari e le opzioni di 
 
 ## Configurazione
 
-### reCAPTCHA (Opzionale)
-1. Vai su [Google reCAPTCHA](https://www.google.com/recaptcha/admin)
-2. Crea un nuovo sito con reCAPTCHA v2
-3. Copia Site Key e Secret Key
-4. Vai su "Volontari Abruzzo" > "Impostazioni" nell'admin WordPress
-5. Inserisci le chiavi e salva
+### reCAPTCHA v2 (opzionale)
+1. Vai su [Google reCAPTCHA](https://www.google.com/recaptcha/admin).
+2. Crea un nuovo sito selezionando reCAPTCHA v2.
+3. Copia Site Key e Secret Key.
+4. In WordPress vai su **Volontari Abruzzo → Impostazioni**.
+5. Inserisci le chiavi e salva.
+
+### Personalizzazione del form
+- Modifica le etichette e i testi direttamente dall'interfaccia admin.
+- Per aggiornare l'elenco dei Comuni modifica `data/comuni_abruzzo.json` mantenendo la struttura JSON originale.
 
 ## Utilizzo
 
-### Inserimento Form
-Inserisci lo shortcode `[pc_volontari_form]` in qualsiasi pagina o post per visualizzare il form di registrazione.
+### Inserimento del form
+Inserisci lo shortcode `[pc_volontari_form]` in qualunque pagina o articolo per mostrare il form di registrazione.
 
-### Gestione Dati
-- Accedi a "Volontari Abruzzo" nel menu admin per vedere tutte le registrazioni
-- Usa i filtri per cercare registrazioni specifiche
-- Esporta i dati in formato CSV quando necessario
+### Gestione dei dati
+- Accedi a **Volontari Abruzzo** nel menu admin per visualizzare tutte le registrazioni.
+- Usa i filtri per limitare la visualizzazione per provincia, comune o parole chiave.
+- Esporta l'elenco completo in formato CSV quando necessario.
 
-## Dati Raccolti
+## Dati raccolti
 
-Il form raccoglie i seguenti dati obbligatori:
+Il form richiede i seguenti dati obbligatori:
 - Nome e Cognome
-- Provincia e Comune di provenienza (validati contro lista ufficiale Abruzzo)
+- Provincia e Comune (validati rispetto alla lista ufficiale Abruzzo)
 - Email e Telefono
-- Consenso privacy (obbligatorio)
-- Intenzione di partecipazione all'evento (opzionale)
-- Preferenze su pernottamento e pasti (opzionali)
+- Consenso privacy
+
+Campi opzionali:
+- Partecipazione all'evento
+- Preferenze su pernottamento e pasti
 
 ## Privacy e GDPR
 
-Il plugin è conforme al Regolamento UE 2016/679 (GDPR):
-- Raccolta del consenso esplicito per il trattamento dati
-- Informativa privacy integrata nel form
-- Memorizzazione sicura dei dati nel database WordPress
-- Tracciamento IP e User Agent per finalità di sicurezza
+Il plugin è progettato per supportare gli adempimenti del Regolamento UE 2016/679 (GDPR):
+- Raccolta del consenso esplicito per il trattamento dei dati.
+- Informativa privacy integrata nel form.
+- Memorizzazione sicura dei dati nel database WordPress.
+- Salvataggio di IP e User Agent per finalità di sicurezza.
 
-## Requisiti Tecnici
+## Requisiti tecnici
 
 - WordPress 5.0 o superiore
 - PHP 7.4 o superiore
 - MySQL 5.6 o superiore
 
-## Dipendenze
+## Supporto
 
-Il plugin utilizza asset frontend separati caricati automaticamente:
+Per assistenza tecnica o segnalazione bug contattare l'autore.
 
-- `assets/css/frontend.css` per lo stile del form e dei popup.
-- `assets/js/frontend.js` per la gestione interattiva e l'inizializzazione facoltativa di reCAPTCHA v2.
-
-## Struttura Database
-
-Il plugin crea la tabella `wp_pcv_volontari` con i seguenti campi:
-- `id` - Identificativo univoco
-- `created_at` - Data registrazione
-- `nome`, `cognome` - Dati anagrafici
-- `comune`, `provincia` - Località
-- `email`, `telefono` - Contatti
-- `privacy`, `partecipa` - Consensi
-- `dorme`, `mangia` - Preferenze pernottamento e pasti (opzionali)
-- `ip`, `user_agent` - Dati tecnici
-
-## Personalizzazione Province e Comuni
-
-L'elenco delle Province e dei Comuni è definito nel file `data/comuni_abruzzo.json`.
-Modifica questo file (mantenendo la struttura JSON con chiavi `province` e `comuni`)
-per aggiornare rapidamente l'elenco utilizzato dal plugin.
-
-## Licenza
-
-Questo plugin è rilasciato sotto licenza GPLv2 or later.
+- Sito web: [francescopasseri.com](https://francescopasseri.com)
+- Email: [info@francescopasseri.com](mailto:info@francescopasseri.com)
 
 ## Autore
 
 **Francesco Passeri**
 
-## Build e Distribuzione
+## Changelog
 
-Il repository include workflow GitHub Actions per la creazione automatica di file ZIP del plugin:
-
-### Build Automatico
-- **Push su main**: Crea build di sviluppo automaticamente
-- **Tag git**: Crea release ufficiali (es. `git tag v1.1.0 && git push origin v1.1.0`)
-- **Pull Request**: Verifica build su PR
-
-### Build Manuale
-- Vai su Actions → "Build WordPress Plugin ZIP" → "Run workflow"
-- Opzionalmente specifica una versione personalizzata
-
-### Download
-- **Artifacts**: Disponibili nella pagina Actions del repository
-- **Releases**: File ZIP allegati alle release GitHub per versioni taggate
-
-Per maggiori dettagli vedere [.github/README.md](.github/README.md).
+Consulta il file [CHANGELOG.md](CHANGELOG.md) per lo storico completo delle versioni.
 
 ## Versione
 
-1.0
+Attuale: **1.0.1**
 
-## Supporto
+## Build e distribuzione
 
-Per supporto tecnico o segnalazione bug, contattare l'autore del plugin.
+Questo repository include workflow GitHub Actions per creare automaticamente file ZIP del plugin.
+
+- **Push su `main`**: genera build di sviluppo.
+- **Tag git**: produce release ufficiali (es. `git tag v1.1.0 && git push origin v1.1.0`).
+- **Pull Request**: esegue build di verifica.
+
+### Build manuale
+- Vai su Actions → "Build WordPress Plugin ZIP" → "Run workflow".
+- (Facoltativo) specifica una versione personalizzata.
+
+### Download
+- **Artifacts**: disponibili nella pagina Actions del repository.
+- **Releases**: ZIP allegati alle release GitHub per le versioni taggate.
+
+Per ulteriori dettagli consulta [.github/README.md](.github/README.md).
