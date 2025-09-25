@@ -33,8 +33,18 @@
       return fallback;
     }
   }
+  function getLabel(key, fallback){
+    if (typeof PCV_DATA !== 'undefined' && PCV_DATA && PCV_DATA.labels && typeof PCV_DATA.labels[key] === 'string'){ 
+      var value = PCV_DATA.labels[key];
+      if (value){
+        return value;
+      }
+    }
+    return fallback;
+  }
   function fillProvince(sel){
-    sel.innerHTML = '<option value="">Seleziona provincia</option>';
+    var selectProvinceText = getLabel('selectProvince', 'Seleziona provincia');
+    sel.innerHTML = '<option value="">' + selectProvinceText + '</option>';
     for (var code in PCV_DATA.province){
       var opt = ce('option');
       opt.value = code;
@@ -43,7 +53,8 @@
     }
   }
   function fillComuni(sel, prov, preselect){
-    sel.innerHTML = '<option value="">Seleziona comune</option>';
+    var selectComuneText = getLabel('selectComune', 'Seleziona comune');
+    sel.innerHTML = '<option value="">' + selectComuneText + '</option>';
     var list = PCV_DATA.comuni[prov] || [];
     list.forEach(function(c){
       var o = ce('option'); o.value = c; o.textContent = c;
@@ -128,7 +139,7 @@
           selComune.value = comune;
           if(modal) modal.classList.add('pcv-hidden');
         } else {
-          alert('Seleziona provincia e comune.');
+          alert(getLabel('modalAlert', 'Seleziona provincia e comune.'));
         }
       });
     }
@@ -147,7 +158,8 @@
       }
       popProv.addEventListener('change', function(){
         var prov = popProv.value;
-        popComune.innerHTML = '<option value="">Seleziona comune</option>';
+        var selectComuneText = getLabel('selectComune', 'Seleziona comune');
+        popComune.innerHTML = '<option value="">' + selectComuneText + '</option>';
         (PCV_DATA.comuni[prov]||[]).forEach(function(c){
           var o = ce('option'); o.value = c; o.textContent = c; popComune.appendChild(o);
         });
