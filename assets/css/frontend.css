@@ -1,17 +1,61 @@
-.pcv-modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:99999}
-.pcv-modal{background:#fff;border-radius:12px;max-width:520px;width:92%;padding:22px;box-shadow:0 10px 30px rgba(0,0,0,.2)}
-.pcv-modal h3{margin:0 0 10px;font-size:20px}
-.pcv-modal .pcv-actions{margin-top:14px;display:flex;gap:10px;justify-content:flex-end}
+.pcv-modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:99999;padding:16px}
+.pcv-modal{background:#fff;border-radius:14px;max-width:520px;width:100%;padding:26px 28px;box-shadow:0 18px 45px rgba(17,24,39,.22);border-top:6px solid #0f6ab4;display:flex;flex-direction:column;gap:18px;transform-origin:top center;animation:pcvModalIn .28s ease}
+.pcv-modal h3{margin:0;color:#0f172a;font-size:24px;line-height:1.25;font-weight:700}
+.pcv-modal p{margin:0;color:#475569;font-size:15px;line-height:1.6}
+.pcv-modal .pcv-modal-header{display:flex;gap:14px;align-items:flex-start}
+.pcv-modal .pcv-modal-icon{width:38px;height:38px;flex-shrink:0;border-radius:12px;background:linear-gradient(135deg,#0f6ab4,#38bdf8);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:20px}
+.pcv-modal .pcv-modal-body{display:flex;flex-direction:column;gap:16px}
+.pcv-modal .pcv-modal-body select{cursor:pointer}
+.pcv-modal label{display:block;font-weight:600;color:#0f172a;margin-top:6px;font-size:14px}
+.pcv-modal select{width:100%;padding:12px 14px;border:1px solid #cbd5f5;border-radius:8px;background:#fff;font-size:15px;transition:border-color .2s ease,box-shadow .2s ease}
+.pcv-modal select:focus{outline:none;border-color:#0f6ab4;box-shadow:0 0 0 3px rgba(15,106,180,.18)}
+.pcv-modal .pcv-actions{margin-top:6px;display:flex;gap:12px;justify-content:flex-end}
 .pcv-hidden{display:none}
-.pcv-form .pcv-row{display:flex;gap:14px;flex-wrap:wrap}
-.pcv-form .pcv-field{flex:1 1 240px;display:flex;flex-direction:column;margin-bottom:12px}
-.pcv-form label{font-weight:600;margin-bottom:6px}
-.pcv-form select,.pcv-form input[type=text],.pcv-form input[type=email],.pcv-form input[type=tel]{padding:10px;border:1px solid #dcdcdc;border-radius:6px}
-.pcv-form .pcv-checkbox{display:flex;gap:8px;align-items:flex-start;margin:8px 0}
-.pcv-form .pcv-checkbox-group{margin:16px 0;padding:12px 14px;border:1px solid #dcdcdc;border-radius:8px;display:flex;flex-direction:column;gap:8px;background-color:#f9f9f9}
+.pcv-form-shell{max-width:720px;margin:0 auto;padding:0 12px}
+.pcv-form{display:flex;flex-direction:column;gap:18px;padding:32px;background:#fff;border-radius:20px;border:1px solid #e2e8f0;box-shadow:0 24px 42px rgba(15,23,42,.08)}
+.pcv-form:focus-within{box-shadow:0 28px 54px rgba(15,23,42,.12)}
+.pcv-form .pcv-row{display:flex;gap:18px;flex-wrap:wrap}
+.pcv-form .pcv-field{flex:1 1 240px;display:flex;flex-direction:column;gap:8px}
+.pcv-form label{font-weight:600;margin-bottom:0;color:#0f172a;font-size:15px}
+.pcv-form select,.pcv-form input[type=text],.pcv-form input[type=email],.pcv-form input[type=tel]{padding:12px 14px;border:1px solid #cbd5f5;border-radius:10px;background:#fff;font-size:15px;transition:border-color .2s ease,box-shadow .2s ease}
+.pcv-form select:focus,.pcv-form input[type=text]:focus,.pcv-form input[type=email]:focus,.pcv-form input[type=tel]:focus{outline:none;border-color:#0f6ab4;box-shadow:0 0 0 3px rgba(15,106,180,.16)}
+.pcv-form .pcv-checkbox{display:flex;gap:12px;align-items:flex-start}
+.pcv-form .pcv-checkbox input[type=checkbox]{width:18px;height:18px;margin:4px 0 0;accent-color:#0f6ab4;flex-shrink:0;transition:transform .2s ease}
+.pcv-form .pcv-checkbox input[type=checkbox]:focus-visible{outline:2px solid rgba(15,106,180,.35);outline-offset:2px}
+.pcv-form .pcv-checkbox input[type=checkbox]:active{transform:scale(.92)}
+.pcv-form .pcv-checkbox label{margin-top:2px;color:#1e293b;line-height:1.6;font-weight:500}
+.pcv-form .pcv-checkbox-group{margin:10px 0;padding:18px 20px;border:1px solid #dbeafe;border-radius:12px;display:flex;flex-direction:column;gap:14px;background:linear-gradient(180deg,#f8fbff,#eef6ff)}
 .pcv-form .pcv-checkbox-group .pcv-checkbox{margin:0}
-.pcv-form .pcv-checkbox-divider{border-top:1px solid #dcdcdc;margin:20px 0 16px}
-.pcv-form .pcv-submit{margin-top:8px}
-.pcv-alert{padding:10px;border-radius:6px;margin-bottom:12px}
-.pcv-alert.success{background:#e6ffed;border:1px solid #b7f0c3}
-.pcv-alert.error{background:#ffecec;border:1px solid #f5b0b0}
+.pcv-form .pcv-checkbox-divider{border-top:1px solid #e2e8f0;margin:8px 0 0}
+.pcv-form .pcv-optional-heading{display:flex;flex-direction:column;gap:4px}
+.pcv-form .pcv-optional-heading-title{margin:0;font-size:16px;font-weight:700;color:#0f172a}
+.pcv-form .pcv-optional-heading-subtitle{margin:0;font-size:14px;color:#475569}
+.pcv-form .pcv-submit{margin-top:6px;display:flex;justify-content:flex-end}
+.pcv-form .button{border-radius:999px;padding:12px 22px;font-weight:600;font-size:15px;border:none;transition:transform .2s ease,box-shadow .2s ease,background .2s ease}
+.pcv-form .button:focus{outline:none;box-shadow:0 0 0 3px rgba(15,106,180,.16)}
+.pcv-form .button.button-primary{background:linear-gradient(135deg,#0f6ab4,#1d4ed8);color:#fff;box-shadow:0 12px 20px rgba(15,106,180,.25)}
+.pcv-form .button.button-primary:hover{transform:translateY(-1px);box-shadow:0 16px 25px rgba(15,106,180,.28)}
+.pcv-form .button.button-primary:active{transform:translateY(0);box-shadow:0 10px 18px rgba(15,106,180,.22)}
+.pcv-form .button.button-secondary{background:#e2e8f0;color:#1e293b}
+.pcv-form .button.button-secondary:hover{background:#cbd5f5}
+.pcv-form .pcv-submit .button{width:auto}
+@media (max-width:720px){.pcv-form{padding:26px 22px}}
+@media (max-width:540px){.pcv-form{padding:22px 18px}.pcv-form .pcv-submit{justify-content:stretch}.pcv-form .pcv-submit .button{width:100%}}
+@media (prefers-reduced-motion:reduce){.pcv-modal{animation:none}.pcv-form,.pcv-form .button,.pcv-modal select,.pcv-form select,.pcv-form input[type=text],.pcv-form input[type=email],.pcv-form input[type=tel],.pcv-form input[type=checkbox]{transition:none}}
+
+@keyframes pcvModalIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.pcv-alert{padding:18px 20px;border-radius:14px;margin:0 auto 24px;max-width:720px;display:flex;gap:14px;align-items:flex-start;font-size:15px;line-height:1.5;position:relative;overflow:hidden;box-shadow:0 16px 30px rgba(15,23,42,.1)}
+.pcv-alert::before{content:"";width:12px;flex-shrink:0;border-radius:999px}
+.pcv-alert .pcv-alert-icon{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;font-weight:700;margin-top:2px}
+.pcv-alert .pcv-alert-message{flex:1}
+.pcv-alert.success{background:#ecfdf5;border:1px solid #bbf7d0;color:#0f5132}
+.pcv-alert.success::before{background:linear-gradient(135deg,#22c55e,#16a34a)}
+.pcv-alert.success .pcv-alert-icon{background:#22c55e;color:#fff}
+.pcv-alert.error{background:#fef2f2;border:1px solid #fecaca;color:#7f1d1d}
+.pcv-alert.error::before{background:linear-gradient(135deg,#ef4444,#b91c1c)}
+.pcv-alert.error .pcv-alert-icon{background:#ef4444;color:#fff}
+.pcv-privacy-notice{font-size:13px;color:#475569;margin-top:4px;padding:16px 18px;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0;display:flex;gap:12px}
+.pcv-privacy-notice::before{content:"i";display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:999px;background:#0f6ab4;color:#fff;font-weight:700;font-size:15px;flex-shrink:0;margin-top:2px}
+.pcv-privacy-notice p{margin:0 0 10px}
+.pcv-privacy-notice p:last-child{margin-bottom:0}
+.pcv-form .g-recaptcha{margin-top:6px}
