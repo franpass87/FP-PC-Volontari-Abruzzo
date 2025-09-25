@@ -616,7 +616,7 @@ class PCV_Abruzzo_Plugin {
         $ip_address = $this->get_ip();
         $user_agent_raw = isset( $_SERVER['HTTP_USER_AGENT'] ) ? wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) : '';
         $user_agent = $user_agent_raw !== '' ? mb_substr( sanitize_text_field( $user_agent_raw ), 0, 255 ) : '';
-        $category = '';
+        $category = 'Volontari';
 
         // Validazioni: provincia e comune devono appartenere a liste Abruzzo
         if ( !array_key_exists($provincia, $this->province) ) $this->redirect_with_status('err');
