@@ -39,6 +39,7 @@ class PCV_Abruzzo_Plugin {
     const OPT_NOTIFY_ENABLED      = 'pcv_notify_enabled';
     const OPT_NOTIFY_RECIPIENTS   = 'pcv_notify_recipients';
     const OPT_NOTIFY_SUBJECT      = 'pcv_notify_subject';
+    const OPT_DEFAULT_CATEGORY    = 'pcv_default_category';
     const IMPORT_EXPECTED_COLUMNS = [
         'nome',
         'cognome',
@@ -64,6 +65,7 @@ class PCV_Abruzzo_Plugin {
     const DEFAULT_OPTIONAL_GROUP_ARIA = 'Opzioni facoltative';
     const DEFAULT_MODAL_ALERT         = 'Seleziona provincia e comune.';
     const DEFAULT_NOTIFY_SUBJECT      = 'Nuova iscrizione volontario';
+    const DEFAULT_CATEGORY_LABEL      = 'Volontari';
 
     /** Province e comuni caricati da file */
     private $province = [];
@@ -134,6 +136,15 @@ class PCV_Abruzzo_Plugin {
         sort( $values, SORT_NATURAL | SORT_FLAG_CASE );
 
         return $values;
+    }
+
+    private function get_default_category_value() {
+        $category_option = get_option( self::OPT_DEFAULT_CATEGORY, self::DEFAULT_CATEGORY_LABEL );
+        if ( ! is_string( $category_option ) || $category_option === '' ) {
+            $category_option = self::DEFAULT_CATEGORY_LABEL;
+        }
+
+        return sanitize_text_field( $category_option );
     }
 
     /* ---------------- Activation: create table ---------------- */
@@ -543,7 +554,7 @@ class PCV_Abruzzo_Plugin {
             </div>
 
             <?php if ( $site_key ) : ?>
-                <div class="g-recaptcha" data-sitekey="<?php echo $site_key; ?>"></div>
+                <div class="g-recaptcha" data-sitekey="<?php echo esc_attr( $site_key ); ?>"></div>
             <?php endif; ?>
 
             <div class="pcv-submit">
@@ -563,14 +574,14 @@ class PCV_Abruzzo_Plugin {
     public function maybe_handle_submission() {
         if ( ! isset($_POST['pcv_submit']) ) return;
 
-        if ( ! isset($_POST['pcv_nonce']) || ! wp_verify_nonce( $_POST['pcv_nonce'], self::NONCE ) ) {
+        if ( ! isset($_POST['pcv_nonce']) || ! wp_verify_nonce( wp_unslash( $_POST['pcv_nonce'] ), self::NONCE ) ) {
             $this->redirect_with_status('err');
         }
 
         // reCAPTCHA verify (if configured)
         $secret = get_option(self::OPT_RECAPTCHA_SECRET, '');
         if ( $secret ) {
-            $token = $_POST['g-recaptcha-response'] ?? '';
+            $token = isset( $_POST['g-recaptcha-response'] ) ? wp_unslash( $_POST['g-recaptcha-response'] ) : '';
             if ( empty($token) ) $this->redirect_with_status('err');
 
             $resp = wp_remote_post( 'https://www.google.com/recaptcha/api/siteverify', [
@@ -634,7 +645,7 @@ class PCV_Abruzzo_Plugin {
         $ip_address = $this->get_ip();
         $user_agent_raw = isset( $_SERVER['HTTP_USER_AGENT'] ) ? wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) : '';
         $user_agent = $user_agent_raw !== '' ? mb_substr( sanitize_text_field( $user_agent_raw ), 0, 255 ) : '';
-        $category = 'Volontari';
+        $category = $this->get_default_category_value();
 
         // Validazioni: provincia e comune devono appartenere a liste Abruzzo
         if ( !array_key_exists($provincia, $this->province) ) $this->redirect_with_status('err');
@@ -709,9 +720,39 @@ class PCV_Abruzzo_Plugin {
     private function sanitize_text( $v ) { $v = trim( wp_strip_all_tags( $v ) ); return $v ? mb_substr($v, 0, 150) : ''; }
     private function sanitize_phone( $v ) { $v = preg_replace('/[^0-9+ ]+/', '', $v); return $v ? mb_substr($v, 0, 50) : ''; }
     private function get_ip() {
-        foreach (['HTTP_CLIENT_IP','HTTP_X_FORWARDED_FOR','REMOTE_ADDR'] as $key) {
-            if (!empty($_SERVER[$key])) { $ip = explode(',', $_SERVER[$key])[0]; return sanitize_text_field($ip); }
-        } return '';
+        $remote_addr = isset( $_SERVER['REMOTE_ADDR'] ) ? wp_unslash( $_SERVER['REMOTE_ADDR'] ) : '';
+        $remote_ip   = $this->validate_ip_address( $remote_addr );
+
+        $trusted_proxies = apply_filters( 'pcv_trusted_proxies', [] );
+        if ( $remote_ip && in_array( $remote_ip, (array) $trusted_proxies, true ) ) {
+            foreach ( [ 'HTTP_X_FORWARDED_FOR', 'HTTP_CLIENT_IP' ] as $header ) {
+                if ( empty( $_SERVER[ $header ] ) ) {
+                    continue;
+                }
+
+                $raw_header = wp_unslash( $_SERVER[ $header ] );
+                $candidates = array_map( 'trim', explode( ',', $raw_header ) );
+                foreach ( $candidates as $candidate ) {
+                    $candidate_ip = $this->validate_ip_address( $candidate );
+                    if ( $candidate_ip ) {
+                        return $candidate_ip;
+                    }
+                }
+            }
+        }
+
+        return $remote_ip;
+    }
+
+    private function validate_ip_address( $ip ) {
+        $ip = trim( (string) $ip );
+        if ( $ip === '' ) {
+            return '';
+        }
+
+        $valid = filter_var( $ip, FILTER_VALIDATE_IP );
+
+        return $valid ? $valid : '';
     }
 
     /* ---------------- Admin: menu + table + settings reCAPTCHA ---------------- */
@@ -783,8 +824,9 @@ class PCV_Abruzzo_Plugin {
 
         require_once ABSPATH . 'wp-admin/includes/class-wp-list-table.php';
 
+        echo '<div class="wrap">';
         printf(
-            '<div class="wrap"><h1 class="wp-heading-inline">%s</h1></div>',
+            '<h1 class="wp-heading-inline">%s</h1>',
             esc_html__( 'Volontari Abruzzo', self::TEXT_DOMAIN )
         );
         $table = new PCV_List_Table( $this );
@@ -793,6 +835,7 @@ class PCV_Abruzzo_Plugin {
         wp_nonce_field( 'pcv_bulk_action' );
         $table->display();
         echo '</form>';
+        echo '</div>';
     }
 
     public function render_settings_page() {
@@ -887,6 +930,12 @@ class PCV_Abruzzo_Plugin {
                 'label'       => __( 'Messaggio popup Provincia/Comune', self::TEXT_DOMAIN ),
                 'description' => __( 'Avviso mostrato nel popup se non vengono selezionati Provincia e Comune.', self::TEXT_DOMAIN ),
                 'default'     => self::DEFAULT_MODAL_ALERT,
+                'sanitize'    => 'sanitize_text_field',
+            ],
+            self::OPT_DEFAULT_CATEGORY => [
+                'label'       => __( 'Categoria predefinita iscrizioni', self::TEXT_DOMAIN ),
+                'description' => __( 'Valore assegnato automaticamente alle registrazioni inviate dal form pubblico.', self::TEXT_DOMAIN ),
+                'default'     => self::DEFAULT_CATEGORY_LABEL,
                 'sanitize'    => 'sanitize_text_field',
             ],
         ];
@@ -1081,7 +1130,7 @@ class PCV_Abruzzo_Plugin {
         echo '</table>';
         submit_button( __( 'Avvia importazione', self::TEXT_DOMAIN ), 'primary', 'pcv_import_confirm' );
 
-        $cancel_url = menu_page_url( self::MENU_SLUG . '-importa', false );
+        $cancel_url = menu_page_url( self::MENU_SLUG . '-import', false );
         if ( $cancel_url ) {
             echo '<a href="' . esc_url( $cancel_url ) . '" class="button button-secondary" style="margin-left:10px;">' . esc_html__( 'Annulla', self::TEXT_DOMAIN ) . '</a>';
         }
@@ -1280,7 +1329,7 @@ class PCV_Abruzzo_Plugin {
             'headers'            => $dataset['headers'],
             'preview_rows'       => $preview_rows,
             'selected_map'       => $default_map,
-            'selected_category'  => '',
+            'selected_category'  => $this->get_default_category_value(),
             'token'              => $token,
         ];
     }
@@ -1927,19 +1976,20 @@ class PCV_Abruzzo_Plugin {
     private function normalize_datetime_input( $value ) {
         $value = trim( (string) $value );
 
+        $timezone = wp_timezone();
+
         if ( $value === '' ) {
-            return current_time( 'mysql' );
+            $datetime = new \DateTime( 'now', $timezone );
+            return $datetime->format( 'Y-m-d H:i:s' );
         }
 
-        $timestamp = strtotime( $value );
-        if ( $timestamp === false ) {
-            return current_time( 'mysql' );
+        try {
+            $datetime = new \DateTime( $value, $timezone );
+        } catch ( \Exception $e ) {
+            $datetime = new \DateTime( 'now', $timezone );
         }
 
-        $offset = get_option( 'gmt_offset', 0 );
-        $timestamp += $offset * HOUR_IN_SECONDS;
-
-        return gmdate( 'Y-m-d H:i:s', $timestamp );
+        return $datetime->format( 'Y-m-d H:i:s' );
     }
 
     /* ---------------- Export CSV ---------------- */
@@ -1948,7 +1998,8 @@ class PCV_Abruzzo_Plugin {
         if ( ! isset($_GET['page']) || $_GET['page'] !== self::MENU_SLUG ) return;
         if ( ! isset($_GET['pcv_export']) || $_GET['pcv_export'] !== 'csv' ) return;
         if ( ! current_user_can('manage_options') ) return;
-        if ( ! wp_verify_nonce( $_GET['_wpnonce'] ?? '', 'pcv_export' ) ) {
+        $export_nonce = isset( $_GET['_wpnonce'] ) ? wp_unslash( $_GET['_wpnonce'] ) : '';
+        if ( ! wp_verify_nonce( $export_nonce, 'pcv_export' ) ) {
             wp_die( esc_html__( 'Nonce non valido', self::TEXT_DOMAIN ) );
         }
 
@@ -1956,12 +2007,21 @@ class PCV_Abruzzo_Plugin {
         $table = $this->table_name();
 
         $where = 'WHERE 1=1'; $params = [];
-        if ( isset($_GET['f_comune']) && $_GET['f_comune'] !== '' ) { $where .= " AND comune LIKE %s"; $params[] = '%'.$wpdb->esc_like(sanitize_text_field($_GET['f_comune'])).'%'; }
-        if ( isset($_GET['f_prov']) && $_GET['f_prov'] !== '' ) { $where .= " AND provincia LIKE %s"; $params[] = '%'.$wpdb->esc_like(sanitize_text_field($_GET['f_prov'])).'%'; }
+        if ( isset($_GET['f_comune']) && $_GET['f_comune'] !== '' ) {
+            $f_comune = sanitize_text_field( wp_unslash( $_GET['f_comune'] ) );
+            $where .= " AND comune LIKE %s";
+            $params[] = '%'.$wpdb->esc_like( $f_comune ).'%';
+        }
+        if ( isset($_GET['f_prov']) && $_GET['f_prov'] !== '' ) {
+            $f_prov = sanitize_text_field( wp_unslash( $_GET['f_prov'] ) );
+            $where .= " AND provincia LIKE %s";
+            $params[] = '%'.$wpdb->esc_like( $f_prov ).'%';
+        }
         if ( isset($_GET['s']) && $_GET['s'] !== '' ) {
-            $like = '%'.$wpdb->esc_like(sanitize_text_field($_GET['s'])).'%';
-            $where .= " AND ( nome LIKE %s OR cognome LIKE %s OR email LIKE %s OR telefono LIKE %s )";
-            array_push($params, $like, $like, $like, $like);
+            $search = sanitize_text_field( wp_unslash( $_GET['s'] ) );
+            $like = '%'.$wpdb->esc_like( $search ).'%';
+            $where .= " AND ( nome LIKE %s OR cognome LIKE %s OR email LIKE %s OR telefono LIKE %s OR categoria LIKE %s )";
+            array_push($params, $like, $like, $like, $like, $like);
         }
 
         $sql = "SELECT * FROM {$table} {$where} ORDER BY created_at DESC";
@@ -2093,13 +2153,18 @@ if ( ! class_exists( 'PCV_List_Table' ) ) {
             global $wpdb;
             $table = $this->plugin->table_name();
             $per_page=20; $current_page=$this->get_pagenum();
-            $orderby = $_GET['orderby'] ?? 'created_at';
-            $order   = (isset($_GET['order']) && strtolower($_GET['order'])==='asc')?'ASC':'DESC';
+            $orderby_raw = isset($_GET['orderby']) ? wp_unslash($_GET['orderby']) : 'created_at';
+            $orderby = sanitize_key( $orderby_raw );
+            $order_raw = isset($_GET['order']) ? wp_unslash($_GET['order']) : 'DESC';
+            $order   = ( strtolower( $order_raw ) === 'asc' ) ? 'ASC' : 'DESC';
             $allowed = ['created_at','nome','cognome','comune','provincia','categoria']; if(!in_array($orderby,$allowed,true)) $orderby='created_at';
             $where='WHERE 1=1'; $params=[];
-            $f_comune = isset($_GET['f_comune'])?trim(sanitize_text_field($_GET['f_comune'])):'';
-            $f_prov   = isset($_GET['f_prov'])?trim(sanitize_text_field($_GET['f_prov'])):'';
-            $s        = isset($_GET['s'])?trim(sanitize_text_field($_GET['s'])):'';
+            $f_comune_raw = isset($_GET['f_comune']) ? wp_unslash($_GET['f_comune']) : '';
+            $f_comune = trim( sanitize_text_field( $f_comune_raw ) );
+            $f_prov_raw   = isset($_GET['f_prov']) ? wp_unslash($_GET['f_prov']) : '';
+            $f_prov   = trim( sanitize_text_field( $f_prov_raw ) );
+            $s_raw        = isset($_GET['s']) ? wp_unslash($_GET['s']) : '';
+            $s        = trim( sanitize_text_field( $s_raw ) );
             if($f_comune!==''){ $where.=" AND comune LIKE %s"; $params[]='%'.$wpdb->esc_like($f_comune).'%'; }
             if($f_prov!==''){ $where.=" AND provincia LIKE %s"; $params[]='%'.$wpdb->esc_like($f_prov).'%'; }
             if($s!==''){ $like='%'.$wpdb->esc_like($s).'%'; $where.=" AND ( nome LIKE %s OR cognome LIKE %s OR email LIKE %s OR telefono LIKE %s OR categoria LIKE %s )"; array_push($params,$like,$like,$like,$like,$like); }
@@ -2208,6 +2273,7 @@ function pcv_uninstall() {
         PCV_Abruzzo_Plugin::OPT_NOTIFY_ENABLED,
         PCV_Abruzzo_Plugin::OPT_NOTIFY_RECIPIENTS,
         PCV_Abruzzo_Plugin::OPT_NOTIFY_SUBJECT,
+        PCV_Abruzzo_Plugin::OPT_DEFAULT_CATEGORY,
     ];
 
     foreach ( $options as $option_name ) {
