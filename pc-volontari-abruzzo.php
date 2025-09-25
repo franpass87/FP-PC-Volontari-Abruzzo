@@ -939,12 +939,30 @@ function pcv_uninstall() {
     global $wpdb;
     $table = $wpdb->prefix . PCV_Abruzzo_Plugin::TABLE;
     $wpdb->query( "DROP TABLE IF EXISTS {$table}" );
-    delete_option( PCV_Abruzzo_Plugin::OPT_RECAPTCHA_SITE );
-    delete_option( PCV_Abruzzo_Plugin::OPT_RECAPTCHA_SECRET );
-    delete_option( PCV_Abruzzo_Plugin::OPT_PRIVACY_NOTICE );
-    delete_option( PCV_Abruzzo_Plugin::OPT_PARTICIPATION_LABEL );
-    delete_option( PCV_Abruzzo_Plugin::OPT_OVERNIGHT_LABEL );
-    delete_option( PCV_Abruzzo_Plugin::OPT_MEALS_LABEL );
+    $options = [
+        PCV_Abruzzo_Plugin::OPT_RECAPTCHA_SITE,
+        PCV_Abruzzo_Plugin::OPT_RECAPTCHA_SECRET,
+        PCV_Abruzzo_Plugin::OPT_PRIVACY_NOTICE,
+        PCV_Abruzzo_Plugin::OPT_PARTICIPATION_LABEL,
+        PCV_Abruzzo_Plugin::OPT_OVERNIGHT_LABEL,
+        PCV_Abruzzo_Plugin::OPT_MEALS_LABEL,
+        PCV_Abruzzo_Plugin::OPT_NAME_LABEL,
+        PCV_Abruzzo_Plugin::OPT_SURNAME_LABEL,
+        PCV_Abruzzo_Plugin::OPT_PROVINCE_LABEL,
+        PCV_Abruzzo_Plugin::OPT_PROVINCE_PLACEHOLDER,
+        PCV_Abruzzo_Plugin::OPT_COMUNE_LABEL,
+        PCV_Abruzzo_Plugin::OPT_COMUNE_PLACEHOLDER,
+        PCV_Abruzzo_Plugin::OPT_EMAIL_LABEL,
+        PCV_Abruzzo_Plugin::OPT_PHONE_LABEL,
+        PCV_Abruzzo_Plugin::OPT_PRIVACY_FIELD_LABEL,
+        PCV_Abruzzo_Plugin::OPT_SUBMIT_LABEL,
+        PCV_Abruzzo_Plugin::OPT_OPTIONAL_GROUP_ARIA,
+        PCV_Abruzzo_Plugin::OPT_MODAL_ALERT,
+    ];
+
+    foreach ( $options as $option_name ) {
+        delete_option( $option_name );
+    }
 }
 
 register_uninstall_hook( __FILE__, 'pcv_uninstall' );
