@@ -2,7 +2,7 @@
 /**
  * Plugin Name: PC Volontari Abruzzo
  * Description: Raccolta iscrizioni volontari (Protezione Civile Abruzzo) con form via shortcode, popup comune, lista completa Comuni/Province Abruzzo, reCAPTCHA v2 e gestionale backend.
- * Version: 1.0.2
+ * Version: 1.1.0
  * Author: Francesco Passeri
  * Author URI: https://francescopasseri.com
  * License: GPLv2 or later
@@ -13,7 +13,7 @@ if ( ! defined('ABSPATH') ) exit;
 
 class PCV_Abruzzo_Plugin {
 
-    const VERSION   = '1.0.2';
+    const VERSION   = '1.1.0';
     const TEXT_DOMAIN = 'pc-volontari-abruzzo';
     const TABLE     = 'pcv_volontari';
     const NONCE     = 'pcv_form_nonce';
@@ -36,6 +36,9 @@ class PCV_Abruzzo_Plugin {
     const OPT_SUBMIT_LABEL        = 'pcv_label_submit';
     const OPT_OPTIONAL_GROUP_ARIA = 'pcv_label_optional_group';
     const OPT_MODAL_ALERT         = 'pcv_label_modal_alert';
+    const OPT_NOTIFY_ENABLED      = 'pcv_notify_enabled';
+    const OPT_NOTIFY_RECIPIENTS   = 'pcv_notify_recipients';
+    const OPT_NOTIFY_SUBJECT      = 'pcv_notify_subject';
     const DEFAULT_PRIVACY_NOTICE  = "I dati saranno trattati ai sensi del Reg. UE 2016/679 (GDPR) per la gestione dell’evento e finalità organizzative. Titolare del trattamento: [inserire].";
     const DEFAULT_PARTICIPATION_LABEL = 'Sì, voglio partecipare all’evento';
     const DEFAULT_OVERNIGHT_LABEL     = 'Mi fermo a dormire';
@@ -52,6 +55,7 @@ class PCV_Abruzzo_Plugin {
     const DEFAULT_SUBMIT_LABEL        = 'Invia iscrizione';
     const DEFAULT_OPTIONAL_GROUP_ARIA = 'Opzioni facoltative';
     const DEFAULT_MODAL_ALERT         = 'Seleziona provincia e comune.';
+    const DEFAULT_NOTIFY_SUBJECT      = 'Nuova iscrizione volontario';
 
     /** Province e comuni caricati da file */
     private $province = [];
@@ -220,6 +224,134 @@ class PCV_Abruzzo_Plugin {
         }
 
         return $value;
+    }
+
+    private function notifications_enabled() {
+        $option = get_option( self::OPT_NOTIFY_ENABLED, '' );
+        if ( $option === '' ) {
+            return true;
+        }
+
+        return (string) $option === '1';
+    }
+
+    private function normalize_recipient_list( $raw_value ) {
+        if ( ! is_string( $raw_value ) ) {
+            $raw_value = '';
+        }
+
+        $parts = preg_split( '/[\r\n,;]+/', $raw_value );
+        $emails = [];
+
+        if ( is_array( $parts ) ) {
+            foreach ( $parts as $part ) {
+                $email = sanitize_email( trim( $part ) );
+                if ( $email && is_email( $email ) ) {
+                    $emails[] = $email;
+                }
+            }
+        }
+
+        $emails = array_values( array_unique( $emails ) );
+
+        return implode( "\n", $emails );
+    }
+
+    private function get_notification_recipients() {
+        $stored = get_option( self::OPT_NOTIFY_RECIPIENTS, '' );
+        if ( ! is_string( $stored ) ) {
+            $stored = '';
+        }
+
+        $normalized = $this->normalize_recipient_list( $stored );
+        $parts = $normalized !== '' ? preg_split( '/[\r\n]+/', $normalized ) : [];
+        $emails = is_array( $parts ) ? array_filter( $parts ) : [];
+
+        if ( empty( $emails ) ) {
+            $admin_email = get_option( 'admin_email' );
+            if ( $admin_email && is_email( $admin_email ) ) {
+                $emails[] = $admin_email;
+            }
+        }
+
+        $emails = array_values( array_unique( $emails ) );
+
+        /**
+         * Consente di modificare i destinatari delle email di notifica.
+         *
+         * @param string[] $emails  Elenco di indirizzi email validi.
+         */
+        $emails = apply_filters( 'pcv_notification_email_recipients', $emails );
+
+        return array_values( array_filter( $emails, function( $email ) {
+            $clean = sanitize_email( $email );
+            return $clean && is_email( $clean );
+        } ) );
+    }
+
+    private function get_notification_subject( array $record ) {
+        $subject = get_option( self::OPT_NOTIFY_SUBJECT, '' );
+        if ( ! is_string( $subject ) || $subject === '' ) {
+            $subject = __( self::DEFAULT_NOTIFY_SUBJECT, self::TEXT_DOMAIN );
+        }
+
+        /**
+         * Consente di filtrare l'oggetto della notifica email.
+         *
+         * @param string $subject Oggetto dell'email.
+         * @param array  $record  Dati del volontario registrato.
+         */
+        return apply_filters( 'pcv_notification_email_subject', $subject, $record );
+    }
+
+    private function build_notification_message( array $record ) {
+        $lines = [
+            sprintf(
+                /* translators: 1: nome volontario, 2: cognome volontario */
+                __( 'Nuova registrazione volontario: %1$s %2$s', self::TEXT_DOMAIN ),
+                $record['nome'],
+                $record['cognome']
+            ),
+            '',
+            __( 'Dettagli iscrizione:', self::TEXT_DOMAIN ),
+            sprintf( '%s: %s', __( 'Nome', self::TEXT_DOMAIN ), $record['nome'] ),
+            sprintf( '%s: %s', __( 'Cognome', self::TEXT_DOMAIN ), $record['cognome'] ),
+            sprintf( '%s: %s', __( 'Email', self::TEXT_DOMAIN ), $record['email'] ),
+            sprintf( '%s: %s', __( 'Telefono', self::TEXT_DOMAIN ), $record['telefono'] ),
+            sprintf( '%s: %s', __( 'Comune', self::TEXT_DOMAIN ), $record['comune'] ),
+            sprintf( '%s: %s', __( 'Provincia', self::TEXT_DOMAIN ), $record['provincia'] ),
+            sprintf( '%s: %s', __( 'Partecipa', self::TEXT_DOMAIN ), $record['partecipa'] ? __( 'Sì', self::TEXT_DOMAIN ) : __( 'No', self::TEXT_DOMAIN ) ),
+            sprintf( '%s: %s', __( 'Pernotta', self::TEXT_DOMAIN ), $record['dorme'] ? __( 'Sì', self::TEXT_DOMAIN ) : __( 'No', self::TEXT_DOMAIN ) ),
+            sprintf( '%s: %s', __( 'Pasti', self::TEXT_DOMAIN ), $record['mangia'] ? __( 'Sì', self::TEXT_DOMAIN ) : __( 'No', self::TEXT_DOMAIN ) ),
+            '',
+            sprintf( '%s: %s', __( 'IP', self::TEXT_DOMAIN ), $record['ip'] ),
+            sprintf( '%s: %s', __( 'User Agent', self::TEXT_DOMAIN ), $record['user_agent'] ),
+        ];
+
+        /**
+         * Permette di modificare il testo della notifica email.
+         *
+         * @param string $message Testo dell'email.
+         * @param array  $record  Dati del volontario registrato.
+         */
+        return apply_filters( 'pcv_notification_email_message', implode( "\n", $lines ), $record );
+    }
+
+    private function maybe_send_notification_email( array $record ) {
+        if ( ! $this->notifications_enabled() ) {
+            return;
+        }
+
+        $recipients = $this->get_notification_recipients();
+        if ( empty( $recipients ) ) {
+            return;
+        }
+
+        $subject = $this->get_notification_subject( $record );
+        $message = $this->build_notification_message( $record );
+        $headers = [ 'Content-Type: text/plain; charset=UTF-8' ];
+
+        wp_mail( $recipients, $subject, $message, $headers );
     }
 
     public function load_textdomain() {
@@ -466,6 +598,11 @@ class PCV_Abruzzo_Plugin {
         $dorme  = $dorme_raw === '1' ? 1 : 0;
         $mangia = $mangia_raw === '1' ? 1 : 0;
 
+        $now = current_time( 'mysql' );
+        $ip_address = $this->get_ip();
+        $user_agent_raw = isset( $_SERVER['HTTP_USER_AGENT'] ) ? wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) : '';
+        $user_agent = $user_agent_raw !== '' ? mb_substr( sanitize_text_field( $user_agent_raw ), 0, 255 ) : '';
+
         // Validazioni: provincia e comune devono appartenere a liste Abruzzo
         if ( !array_key_exists($provincia, $this->province) ) $this->redirect_with_status('err');
         $validComune = in_array( $comune, $this->comuni[$provincia] ?? [], true );
@@ -480,7 +617,7 @@ class PCV_Abruzzo_Plugin {
         $inserted = $wpdb->insert(
             $table,
             [
-                'created_at' => current_time('mysql'),
+                'created_at' => $now,
                 'nome'       => $nome,
                 'cognome'    => $cognome,
                 'comune'     => $comune,
@@ -491,11 +628,39 @@ class PCV_Abruzzo_Plugin {
                 'partecipa'  => $partecipa,
                 'dorme'      => $dorme,
                 'mangia'     => $mangia,
-                'ip'         => $this->get_ip(),
-                'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? ''
+                'ip'         => $ip_address,
+                'user_agent' => $user_agent,
             ],
             [ '%s','%s','%s','%s','%s','%s','%s','%d','%d','%d','%d','%s','%s' ]
         );
+
+        if ( $inserted ) {
+            $record = [
+                'id'         => (int) $wpdb->insert_id,
+                'created_at' => $now,
+                'nome'       => $nome,
+                'cognome'    => $cognome,
+                'comune'     => $comune,
+                'provincia'  => $provincia,
+                'email'      => $email,
+                'telefono'   => $telefono,
+                'privacy'    => $privacy,
+                'partecipa'  => $partecipa,
+                'dorme'      => $dorme,
+                'mangia'     => $mangia,
+                'ip'         => $ip_address,
+                'user_agent' => $user_agent,
+            ];
+
+            $this->maybe_send_notification_email( $record );
+
+            /**
+             * Viene eseguito dopo la registrazione di un volontario.
+             *
+             * @param array $record Dati del volontario salvato.
+             */
+            do_action( 'pcv_volunteer_registered', $record );
+        }
 
         $this->redirect_with_status( $inserted ? 'ok' : 'err' );
     }
@@ -687,10 +852,18 @@ class PCV_Abruzzo_Plugin {
             $site_value = isset($_POST['pcv_site_key']) ? sanitize_text_field( wp_unslash( $_POST['pcv_site_key'] ) ) : '';
             $secret_value = isset($_POST['pcv_secret_key']) ? sanitize_text_field( wp_unslash( $_POST['pcv_secret_key'] ) ) : '';
             $privacy_notice_value = isset($_POST['pcv_privacy_notice']) ? wp_kses_post( wp_unslash( $_POST['pcv_privacy_notice'] ) ) : '';
+            $notify_enabled_value = isset( $_POST['pcv_notify_enabled'] ) ? '1' : '0';
+            $notify_recipients_raw = isset( $_POST['pcv_notify_recipients'] ) ? wp_unslash( $_POST['pcv_notify_recipients'] ) : '';
+            $notify_recipients_value = $this->normalize_recipient_list( $notify_recipients_raw );
+            $notify_subject_raw = isset( $_POST['pcv_notify_subject'] ) ? wp_unslash( $_POST['pcv_notify_subject'] ) : '';
+            $notify_subject_value = sanitize_text_field( $notify_subject_raw );
 
             update_option(self::OPT_RECAPTCHA_SITE, $site_value);
             update_option(self::OPT_RECAPTCHA_SECRET, $secret_value);
             update_option(self::OPT_PRIVACY_NOTICE, $privacy_notice_value);
+            update_option(self::OPT_NOTIFY_ENABLED, $notify_enabled_value);
+            update_option(self::OPT_NOTIFY_RECIPIENTS, $notify_recipients_value);
+            update_option(self::OPT_NOTIFY_SUBJECT, $notify_subject_value);
 
             foreach ( $label_fields as $option_key => $field ) {
                 $raw_value = isset( $_POST[ $option_key ] ) ? wp_unslash( $_POST[ $option_key ] ) : '';
@@ -711,6 +884,16 @@ class PCV_Abruzzo_Plugin {
         if ( ! $privacy_notice ) {
             $privacy_notice = __( self::DEFAULT_PRIVACY_NOTICE, self::TEXT_DOMAIN );
         }
+        $notify_enabled = $this->notifications_enabled();
+        $notify_recipients = get_option( self::OPT_NOTIFY_RECIPIENTS, '' );
+        if ( ! is_string( $notify_recipients ) ) {
+            $notify_recipients = '';
+        }
+        $notify_recipients = $this->normalize_recipient_list( $notify_recipients );
+        $notify_subject = get_option( self::OPT_NOTIFY_SUBJECT, '' );
+        if ( ! is_string( $notify_subject ) || $notify_subject === '' ) {
+            $notify_subject = __( self::DEFAULT_NOTIFY_SUBJECT, self::TEXT_DOMAIN );
+        }
 
         $label_values = [];
         foreach ( $label_fields as $option_key => $field ) {
@@ -727,6 +910,9 @@ class PCV_Abruzzo_Plugin {
         echo '<table class="form-table">';
         echo '<tr><th scope="row"><label for="pcv_site_key">' . esc_html__( 'Site Key', self::TEXT_DOMAIN ) . '</label></th><td><input type="text" id="pcv_site_key" name="pcv_site_key" value="'.$site.'" class="regular-text"></td></tr>';
         echo '<tr><th scope="row"><label for="pcv_secret_key">' . esc_html__( 'Secret Key', self::TEXT_DOMAIN ) . '</label></th><td><input type="text" id="pcv_secret_key" name="pcv_secret_key" value="'.$secret.'" class="regular-text"></td></tr>';
+        echo '<tr><th scope="row">' . esc_html__( 'Notifiche email', self::TEXT_DOMAIN ) . '</th><td><label><input type="checkbox" name="pcv_notify_enabled" value="1" ' . checked( $notify_enabled, true, false ) . '> ' . esc_html__( 'Invia una email di notifica ad ogni nuova iscrizione.', self::TEXT_DOMAIN ) . '</label><p class="description">' . esc_html__( 'Per impostazione predefinita la notifica viene inviata all’email amministratore di WordPress.', self::TEXT_DOMAIN ) . '</p></td></tr>';
+        echo '<tr><th scope="row"><label for="pcv_notify_recipients">' . esc_html__( 'Destinatari notifiche', self::TEXT_DOMAIN ) . '</label></th><td><textarea id="pcv_notify_recipients" name="pcv_notify_recipients" rows="4" class="large-text code">' . esc_textarea( $notify_recipients ) . '</textarea><p class="description">' . esc_html__( 'Inserisci uno o più indirizzi email (uno per riga, virgola o punto e virgola). Se lasci vuoto verrà utilizzata l’email amministratore.', self::TEXT_DOMAIN ) . '</p></td></tr>';
+        echo '<tr><th scope="row"><label for="pcv_notify_subject">' . esc_html__( 'Oggetto email notifica', self::TEXT_DOMAIN ) . '</label></th><td><input type="text" id="pcv_notify_subject" name="pcv_notify_subject" value="' . esc_attr( $notify_subject ) . '" class="regular-text"><p class="description">' . esc_html__( 'Personalizza l’oggetto delle email inviate ai referenti.', self::TEXT_DOMAIN ) . '</p></td></tr>';
         foreach ( $label_fields as $option_key => $field ) {
             $value = $label_values[ $option_key ];
             $field_id = esc_attr( $option_key );
@@ -1000,6 +1186,9 @@ function pcv_uninstall() {
         PCV_Abruzzo_Plugin::OPT_SUBMIT_LABEL,
         PCV_Abruzzo_Plugin::OPT_OPTIONAL_GROUP_ARIA,
         PCV_Abruzzo_Plugin::OPT_MODAL_ALERT,
+        PCV_Abruzzo_Plugin::OPT_NOTIFY_ENABLED,
+        PCV_Abruzzo_Plugin::OPT_NOTIFY_RECIPIENTS,
+        PCV_Abruzzo_Plugin::OPT_NOTIFY_SUBJECT,
     ];
 
     foreach ( $options as $option_name ) {
