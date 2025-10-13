@@ -16,6 +16,7 @@ class PCV_Installer {
      */
     public static function activate() {
         PCV_Database::create_or_upgrade_schema();
+        PCV_Role_Manager::create_role();
     }
 
     /**
@@ -25,6 +26,7 @@ class PCV_Installer {
      */
     public static function uninstall() {
         PCV_Database::drop_table();
+        PCV_Role_Manager::remove_role();
 
         $options = [
             'pcv_recaptcha_site',

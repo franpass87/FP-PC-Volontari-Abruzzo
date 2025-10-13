@@ -34,7 +34,7 @@ class PCV_Admin_Menu {
         add_menu_page(
             __( 'Volontari Abruzzo', self::TEXT_DOMAIN ),
             __( 'Volontari Abruzzo', self::TEXT_DOMAIN ),
-            'manage_options',
+            PCV_Role_Manager::CAP_VIEW_VOLUNTEERS,
             self::MENU_SLUG,
             [ $this, 'render_main_page' ],
             'dashicons-groups',
@@ -45,7 +45,7 @@ class PCV_Admin_Menu {
             self::MENU_SLUG,
             __( 'Impostazioni reCAPTCHA', self::TEXT_DOMAIN ),
             __( 'Impostazioni', self::TEXT_DOMAIN ),
-            'manage_options',
+            PCV_Role_Manager::CAP_MANAGE_SETTINGS,
             self::MENU_SLUG . '-settings',
             [ $this->settings_page, 'render' ]
         );
@@ -54,7 +54,7 @@ class PCV_Admin_Menu {
             self::MENU_SLUG,
             __( 'Importazione volontari', self::TEXT_DOMAIN ),
             __( 'Importa', self::TEXT_DOMAIN ),
-            'manage_options',
+            PCV_Role_Manager::CAP_IMPORT_VOLUNTEERS,
             self::MENU_SLUG . '-import',
             [ $this->import_page, 'render' ]
         );
@@ -66,7 +66,7 @@ class PCV_Admin_Menu {
      * @return void
      */
     public function render_main_page() {
-        if ( ! current_user_can( 'manage_options' ) ) {
+        if ( ! PCV_Role_Manager::can_view_volunteers() ) {
             return;
         }
 

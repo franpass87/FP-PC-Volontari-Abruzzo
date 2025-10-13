@@ -23,7 +23,7 @@ class PCV_Settings_Page {
      * @return void
      */
     public function render() {
-        if ( ! current_user_can( 'manage_options' ) ) {
+        if ( ! PCV_Role_Manager::can_manage_settings() ) {
             return;
         }
 

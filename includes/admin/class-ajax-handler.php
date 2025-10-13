@@ -51,7 +51,7 @@ class PCV_Ajax_Handler {
     public function get_volunteer() {
         check_ajax_referer( 'pcv_ajax_nonce', 'nonce' );
 
-        if ( ! current_user_can( 'manage_options' ) ) {
+        if ( ! PCV_Role_Manager::can_view_volunteers() ) {
             wp_send_json_error( [ 'message' => __( 'Permessi insufficienti', self::TEXT_DOMAIN ) ] );
         }
 
@@ -78,7 +78,7 @@ class PCV_Ajax_Handler {
     public function update_volunteer() {
         check_ajax_referer( 'pcv_ajax_nonce', 'nonce' );
 
-        if ( ! current_user_can( 'manage_options' ) ) {
+        if ( ! PCV_Role_Manager::can_manage_volunteers() ) {
             wp_send_json_error( [ 'message' => __( 'Permessi insufficienti', self::TEXT_DOMAIN ) ] );
         }
 
@@ -156,7 +156,7 @@ class PCV_Ajax_Handler {
     public function delete_volunteer() {
         check_ajax_referer( 'pcv_ajax_nonce', 'nonce' );
 
-        if ( ! current_user_can( 'manage_options' ) ) {
+        if ( ! PCV_Role_Manager::can_delete_volunteers() ) {
             wp_send_json_error( [ 'message' => __( 'Permessi insufficienti', self::TEXT_DOMAIN ) ] );
         }
 
@@ -183,7 +183,7 @@ class PCV_Ajax_Handler {
     public function bulk_update() {
         check_ajax_referer( 'pcv_ajax_nonce', 'nonce' );
 
-        if ( ! current_user_can( 'manage_options' ) ) {
+        if ( ! PCV_Role_Manager::can_manage_volunteers() ) {
             wp_send_json_error( [ 'message' => __( 'Permessi insufficienti', self::TEXT_DOMAIN ) ] );
         }
 
@@ -238,7 +238,7 @@ class PCV_Ajax_Handler {
     public function get_comuni() {
         check_ajax_referer( 'pcv_ajax_nonce', 'nonce' );
 
-        if ( ! current_user_can( 'manage_options' ) ) {
+        if ( ! PCV_Role_Manager::can_view_volunteers() ) {
             wp_send_json_error( [ 'message' => __( 'Permessi insufficienti', self::TEXT_DOMAIN ) ] );
         }
 
