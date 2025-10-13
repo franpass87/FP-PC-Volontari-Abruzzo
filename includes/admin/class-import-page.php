@@ -21,7 +21,7 @@ class PCV_Import_Page {
     }
 
     public function render() {
-        if ( ! current_user_can( 'manage_options' ) ) {
+        if ( ! PCV_Role_Manager::can_import_volunteers() ) {
             return;
         }
 

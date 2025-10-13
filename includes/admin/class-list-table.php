@@ -160,6 +160,10 @@ class PCV_List_Table extends WP_List_Table {
 
         check_admin_referer( 'pcv_bulk_action' );
 
+        if ( ! PCV_Role_Manager::can_delete_volunteers() ) {
+            return;
+        }
+
         if ( empty( $_POST['id'] ) || ! is_array( $_POST['id'] ) ) {
             return;
         }

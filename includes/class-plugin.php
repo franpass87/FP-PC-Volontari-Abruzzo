@@ -213,7 +213,7 @@ class PCV_Plugin {
             return;
         }
 
-        if ( ! current_user_can( 'manage_options' ) ) {
+        if ( ! PCV_Role_Manager::can_export_volunteers() ) {
             return;
         }
 
