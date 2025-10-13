@@ -69,7 +69,9 @@ class PCV_Sanitizer {
             }
         }
 
-        return $remote_ip;
+        // Se non è stato possibile determinare l'IP, ritorna una stringa vuota
+        // Il database accetta NULL per questo campo
+        return $remote_ip !== '' ? $remote_ip : '';
     }
 
     /**

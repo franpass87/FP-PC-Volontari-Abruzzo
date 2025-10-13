@@ -281,10 +281,10 @@
             form.querySelector('[name="email"]').value = v.email || '';
             form.querySelector('[name="telefono"]').value = v.telefono || '';
             form.querySelector('[name="categoria"]').value = v.categoria || '';
-            form.querySelector('[name="privacy"]').checked = v.privacy == 1;
-            form.querySelector('[name="partecipa"]').checked = v.partecipa == 1;
-            form.querySelector('[name="dorme"]').checked = v.dorme == 1;
-            form.querySelector('[name="mangia"]').checked = v.mangia == 1;
+            form.querySelector('[name="privacy"]').checked = parseInt(v.privacy) === 1;
+            form.querySelector('[name="partecipa"]').checked = parseInt(v.partecipa) === 1;
+            form.querySelector('[name="dorme"]').checked = parseInt(v.dorme) === 1;
+            form.querySelector('[name="mangia"]').checked = parseInt(v.mangia) === 1;
             
             var provSelect = document.getElementById('pcv-modal-provincia');
             var comuneSelect = document.getElementById('pcv-modal-comune');
