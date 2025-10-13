@@ -45,7 +45,7 @@ class PCV_Admin_Assets {
             $selected_comune = '';
         }
 
-        wp_register_script( 'pcv-admin', plugins_url( 'assets/js/admin.js', $this->plugin_file ), [], self::VERSION, true );
+        wp_register_script( 'pcv-admin', plugins_url( 'assets/js/admin.js', $this->plugin_file ), [ 'jquery' ], self::VERSION, true );
         wp_localize_script( 'pcv-admin', 'PCV_ADMIN_DATA', [
             'province'           => $this->province_data,
             'comuni'             => $this->comuni_data,
@@ -59,6 +59,18 @@ class PCV_Admin_Assets {
                 'placeholderComune' => __( 'Tutti i comuni', self::TEXT_DOMAIN ),
             ],
         ] );
+        
+        wp_localize_script( 'pcv-admin', 'PCV_AJAX_DATA', [
+            'ajax_url' => admin_url( 'admin-ajax.php' ),
+            'nonce'    => wp_create_nonce( 'pcv_ajax_nonce' ),
+            'province' => $this->province_data,
+            'comuni'   => $this->comuni_data,
+            'allComuni' => $this->all_comuni,
+        ] );
+        
         wp_enqueue_script( 'pcv-admin' );
+        
+        // Enqueue CSS per i modal
+        wp_enqueue_style( 'pcv-admin-modal', plugins_url( 'assets/css/frontend.css', $this->plugin_file ), [], self::VERSION );
     }
 }

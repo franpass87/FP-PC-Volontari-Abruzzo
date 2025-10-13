@@ -37,6 +37,7 @@ class PCV_Plugin {
     private $list_table;
     private $admin_menu;
     private $admin_assets;
+    private $ajax_handler;
 
     /**
      * Costruttore
@@ -151,6 +152,12 @@ class PCV_Plugin {
             $this->data_loader->get_province_data(),
             $this->data_loader->get_comuni_data(),
             $this->data_loader->get_all_comuni()
+        );
+
+        $this->ajax_handler = new PCV_Ajax_Handler(
+            $this->repository,
+            $this->data_loader->get_province_data(),
+            $this->data_loader->get_comuni_data()
         );
     }
 

@@ -77,6 +77,7 @@ class PCV_Autoloader {
             'PCV_List_Table'     => 'admin/class-list-table.php',
             'PCV_Settings_Page'  => 'admin/class-settings-page.php',
             'PCV_Import_Page'    => 'admin/class-import-page.php',
+            'PCV_Ajax_Handler'   => 'admin/class-ajax-handler.php',
         ];
 
         if ( isset( $class_map[ $class ] ) ) {
