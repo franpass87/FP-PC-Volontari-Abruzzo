@@ -7,11 +7,11 @@
   }
 
   document.addEventListener('DOMContentLoaded', function(){
-    if (typeof window.PCV_ADMIN_DATA === 'undefined') {
-      return;
-    }
-
-    var data = window.PCV_ADMIN_DATA || {};
+    // =====================================================
+    // GESTIONE FILTRI PROVINCIA/COMUNE
+    // =====================================================
+    if (typeof window.PCV_ADMIN_DATA !== 'undefined') {
+      var data = window.PCV_ADMIN_DATA || {};
     var provSelect = document.getElementById('pcv-admin-provincia');
     var comuneSelect = document.getElementById('pcv-admin-comune');
 
@@ -85,16 +85,13 @@
         selectedComune = comuneSelect.value || '';
       });
     }
+    }
 
     // =====================================================
     // GESTIONE MODIFICA ED ELIMINAZIONE VOLONTARI
     // =====================================================
-
-    if (typeof window.PCV_AJAX_DATA === 'undefined') {
-      return;
-    }
-
-    var ajaxData = window.PCV_AJAX_DATA || {};
+    if (typeof window.PCV_AJAX_DATA !== 'undefined') {
+      var ajaxData = window.PCV_AJAX_DATA || {};
     var currentEditId = null;
 
     // Crea modal HTML se non esiste
@@ -421,5 +418,6 @@
         }
       });
     });
+    }
   });
 })();

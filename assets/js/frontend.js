@@ -139,9 +139,13 @@
           storage.set('pcv_comune', comune);
           storedProv = prov;
           storedComune = comune;
-          selProv.value = prov;
-          selProv.dispatchEvent(new Event('change'));
-          selComune.value = comune;
+          if(selProv){
+            selProv.value = prov;
+            selProv.dispatchEvent(new Event('change'));
+          }
+          if(selComune){
+            selComune.value = comune;
+          }
           if(modal) modal.classList.add('pcv-hidden');
         } else {
           alert(getLabel('modalAlert', FALLBACKS.modalAlert));
