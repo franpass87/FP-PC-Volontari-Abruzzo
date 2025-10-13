@@ -252,6 +252,15 @@
       });
     }
 
+    // Event listener per cambio provincia nel modal (aggiunto una sola volta)
+    var modalProvSelect = document.getElementById('pcv-modal-provincia');
+    var modalComuneSelect = document.getElementById('pcv-modal-comune');
+    if (modalProvSelect && modalComuneSelect) {
+      modalProvSelect.addEventListener('change', function() {
+        populateModalComuneSelect(modalProvSelect.value, modalComuneSelect, '');
+      });
+    }
+
     // Apri modal modifica singola
     document.addEventListener('click', function(e) {
       if (e.target.classList.contains('pcv-edit-volunteer')) {
@@ -285,10 +294,6 @@
             
             populateModalProvinceSelect(provSelect, v.provincia);
             populateModalComuneSelect(v.provincia, comuneSelect, v.comune);
-            
-            provSelect.addEventListener('change', function() {
-              populateModalComuneSelect(provSelect.value, comuneSelect, '');
-            });
             
             document.getElementById('pcv-edit-modal').style.display = 'block';
           } else {
@@ -362,12 +367,14 @@
       });
     });
 
-    // Gestione bulk edit
-    var bulkActionSelect = document.querySelector('select[name="action"]');
-    if (bulkActionSelect) {
-      var form = bulkActionSelect.closest('form');
-      form.addEventListener('submit', function(e) {
-        var action = bulkActionSelect.value;
+    // Gestione bulk edit - intercetta il form submit
+    var topForm = document.getElementById('posts-filter');
+    if (topForm) {
+      topForm.addEventListener('submit', function(e) {
+        var action1 = document.querySelector('select[name="action"]');
+        var action2 = document.querySelector('select[name="action2"]');
+        var action = (action1 && action1.value) || (action2 && action2.value);
+        
         if (action === 'bulk_edit') {
           e.preventDefault();
           var checkboxes = document.querySelectorAll('input[name="id[]"]:checked');
