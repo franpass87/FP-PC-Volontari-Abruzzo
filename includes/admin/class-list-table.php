@@ -86,6 +86,29 @@ class PCV_List_Table extends WP_List_Table {
     }
 
     /**
+     * Colonna nome con row actions
+     *
+     * @param object $item
+     * @return string
+     */
+    protected function column_nome( $item ) {
+        $actions = [
+            'edit' => sprintf(
+                '<a href="#" class="pcv-edit-volunteer" data-id="%d">%s</a>',
+                $item->id,
+                esc_html__( 'Modifica', self::TEXT_DOMAIN )
+            ),
+            'delete' => sprintf(
+                '<a href="#" class="pcv-delete-volunteer" data-id="%d">%s</a>',
+                $item->id,
+                esc_html__( 'Elimina', self::TEXT_DOMAIN )
+            ),
+        ];
+
+        return sprintf( '%s %s', esc_html( $item->nome ), $this->row_actions( $actions ) );
+    }
+
+    /**
      * Colonna default
      *
      * @param object $item
@@ -96,7 +119,6 @@ class PCV_List_Table extends WP_List_Table {
         switch ( $col ) {
             case 'created_at':
                 return esc_html( mysql2date( 'd/m/Y H:i', $item->created_at ) );
-            case 'nome':
             case 'cognome':
             case 'comune':
             case 'provincia':
@@ -120,7 +142,10 @@ class PCV_List_Table extends WP_List_Table {
      * @return array
      */
     public function get_bulk_actions() {
-        return [ 'delete' => esc_html__( 'Elimina', self::TEXT_DOMAIN ) ];
+        return [
+            'delete' => esc_html__( 'Elimina', self::TEXT_DOMAIN ),
+            'bulk_edit' => esc_html__( 'Modifica campi selezionati', self::TEXT_DOMAIN ),
+        ];
     }
 
     /**
@@ -141,6 +166,24 @@ class PCV_List_Table extends WP_List_Table {
 
         $ids = array_map( 'absint', $_POST['id'] );
         $this->repository->delete_by_ids( $ids );
+    }
+
+    /**
+     * Ottiene dati province
+     *
+     * @return array
+     */
+    public function get_province_data() {
+        return $this->province_data;
+    }
+
+    /**
+     * Ottiene dati comuni
+     *
+     * @return array
+     */
+    public function get_comuni_data() {
+        return $this->comuni_data;
     }
 
     /**

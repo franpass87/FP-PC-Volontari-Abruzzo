@@ -59,3 +59,22 @@
 .pcv-privacy-notice p{margin:0 0 10px}
 .pcv-privacy-notice p:last-child{margin-bottom:0}
 .pcv-form .g-recaptcha{margin-top:6px}
+
+/* Admin Modal Styles */
+.pcv-modal{display:none;position:fixed;z-index:100000;left:0;top:0;width:100%;height:100%;overflow:auto;background-color:rgba(0,0,0,0.6)}
+.pcv-modal-content{background-color:#fff;margin:5% auto;padding:30px;border-radius:12px;width:90%;max-width:600px;box-shadow:0 20px 50px rgba(0,0,0,0.3);position:relative}
+.pcv-modal-close{color:#999;float:right;font-size:32px;font-weight:700;line-height:1;cursor:pointer;transition:color 0.2s}
+.pcv-modal-close:hover,.pcv-modal-close:focus{color:#333}
+.pcv-modal-content h2{margin:0 0 24px;color:#0f172a;font-size:22px;font-weight:700}
+.pcv-form-row{margin-bottom:18px}
+.pcv-form-row label{display:block;font-weight:600;margin-bottom:6px;color:#0f172a;font-size:14px}
+.pcv-form-row input[type="text"],
+.pcv-form-row input[type="email"],
+.pcv-form-row select{width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:15px;transition:border-color 0.2s,box-shadow 0.2s}
+.pcv-form-row input[type="text"]:focus,
+.pcv-form-row input[type="email"]:focus,
+.pcv-form-row select:focus{outline:none;border-color:#0f6ab4;box-shadow:0 0 0 3px rgba(15,106,180,0.15)}
+.pcv-form-row input[type="checkbox"]{width:18px;height:18px;accent-color:#0f6ab4;margin-right:8px}
+.pcv-form-actions{margin-top:26px;display:flex;gap:12px;justify-content:flex-end}
+.pcv-modal-cancel{background:#e2e8f0!important;color:#1e293b!important}
+.pcv-modal-cancel:hover{background:#cbd5e1!important}
