@@ -50,17 +50,22 @@
   function fillProvince(sel){
     var selectProvinceText = getLabel('selectProvince', FALLBACKS.selectProvince);
     sel.innerHTML = '<option value="">' + selectProvinceText + '</option>';
-    for (var code in PCV_DATA.province){
-      var opt = ce('option');
-      opt.value = code;
-      opt.textContent = PCV_DATA.province[code] + ' ('+code+')';
-      sel.appendChild(opt);
+    if (typeof PCV_DATA !== 'undefined' && PCV_DATA && PCV_DATA.province) {
+      for (var code in PCV_DATA.province){
+        var opt = ce('option');
+        opt.value = code;
+        opt.textContent = PCV_DATA.province[code] + ' ('+code+')';
+        sel.appendChild(opt);
+      }
     }
   }
   function fillComuni(sel, prov, preselect){
     var selectComuneText = getLabel('selectComune', FALLBACKS.selectComune);
     sel.innerHTML = '<option value="">' + selectComuneText + '</option>';
-    var list = PCV_DATA.comuni[prov] || [];
+    var list = [];
+    if (typeof PCV_DATA !== 'undefined' && PCV_DATA && PCV_DATA.comuni && PCV_DATA.comuni[prov]) {
+      list = PCV_DATA.comuni[prov];
+    }
     list.forEach(function(c){
       var o = ce('option'); o.value = c; o.textContent = c;
       sel.appendChild(o);
@@ -160,16 +165,19 @@
     // Selezione guidata nel popup (provincia -> comuni)
     var popProv = qs('#pcvProvinciaInput');
     var popComune = qs('#pcvComuneInput');
-    if(popProv && popComune){
+    if(popProv && popComune && typeof PCV_DATA !== 'undefined' && PCV_DATA){
       // riempi province
-      for (var code in PCV_DATA.province){
-        var o = ce('option'); o.value = code; o.textContent = PCV_DATA.province[code] + ' ('+code+')'; popProv.appendChild(o);
+      if (PCV_DATA.province) {
+        for (var code in PCV_DATA.province){
+          var o = ce('option'); o.value = code; o.textContent = PCV_DATA.province[code] + ' ('+code+')'; popProv.appendChild(o);
+        }
       }
       popProv.addEventListener('change', function(){
         var prov = popProv.value;
         var selectComuneText = getLabel('selectComune', FALLBACKS.selectComune);
         popComune.innerHTML = '<option value="">' + selectComuneText + '</option>';
-        (PCV_DATA.comuni[prov]||[]).forEach(function(c){
+        var comuniList = (PCV_DATA.comuni && PCV_DATA.comuni[prov]) ? PCV_DATA.comuni[prov] : [];
+        comuniList.forEach(function(c){
           var o = ce('option'); o.value = c; o.textContent = c; popComune.appendChild(o);
         });
       });
@@ -180,7 +188,7 @@
     }
 
     // reCAPTCHA v2
-    if(PCV_DATA.recaptcha_site){
+    if(typeof PCV_DATA !== 'undefined' && PCV_DATA && PCV_DATA.recaptcha_site){
       var s = document.createElement('script');
       s.src = 'https://www.google.com/recaptcha/api.js';
       s.async = true; s.defer = true;

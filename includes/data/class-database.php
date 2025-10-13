@@ -45,10 +45,9 @@ class PCV_Database {
         }
 
         $needs_upgrade = false;
-        $table_sql = esc_sql( $table );
         foreach ( [ 'dorme', 'mangia', 'categoria' ] as $column ) {
             $column_exists = $wpdb->get_var(
-                $wpdb->prepare( "SHOW COLUMNS FROM `{$table_sql}` LIKE %s", $column )
+                $wpdb->prepare( "SHOW COLUMNS FROM `{$table}` LIKE %s", $column )
             );
 
             if ( ! $column_exists ) {
@@ -117,6 +116,7 @@ class PCV_Database {
     public static function drop_table() {
         global $wpdb;
         $table = self::get_table_name();
-        $wpdb->query( "DROP TABLE IF EXISTS {$table}" );
+        // $table è già sicuro perché viene da get_table_name() che usa $wpdb->prefix
+        $wpdb->query( "DROP TABLE IF EXISTS `{$table}`" );
     }
 }
