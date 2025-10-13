@@ -283,7 +283,7 @@ class PCV_Importer {
             'partecipa' => [
                 'label'       => __( 'Partecipa', self::TEXT_DOMAIN ),
                 'required'    => false,
-                'description' => __( 'Indica la partecipazione all'evento (1/0, si/no, true/false).', self::TEXT_DOMAIN ),
+                'description' => __( 'Indica la partecipazione all\'evento (1/0, si/no, true/false).', self::TEXT_DOMAIN ),
             ],
             'dorme' => [
                 'label'       => __( 'Pernotta', self::TEXT_DOMAIN ),
