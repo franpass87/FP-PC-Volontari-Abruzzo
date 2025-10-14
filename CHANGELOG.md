@@ -10,6 +10,8 @@ Tutte le modifiche rilevanti del plugin **PC Volontari Abruzzo**.
 - **Select Categoria nei Form**: Trasformati i campi categoria da input testuale a menu a tendina sia in modifica singola che bulk
 - **Statistiche Avanzate**: Conteggio volontari per categoria, provincia più attiva, nuovi iscritti ultimi 7 giorni
 - **Rinomina Categoria**: Possibilità di rinominare categorie aggiornando automaticamente tutti i volontari associati
+- **Sistema Backup Automatico**: Backup automatico di tutte le impostazioni prima di ogni aggiornamento plugin
+- **Tracciamento Versione**: Il plugin ora traccia la propria versione per gestire upgrade in modo sicuro
 
 ### Miglioramenti
 - Export CSV ora rispetta il filtro categoria selezionato
@@ -17,16 +19,28 @@ Tutte le modifiche rilevanti del plugin **PC Volontari Abruzzo**.
 - Interfaccia utente migliorata con grafici visuali nelle statistiche
 - Sistema di categorie predefinite con possibilità di personalizzazione completa
 - Identificazione automatica di categorie in uso non presenti nell'elenco predefinito
+- **Protezione Dati**: Impostazioni non vengono più sovrascritte se campi mancanti nel form
+- **Info Backup**: Visualizzazione informazioni backup nella pagina Impostazioni
+
+### Correzioni
+- **CRITICO**: Risolto problema perdita dati impostazioni durante aggiornamento/salvataggio
+- **CRITICO**: Corretta inizializzazione autoloader per nuove classi (risolveva white screen of death)
+- Aggiunta opzione `pcv_categories` alla lista di disinstallazione per pulizia completa
 
 ### File Aggiunti
 - `includes/class-category-manager.php` - Classe centrale gestione categorie
 - `includes/admin/class-categories-page.php` - Interfaccia admin categorie
 - `includes/admin/class-dashboard-widget.php` - Widget dashboard statistiche
+- `includes/class-upgrade-manager.php` - Sistema backup e gestione upgrade
 - `GESTIONE_CATEGORIE.md` - Documentazione completa funzionalità categorie
+- `PROTEZIONE_DATI_IMPOSTAZIONI.md` - Documentazione protezione dati
 
 ### File Modificati
-- `includes/class-plugin.php` - Integrazione categorie e widget dashboard
+- `includes/class-plugin.php` - Integrazione categorie, widget dashboard e upgrade manager
+- `includes/class-autoloader.php` - Aggiunte nuove classi alla mappa
+- `includes/class-installer.php` - Aggiunta pcv_categories alla disinstallazione
 - `includes/admin/class-admin-menu.php` - Aggiunto menu Categorie
+- `includes/admin/class-settings-page.php` - Protezione salvataggio e visualizzazione backup
 - `includes/data/class-repository.php` - Supporto filtro categoria
 - `includes/admin/class-list-table.php` - Filtro dropdown categoria
 - `includes/admin/class-admin-assets.php` - Dati categorie per JavaScript

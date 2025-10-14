@@ -48,7 +48,22 @@ class PCV_Settings_Page {
 
         $label_values = $this->get_label_values( $label_fields );
 
+        // Verifica se esiste un backup
+        $backup_info = PCV_Upgrade_Manager::get_backup_info();
+
         echo '<div class="wrap"><h1>' . esc_html__( 'Impostazioni modulo Volontari', self::TEXT_DOMAIN ) . '</h1>';
+        
+        // Mostra info backup se disponibile
+        if ( $backup_info ) {
+            echo '<div class="notice notice-info"><p>';
+            printf(
+                esc_html__( 'Backup automatico disponibile: %d impostazioni salvate il %s', self::TEXT_DOMAIN ),
+                $backup_info['settings_count'],
+                esc_html( mysql2date( 'd/m/Y H:i', $backup_info['timestamp'] ) )
+            );
+            echo '</p></div>';
+        }
+        
         echo '<form method="post">';
         wp_nonce_field( 'pcv_save_keys_nonce' );
         echo '<table class="form-table">';
@@ -174,30 +189,53 @@ class PCV_Settings_Page {
     }
 
     private function save_settings( $label_fields ) {
-        $site_value = isset( $_POST['pcv_site_key'] ) ? sanitize_text_field( wp_unslash( $_POST['pcv_site_key'] ) ) : '';
-        $secret_value = isset( $_POST['pcv_secret_key'] ) ? sanitize_text_field( wp_unslash( $_POST['pcv_secret_key'] ) ) : '';
-        $privacy_notice_value = isset( $_POST['pcv_privacy_notice'] ) ? wp_kses_post( wp_unslash( $_POST['pcv_privacy_notice'] ) ) : '';
+        // Salva solo i campi che sono effettivamente presenti nel form
+        if ( isset( $_POST['pcv_site_key'] ) ) {
+            $site_value = sanitize_text_field( wp_unslash( $_POST['pcv_site_key'] ) );
+            update_option( 'pcv_recaptcha_site', $site_value );
+        }
+        
+        if ( isset( $_POST['pcv_secret_key'] ) ) {
+            $secret_value = sanitize_text_field( wp_unslash( $_POST['pcv_secret_key'] ) );
+            update_option( 'pcv_recaptcha_secret', $secret_value );
+        }
+        
+        if ( isset( $_POST['pcv_privacy_notice'] ) ) {
+            $privacy_notice_value = wp_kses_post( wp_unslash( $_POST['pcv_privacy_notice'] ) );
+            update_option( 'pcv_privacy_notice', $privacy_notice_value );
+        }
+        
+        // Checkbox: aggiorna sempre perché la mancanza significa "non spuntato"
         $notify_enabled_value = isset( $_POST['pcv_notify_enabled'] ) ? '1' : '0';
-        $notify_recipients_raw = isset( $_POST['pcv_notify_recipients'] ) ? wp_unslash( $_POST['pcv_notify_recipients'] ) : '';
-        $notify_recipients_value = $this->sanitizer->normalize_recipient_list( $notify_recipients_raw );
-        $notify_subject_raw = isset( $_POST['pcv_notify_subject'] ) ? wp_unslash( $_POST['pcv_notify_subject'] ) : '';
-        $notify_subject_value = sanitize_text_field( $notify_subject_raw );
-
-        update_option( 'pcv_recaptcha_site', $site_value );
-        update_option( 'pcv_recaptcha_secret', $secret_value );
-        update_option( 'pcv_privacy_notice', $privacy_notice_value );
         update_option( 'pcv_notify_enabled', $notify_enabled_value );
-        update_option( 'pcv_notify_recipients', $notify_recipients_value );
-        update_option( 'pcv_notify_subject', $notify_subject_value );
+        
+        if ( isset( $_POST['pcv_notify_recipients'] ) ) {
+            $notify_recipients_raw = wp_unslash( $_POST['pcv_notify_recipients'] );
+            $notify_recipients_value = $this->sanitizer->normalize_recipient_list( $notify_recipients_raw );
+            update_option( 'pcv_notify_recipients', $notify_recipients_value );
+        }
+        
+        if ( isset( $_POST['pcv_notify_subject'] ) ) {
+            $notify_subject_raw = wp_unslash( $_POST['pcv_notify_subject'] );
+            $notify_subject_value = sanitize_text_field( $notify_subject_raw );
+            update_option( 'pcv_notify_subject', $notify_subject_value );
+        }
 
         foreach ( $label_fields as $option_key => $field ) {
-            $raw_value = isset( $_POST[ $option_key ] ) ? wp_unslash( $_POST[ $option_key ] ) : '';
+            // Solo aggiorna se il campo è presente nel POST
+            if ( ! isset( $_POST[ $option_key ] ) ) {
+                continue;
+            }
+            
+            $raw_value = wp_unslash( $_POST[ $option_key ] );
             $sanitize_cb = $field['sanitize'];
             if ( is_callable( $sanitize_cb ) ) {
                 $clean_value = call_user_func( $sanitize_cb, $raw_value );
             } else {
                 $clean_value = sanitize_text_field( $raw_value );
             }
+            
+            // Solo aggiorna se il valore non è vuoto o se è intenzionalmente vuoto
             update_option( $option_key, $clean_value );
         }
     }

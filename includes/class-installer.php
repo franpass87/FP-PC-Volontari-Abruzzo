@@ -119,6 +119,7 @@ class PCV_Installer {
             'pcv_notify_recipients',
             'pcv_notify_subject',
             'pcv_default_category',
+            'pcv_categories',
         ];
 
         foreach ( $options as $option_name ) {

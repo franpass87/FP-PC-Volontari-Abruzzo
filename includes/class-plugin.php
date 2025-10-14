@@ -172,6 +172,9 @@ class PCV_Plugin {
 
         // Database upgrade
         add_action( 'init', [ 'PCV_Database', 'maybe_upgrade_schema' ] );
+        
+        // Plugin upgrade e backup impostazioni
+        add_action( 'admin_init', [ 'PCV_Upgrade_Manager', 'maybe_upgrade' ] );
 
         // Frontend
         add_shortcode( 'pc_volontari_form', [ $this->shortcode, 'render' ] );
