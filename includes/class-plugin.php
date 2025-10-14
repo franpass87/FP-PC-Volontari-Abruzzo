@@ -181,6 +181,11 @@ class PCV_Plugin {
         add_action( 'admin_menu', [ $this, 'init_and_register_admin_menu' ] );
         add_action( 'admin_enqueue_scripts', [ $this, 'init_and_enqueue_admin_assets' ] );
         add_action( 'admin_init', [ $this, 'maybe_export_csv' ] );
+        
+        // Admin AJAX - deve essere sempre registrato nell'area admin
+        if ( is_admin() ) {
+            add_action( 'admin_init', [ $this, 'init_ajax_handler' ] );
+        }
     }
 
     /**
@@ -210,6 +215,17 @@ class PCV_Plugin {
         
         if ( $this->admin_assets ) {
             $this->admin_assets->enqueue( $hook );
+        }
+    }
+
+    /**
+     * Inizializza AJAX handler (sempre registrato nell'admin)
+     *
+     * @return void
+     */
+    public function init_ajax_handler() {
+        if ( ! $this->ajax_handler ) {
+            $this->init_admin();
         }
     }
 
