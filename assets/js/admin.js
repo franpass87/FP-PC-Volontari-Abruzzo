@@ -1,5 +1,4 @@
 (function(){
-  alert('ADMIN.JS CARICATO - Se vedi questo alert, il file funziona!');
   console.log('=== ADMIN.JS CARICATO ===');
   
   function toArray(value){
@@ -485,9 +484,6 @@
     // Apri modal modifica singola
     console.log('Aggiungo listener per click su modifica');
     document.addEventListener('click', function(e) {
-      // Debug: logga tutti i click
-      console.log('Click rilevato su:', e.target, 'Classi:', e.target.className);
-      
       // Verifica se il click è su un pulsante modifica o su un suo elemento padre
       var target = e.target;
       var editBtn = null;

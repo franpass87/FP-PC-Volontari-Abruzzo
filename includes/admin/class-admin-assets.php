@@ -9,7 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 class PCV_Admin_Assets {
 
-    const VERSION = '1.3.1';
+    const VERSION = '1.3.2';
     const TEXT_DOMAIN = 'pc-volontari-abruzzo';
     const MENU_SLUG = 'pcv-volontari';
 
