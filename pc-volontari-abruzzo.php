@@ -11,6 +11,9 @@
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
+// Definisci costante percorso file principale
+define( 'PCV_PLUGIN_FILE', __FILE__ );
+
 // Hook attivazione - deve essere registrato PRIMA di caricare le classi
 register_activation_hook( __FILE__, 'pcv_activate_plugin' );
 
@@ -20,6 +23,26 @@ register_activation_hook( __FILE__, 'pcv_activate_plugin' );
  * @return void
  */
 function pcv_activate_plugin() {
+    // Verifica versione PHP minima
+    if ( version_compare( PHP_VERSION, '7.0', '<' ) ) {
+        deactivate_plugins( plugin_basename( PCV_PLUGIN_FILE ) );
+        wp_die(
+            esc_html__( 'Questo plugin richiede PHP 7.0 o superiore.', 'pc-volontari-abruzzo' ),
+            esc_html__( 'Errore Attivazione Plugin', 'pc-volontari-abruzzo' ),
+            [ 'back_link' => true ]
+        );
+    }
+    
+    // Verifica versione WordPress minima
+    if ( version_compare( get_bloginfo( 'version' ), '5.0', '<' ) ) {
+        deactivate_plugins( plugin_basename( PCV_PLUGIN_FILE ) );
+        wp_die(
+            esc_html__( 'Questo plugin richiede WordPress 5.0 o superiore.', 'pc-volontari-abruzzo' ),
+            esc_html__( 'Errore Attivazione Plugin', 'pc-volontari-abruzzo' ),
+            [ 'back_link' => true ]
+        );
+    }
+    
     // Carica le classi necessarie per l'attivazione
     require_once __DIR__ . '/includes/data/class-database.php';
     require_once __DIR__ . '/includes/class-role-manager.php';
@@ -28,12 +51,6 @@ function pcv_activate_plugin() {
     // Esegui l'attivazione
     PCV_Installer::activate();
 }
-
-// Carica autoloader
-require_once __DIR__ . '/includes/class-autoloader.php';
-
-$autoloader = new PCV_Autoloader( __DIR__ . '/includes' );
-$autoloader->register();
 
 // Hook disinstallazione
 register_uninstall_hook( __FILE__, 'pcv_uninstall_plugin' );
@@ -53,5 +70,20 @@ function pcv_uninstall_plugin() {
     PCV_Installer::uninstall();
 }
 
-// Inizializza plugin
-new PCV_Plugin( __FILE__ );
+// Carica autoloader
+require_once __DIR__ . '/includes/class-autoloader.php';
+
+$autoloader = new PCV_Autoloader( __DIR__ . '/includes' );
+$autoloader->register();
+
+/**
+ * Inizializza il plugin quando WordPress è completamente caricato
+ *
+ * @return void
+ */
+function pcv_init_plugin() {
+    new PCV_Plugin( PCV_PLUGIN_FILE );
+}
+
+// Inizializza plugin dopo che WordPress è completamente caricato
+add_action( 'plugins_loaded', 'pcv_init_plugin' );

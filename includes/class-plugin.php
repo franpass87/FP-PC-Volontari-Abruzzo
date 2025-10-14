@@ -171,7 +171,7 @@ class PCV_Plugin {
         add_action( 'init', [ $this, 'load_textdomain' ] );
 
         // Database upgrade
-        add_action( 'plugins_loaded', [ 'PCV_Database', 'maybe_upgrade_schema' ] );
+        add_action( 'init', [ 'PCV_Database', 'maybe_upgrade_schema' ] );
 
         // Frontend
         add_shortcode( 'pc_volontari_form', [ $this->shortcode, 'render' ] );

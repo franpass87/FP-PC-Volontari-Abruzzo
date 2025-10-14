@@ -16,6 +16,15 @@ class PCV_Installer {
      */
     public static function activate() {
         try {
+            // Carica il textdomain per le traduzioni durante l'attivazione
+            if ( function_exists( 'load_plugin_textdomain' ) && defined( 'PCV_PLUGIN_FILE' ) ) {
+                load_plugin_textdomain( 
+                    'pc-volontari-abruzzo', 
+                    false, 
+                    dirname( plugin_basename( PCV_PLUGIN_FILE ) ) . '/languages' 
+                );
+            }
+            
             // Verifica che le classi necessarie esistano
             if ( ! class_exists( 'PCV_Database' ) ) {
                 throw new Exception( 'Classe PCV_Database non trovata' );
@@ -50,19 +59,30 @@ class PCV_Installer {
             // Log dell'errore
             error_log( 'PC Volontari Abruzzo - Errore attivazione: ' . $e->getMessage() );
             
+            // Prepara messaggio di errore
+            $error_msg = sprintf(
+                'Errore durante l\'attivazione del plugin PC Volontari Abruzzo: %s',
+                $e->getMessage()
+            );
+            
+            if ( function_exists( 'esc_html' ) ) {
+                $error_msg = esc_html( $error_msg );
+            }
+            
             if ( function_exists( 'wp_die' ) ) {
+                $title = 'Errore Attivazione Plugin';
+                if ( function_exists( 'esc_html' ) ) {
+                    $title = esc_html( $title );
+                }
+                
                 wp_die(
-                    sprintf(
-                        /* translators: %s: messaggio di errore */
-                        esc_html__( 'Errore durante l\'attivazione del plugin PC Volontari Abruzzo: %s', 'pc-volontari-abruzzo' ),
-                        esc_html( $e->getMessage() )
-                    ),
-                    esc_html__( 'Errore Attivazione Plugin', 'pc-volontari-abruzzo' ),
+                    $error_msg,
+                    $title,
                     [ 'back_link' => true ]
                 );
             } else {
                 // Fallback se wp_die non è disponibile
-                die( 'Errore durante l\'attivazione del plugin: ' . esc_html( $e->getMessage() ) );
+                die( $error_msg );
             }
         }
     }
