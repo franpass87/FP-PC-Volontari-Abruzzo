@@ -100,6 +100,9 @@ class PCV_Admin_Menu {
 
         $this->list_table->prepare_items();
 
+        // Mostra i filtri PRIMA del form delle azioni bulk
+        $this->list_table->display_filters();
+        
         echo '<form method="post">';
         wp_nonce_field( 'pcv_bulk_action' );
         $this->list_table->display();

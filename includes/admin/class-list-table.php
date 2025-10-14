@@ -332,4 +332,13 @@ class PCV_List_Table extends WP_List_Table {
         echo ' <a class="button button-primary" href="' . esc_url( $export_url ) . '">' . esc_html__( 'Export CSV', self::TEXT_DOMAIN ) . '</a>';
         echo '</form></div>';
     }
+
+    /**
+     * Mostra i filtri (separato dalla tabella)
+     *
+     * @return void
+     */
+    public function display_filters() {
+        $this->display_extra_tablenav( 'top' );
+    }
 }
