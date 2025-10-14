@@ -10,12 +10,18 @@
 
   function initAdmin() {
     console.log('=== INIT ADMIN TRIGGERED ===');
+    console.log('DOM ready state:', document.readyState);
+    
     // =====================================================
     // GESTIONE FILTRI PROVINCIA/COMUNE
     // =====================================================
     var data = window.PCV_ADMIN_DATA || {};
     var provSelect = document.getElementById('pcv-admin-provincia');
     var comuneSelect = document.getElementById('pcv-admin-comune');
+    
+    // Verifica se il form esiste
+    var testForm = document.getElementById('pcv-filter-form');
+    console.log('Form test during init:', testForm);
     
     // Debug: verifica se i dati sono caricati
     console.log('PCV_ADMIN_DATA:', data);
@@ -205,8 +211,20 @@
     
     // Se il form non viene trovato, proviamo a cercarlo in altri modi
     if (!filterForm) {
+      console.log('Form pcv-filter-form not found, searching alternatives...');
+      var allForms = document.querySelectorAll('form');
+      console.log('Total forms found:', allForms.length);
+      allForms.forEach(function(form, index) {
+        console.log('Form ' + index + ':', form.id, form.method, form.action);
+      });
+      
       filterForm = document.querySelector('form[method="get"]');
       console.log('Alternative form found:', filterForm);
+      
+      if (!filterForm) {
+        filterForm = document.querySelector('form');
+        console.log('Any form found:', filterForm);
+      }
     }
     
     if (filterForm) {
@@ -748,9 +766,13 @@
   // Esegui init quando il DOM è pronto
   if (document.readyState === 'loading') {
     console.log('DOM ancora in caricamento, attendo DOMContentLoaded');
-    document.addEventListener('DOMContentLoaded', initAdmin);
+    document.addEventListener('DOMContentLoaded', function() {
+      // Aspetta un po' per assicurarsi che tutto sia caricato
+      setTimeout(initAdmin, 100);
+    });
   } else {
     console.log('DOM già caricato, eseguo init subito');
-    initAdmin();
+    // Aspetta un po' anche se il DOM è già caricato
+    setTimeout(initAdmin, 100);
   }
 })();
