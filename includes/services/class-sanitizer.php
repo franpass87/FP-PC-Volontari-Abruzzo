@@ -177,23 +177,57 @@ class PCV_Sanitizer {
      * @return string
      */
     public function normalize_province_input( $value, array $province_map ) {
-        $value = strtoupper( trim( (string) $value ) );
+        $value = trim( (string) $value );
 
         if ( $value === '' ) {
             return '';
         }
 
-        if ( isset( $province_map[ $value ] ) ) {
-            return $value;
+        $value_upper = strtoupper( $value );
+
+        // Se è già un codice a due lettere valido, restituiscilo
+        if ( isset( $province_map[ $value_upper ] ) ) {
+            return $value_upper;
         }
 
+        // Se è il nome completo della provincia, trova il codice corrispondente
         foreach ( $province_map as $code => $label ) {
             if ( strcasecmp( $label, $value ) === 0 ) {
                 return $code;
             }
         }
 
+        // Se è nel formato "Nome Provincia (CODICE)", estrai il codice
+        if ( preg_match( '/\(([A-Z]{2})\)$/', $value, $matches ) ) {
+            $code = $matches[1];
+            if ( isset( $province_map[ $code ] ) ) {
+                return $code;
+            }
+        }
+
         return '';
+    }
+
+    /**
+     * Normalizza input comune
+     *
+     * @param string $value
+     * @return string
+     */
+    public function normalize_comune_input( $value ) {
+        $value = trim( (string) $value );
+
+        if ( $value === '' ) {
+            return '';
+        }
+
+        // Rimuovi il prefisso "Comune di" se presente
+        $value = preg_replace( '/^Comune\s+di\s+/i', '', $value );
+        
+        // Rimuovi anche varianti come "Com. di", "C. di", etc.
+        $value = preg_replace( '/^C(?:om)?\.?\s+di\s+/i', '', $value );
+
+        return trim( $value );
     }
 
     /**

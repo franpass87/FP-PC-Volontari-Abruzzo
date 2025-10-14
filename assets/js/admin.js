@@ -10,8 +10,7 @@
     // =====================================================
     // GESTIONE FILTRI PROVINCIA/COMUNE
     // =====================================================
-    if (typeof window.PCV_ADMIN_DATA !== 'undefined') {
-      var data = window.PCV_ADMIN_DATA || {};
+    var data = window.PCV_ADMIN_DATA || {};
     var provSelect = document.getElementById('pcv-admin-provincia');
     var comuneSelect = document.getElementById('pcv-admin-comune');
 
@@ -160,25 +159,48 @@
         });
       }
 
-      // Gestione ricerca con debounce
-      var searchInput = document.querySelector('#pcv-filter-form input[name="s"]');
+    }
+    
+    // Gestione ricerca con debounce (indipendente dai filtri provincia/comune)
+    var filterForm = document.getElementById('pcv-filter-form');
+    if (filterForm) {
+      var searchInput = filterForm.querySelector('input[name="s"]');
       if (searchInput) {
         var searchTimeout;
         searchInput.addEventListener('input', function() {
           clearTimeout(searchTimeout);
           searchTimeout = setTimeout(function() {
             // Aggiungi indicatore di caricamento
-            var submitBtn = document.querySelector('#pcv-filter-form input[type="submit"]');
+            var submitBtn = filterForm.querySelector('input[type="submit"]');
             if (submitBtn) {
               submitBtn.value = 'Ricerca...';
               submitBtn.disabled = true;
             }
             
             // Auto-submit del form dopo 500ms di inattività
-            document.getElementById('pcv-filter-form').submit();
+            filterForm.submit();
           }, 500);
         });
+        
+        // Aggiungi anche un listener per il tasto Enter
+        searchInput.addEventListener('keypress', function(e) {
+          if (e.key === 'Enter') {
+            clearTimeout(searchTimeout);
+            filterForm.submit();
+          }
+        });
       }
+      
+      // Gestione submit manuale del form di ricerca
+      filterForm.addEventListener('submit', function(e) {
+        // Aggiungi indicatore di caricamento
+        var submitBtn = filterForm.querySelector('input[type="submit"]');
+        if (submitBtn) {
+          submitBtn.value = 'Filtra...';
+          submitBtn.disabled = true;
+        }
+        // Il form verrà comunque sottoposto normalmente
+      });
     }
     }
 

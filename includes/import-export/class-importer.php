@@ -182,7 +182,7 @@ class PCV_Importer {
 
             $nome      = $this->sanitizer->sanitize_name( $row['nome'] ?? '' );
             $cognome   = $this->sanitizer->sanitize_name( $row['cognome'] ?? '' );
-            $comune    = $this->sanitizer->sanitize_text( $row['comune'] ?? '' );
+            $comune    = $this->sanitizer->normalize_comune_input( $row['comune'] ?? '' );
             $provincia = $this->sanitizer->normalize_province_input( $row['provincia'] ?? '', $this->province_data );
             $email_raw = isset( $row['email'] ) ? sanitize_email( $row['email'] ) : '';
             $telefono  = $this->sanitizer->sanitize_phone( $row['telefono'] ?? '' );
