@@ -73,12 +73,17 @@ class PCV_Autoloader {
             'PCV_Shortcode'      => 'frontend/class-shortcode.php',
 
             // Admin
-            'PCV_Admin_Menu'     => 'admin/class-admin-menu.php',
-            'PCV_Admin_Assets'   => 'admin/class-admin-assets.php',
-            'PCV_List_Table'     => 'admin/class-list-table.php',
-            'PCV_Settings_Page'  => 'admin/class-settings-page.php',
-            'PCV_Import_Page'    => 'admin/class-import-page.php',
-            'PCV_Ajax_Handler'   => 'admin/class-ajax-handler.php',
+            'PCV_Admin_Menu'       => 'admin/class-admin-menu.php',
+            'PCV_Admin_Assets'     => 'admin/class-admin-assets.php',
+            'PCV_List_Table'       => 'admin/class-list-table.php',
+            'PCV_Settings_Page'    => 'admin/class-settings-page.php',
+            'PCV_Import_Page'      => 'admin/class-import-page.php',
+            'PCV_Ajax_Handler'     => 'admin/class-ajax-handler.php',
+            'PCV_Categories_Page'  => 'admin/class-categories-page.php',
+            'PCV_Dashboard_Widget' => 'admin/class-dashboard-widget.php',
+
+            // Categories
+            'PCV_Category_Manager' => 'class-category-manager.php',
         ];
 
         if ( isset( $class_map[ $class ] ) ) {
