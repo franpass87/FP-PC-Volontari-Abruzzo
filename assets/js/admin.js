@@ -1,4 +1,7 @@
 (function(){
+  alert('ADMIN.JS CARICATO - Se vedi questo alert, il file funziona!');
+  console.log('=== ADMIN.JS CARICATO ===');
+  
   function toArray(value){
     if (Array.isArray(value)) {
       return value.slice();
@@ -6,7 +9,8 @@
     return [];
   }
 
-  document.addEventListener('DOMContentLoaded', function(){
+  function initAdmin() {
+    console.log('=== INIT ADMIN TRIGGERED ===');
     // =====================================================
     // GESTIONE FILTRI PROVINCIA/COMUNE
     // =====================================================
@@ -389,6 +393,8 @@
     }
 
     ensureModals();
+    console.log('Modal creati, PCV_AJAX_DATA disponibile');
+    console.log('ajaxData:', ajaxData);
 
     // Funzione per popolare select province nel modal
     function populateModalProvinceSelect(selectEl, selectedValue) {
@@ -470,12 +476,33 @@
       });
     }
 
+    // Verifica presenza pulsanti modifica
+    var editButtons = document.querySelectorAll('.pcv-edit-volunteer');
+    console.log('Pulsanti modifica trovati:', editButtons.length);
+    if (editButtons.length > 0) {
+      console.log('Primo pulsante modifica:', editButtons[0]);
+    }
+
     // Apri modal modifica singola
+    console.log('Aggiungo listener per click su modifica');
     document.addEventListener('click', function(e) {
-      if (e.target.classList.contains('pcv-edit-volunteer')) {
+      // Debug: logga tutti i click
+      console.log('Click rilevato su:', e.target, 'Classi:', e.target.className);
+      
+      // Verifica se il click è su un pulsante modifica o su un suo elemento padre
+      var target = e.target;
+      var editBtn = null;
+      
+      if (target.classList.contains('pcv-edit-volunteer')) {
+        editBtn = target;
+      } else if (target.closest && target.closest('.pcv-edit-volunteer')) {
+        editBtn = target.closest('.pcv-edit-volunteer');
+      }
+      
+      if (editBtn) {
         console.log('Click su modifica intercettato');
         e.preventDefault();
-        var id = parseInt(e.target.getAttribute('data-id'));
+        var id = parseInt(editBtn.getAttribute('data-id'));
         console.log('ID volontario:', id);
         if (!id) {
           console.error('ID non valido');
@@ -721,5 +748,14 @@
         }
       });
     });
-  });
+  }
+
+  // Esegui init quando il DOM è pronto
+  if (document.readyState === 'loading') {
+    console.log('DOM ancora in caricamento, attendo DOMContentLoaded');
+    document.addEventListener('DOMContentLoaded', initAdmin);
+  } else {
+    console.log('DOM già caricato, eseguo init subito');
+    initAdmin();
+  }
 })();
