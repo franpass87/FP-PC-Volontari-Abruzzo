@@ -357,13 +357,10 @@ class PCV_List_Table extends WP_List_Table {
         // Imposta il flag per non mostrare i filtri extra
         $this->_displaying_table_only = true;
         
-        // Mostra solo la tabella senza i filtri extra
-        $this->display_tablenav( 'top' );
-        $this->display_rows_or_placeholder();
-        $this->display_tablenav( 'bottom' );
+        // Usa la funzione display() normale ma senza filtri extra
+        $this->display();
         
         // Rimuovi il flag
         unset( $this->_displaying_table_only );
     }
-
 }
