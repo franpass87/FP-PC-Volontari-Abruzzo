@@ -17,6 +17,11 @@ require_once __DIR__ . '/includes/class-autoloader.php';
 $autoloader = new PCV_Autoloader( __DIR__ . '/includes' );
 $autoloader->register();
 
+// Carica esplicitamente le classi necessarie per l'attivazione
+require_once __DIR__ . '/includes/class-installer.php';
+require_once __DIR__ . '/includes/data/class-database.php';
+require_once __DIR__ . '/includes/class-role-manager.php';
+
 // Hook attivazione
 register_activation_hook( __FILE__, [ 'PCV_Installer', 'activate' ] );
 

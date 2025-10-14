@@ -15,8 +15,40 @@ class PCV_Installer {
      * @return void
      */
     public static function activate() {
-        PCV_Database::create_or_upgrade_schema();
-        PCV_Role_Manager::create_role();
+        try {
+            // Verifica che le classi necessarie esistano
+            if ( ! class_exists( 'PCV_Database' ) ) {
+                throw new Exception( 'Classe PCV_Database non trovata' );
+            }
+            
+            if ( ! class_exists( 'PCV_Role_Manager' ) ) {
+                throw new Exception( 'Classe PCV_Role_Manager non trovata' );
+            }
+            
+            // Crea schema database
+            PCV_Database::create_or_upgrade_schema();
+            
+            // Crea ruolo personalizzato
+            PCV_Role_Manager::create_role();
+            
+        } catch ( Exception $e ) {
+            // Log dell'errore
+            if ( function_exists( 'wp_die' ) ) {
+                wp_die(
+                    sprintf(
+                        /* translators: %s: messaggio di errore */
+                        esc_html__( 'Errore durante l\'attivazione del plugin PC Volontari Abruzzo: %s', 'pc-volontari-abruzzo' ),
+                        esc_html( $e->getMessage() )
+                    ),
+                    esc_html__( 'Errore Attivazione Plugin', 'pc-volontari-abruzzo' ),
+                    [ 'back_link' => true ]
+                );
+            } else {
+                // Fallback se wp_die non è disponibile
+                error_log( 'PC Volontari Abruzzo - Errore attivazione: ' . $e->getMessage() );
+                die( 'Errore durante l\'attivazione del plugin: ' . esc_html( $e->getMessage() ) );
+            }
+        }
     }
 
     /**
