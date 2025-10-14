@@ -55,7 +55,11 @@ class PCV_Plugin {
         $this->init_data();
         $this->init_import_export();
         $this->init_frontend();
-        $this->init_admin();
+        
+        // Inizializza admin solo se siamo in area admin
+        if ( is_admin() ) {
+            $this->init_admin();
+        }
 
         // Hook WordPress
         $this->register_hooks();
@@ -178,12 +182,12 @@ class PCV_Plugin {
         add_action( 'wp_enqueue_scripts', [ $this->assets_manager, 'register_assets' ] );
         add_action( 'init', [ $this->form_handler, 'maybe_handle_submission' ] );
 
-        // Admin
-        add_action( 'admin_menu', [ $this->admin_menu, 'register_menus' ] );
-        add_action( 'admin_enqueue_scripts', [ $this->admin_assets, 'enqueue' ] );
-
-        // Export
-        add_action( 'admin_init', [ $this, 'maybe_export_csv' ] );
+        // Admin - solo se siamo in area admin
+        if ( is_admin() ) {
+            add_action( 'admin_menu', [ $this->admin_menu, 'register_menus' ] );
+            add_action( 'admin_enqueue_scripts', [ $this->admin_assets, 'enqueue' ] );
+            add_action( 'admin_init', [ $this, 'maybe_export_csv' ] );
+        }
     }
 
     /**

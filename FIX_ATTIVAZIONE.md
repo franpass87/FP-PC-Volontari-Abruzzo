@@ -1,35 +1,47 @@
-# Fix Errore Fatale all'Attivazione
+# Fix Errore Fatale all'Attivazione e White Screen
 
 ## Problema
-Il plugin generava un errore fatale durante l'attivazione senza messaggi di errore chiari nei log.
+1. **Errore fatale all'attivazione** senza messaggi di errore nei log
+2. **White Screen of Death (WSOD)** dopo le prime modifiche
 
 ## Causa
 Il problema era causato da:
 1. L'inizializzazione completa del plugin veniva eseguita immediatamente, anche durante la fase di attivazione
-2. Questo poteva causare conflitti con hook di WordPress non ancora completamente disponibili
-3. Il plugin tentava di aggiungere un'azione all'hook `plugins_loaded` mentre era già in esecuzione
+2. Questo causava conflitti con hook di WordPress non ancora completamente disponibili  
+3. **PRINCIPALE**: Le classi admin (PCV_List_Table) venivano caricate anche nel frontend, richiedendo `WP_List_Table` che è disponibile solo in area admin
+4. Il caricamento di `WP_List_Table` falliva nel frontend causando il white screen
 
 ## Modifiche Apportate
 
 ### 1. File principale: `pc-volontari-abruzzo.php`
 
-#### Definizione Costante
+#### Definizione Costanti
 - Aggiunta costante `PCV_PLUGIN_FILE` per il percorso del file principale
-
-#### Spostamento Inizializzazione
-- L'inizializzazione del plugin (`new PCV_Plugin()`) è stata spostata dall'esecuzione immediata all'hook `plugins_loaded`
-- Creata funzione `pcv_init_plugin()` per gestire l'inizializzazione
+- Aggiunta costante `PCV_PLUGIN_DIR` per la directory del plugin
 
 #### Controlli Versione
 - Aggiunta verifica versione PHP minima (7.0+)
 - Aggiunta verifica versione WordPress minima (5.0+)
 - Se i requisiti non sono soddisfatti, il plugin viene disattivato con messaggio esplicativo
 
+#### Inizializzazione Sicura
+- L'inizializzazione usa `wp_installing()` per verificare che WordPress sia pronto
+- Il plugin non si inizializza durante l'installazione di WordPress
+
 ### 2. Classe Plugin: `includes/class-plugin.php`
+
+#### **FIX CRITICO: Caricamento Condizionale Admin** ⭐
+- Le classi admin vengono caricate **SOLO** quando `is_admin()` è `true`
+- Questo previene il caricamento di `WP_List_Table` nel frontend
+- Risolve il white screen causato dalla richiesta di classi admin non disponibili
+
+#### Hook Admin Condizionali
+- Gli hook admin (`admin_menu`, `admin_enqueue_scripts`, `admin_init`) vengono registrati solo in area admin
+- Riduce il carico nel frontend
 
 #### Fix Hook Database
 - Cambiato hook per `PCV_Database::maybe_upgrade_schema` da `plugins_loaded` a `init`
-- Questo evita il conflitto con l'inizializzazione del plugin in `plugins_loaded`
+- Garantisce che il database sia aggiornato quando necessario
 
 ### 3. Installer: `includes/class-installer.php`
 

@@ -13,9 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 // Definisci costante percorso file principale
 define( 'PCV_PLUGIN_FILE', __FILE__ );
-
-// Hook attivazione - deve essere registrato PRIMA di caricare le classi
-register_activation_hook( __FILE__, 'pcv_activate_plugin' );
+define( 'PCV_PLUGIN_DIR', __DIR__ );
 
 /**
  * Funzione di attivazione del plugin
@@ -44,16 +42,13 @@ function pcv_activate_plugin() {
     }
     
     // Carica le classi necessarie per l'attivazione
-    require_once __DIR__ . '/includes/data/class-database.php';
-    require_once __DIR__ . '/includes/class-role-manager.php';
-    require_once __DIR__ . '/includes/class-installer.php';
+    require_once PCV_PLUGIN_DIR . '/includes/data/class-database.php';
+    require_once PCV_PLUGIN_DIR . '/includes/class-role-manager.php';
+    require_once PCV_PLUGIN_DIR . '/includes/class-installer.php';
     
     // Esegui l'attivazione
     PCV_Installer::activate();
 }
-
-// Hook disinstallazione
-register_uninstall_hook( __FILE__, 'pcv_uninstall_plugin' );
 
 /**
  * Funzione di disinstallazione del plugin
@@ -62,28 +57,25 @@ register_uninstall_hook( __FILE__, 'pcv_uninstall_plugin' );
  */
 function pcv_uninstall_plugin() {
     // Carica le classi necessarie per la disinstallazione
-    require_once __DIR__ . '/includes/data/class-database.php';
-    require_once __DIR__ . '/includes/class-role-manager.php';
-    require_once __DIR__ . '/includes/class-installer.php';
+    require_once PCV_PLUGIN_DIR . '/includes/data/class-database.php';
+    require_once PCV_PLUGIN_DIR . '/includes/class-role-manager.php';
+    require_once PCV_PLUGIN_DIR . '/includes/class-installer.php';
     
     // Esegui la disinstallazione
     PCV_Installer::uninstall();
 }
 
-// Carica autoloader
-require_once __DIR__ . '/includes/class-autoloader.php';
+// Hook attivazione/disinstallazione
+register_activation_hook( __FILE__, 'pcv_activate_plugin' );
+register_uninstall_hook( __FILE__, 'pcv_uninstall_plugin' );
 
-$autoloader = new PCV_Autoloader( __DIR__ . '/includes' );
+// Carica autoloader
+require_once PCV_PLUGIN_DIR . '/includes/class-autoloader.php';
+
+$autoloader = new PCV_Autoloader( PCV_PLUGIN_DIR . '/includes' );
 $autoloader->register();
 
-/**
- * Inizializza il plugin quando WordPress è completamente caricato
- *
- * @return void
- */
-function pcv_init_plugin() {
+// Inizializza plugin
+if ( ! wp_installing() ) {
     new PCV_Plugin( PCV_PLUGIN_FILE );
 }
-
-// Inizializza plugin dopo che WordPress è completamente caricato
-add_action( 'plugins_loaded', 'pcv_init_plugin' );
