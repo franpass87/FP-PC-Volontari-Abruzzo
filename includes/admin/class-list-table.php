@@ -255,6 +255,11 @@ class PCV_List_Table extends WP_List_Table {
      * @return void
      */
     public function extra_tablenav( $which ) {
+        // Se il flag è impostato, non mostrare i filtri
+        if ( isset( $this->_hide_extra_tablenav ) && $this->_hide_extra_tablenav ) {
+            return;
+        }
+        
         if ( $which !== 'top' ) {
             return;
         }
@@ -349,9 +354,9 @@ class PCV_List_Table extends WP_List_Table {
      * @return void
      */
     public function display_table_only() {
-        // Sovrascrivi la funzione display() per non mostrare i filtri extra
-        $this->display_tablenav( 'top' );
-        $this->display_rows_or_placeholder();
-        $this->display_tablenav( 'bottom' );
+        // Usa la funzione display() normale ma con un flag per non mostrare i filtri
+        $this->_hide_extra_tablenav = true;
+        $this->display();
+        unset( $this->_hide_extra_tablenav );
     }
 }
