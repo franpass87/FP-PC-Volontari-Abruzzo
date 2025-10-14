@@ -208,7 +208,7 @@
     // GESTIONE MODIFICA ED ELIMINAZIONE VOLONTARI
     // =====================================================
     if (typeof window.PCV_AJAX_DATA !== 'undefined') {
-      var ajaxData = window.PCV_AJAX_DATA || {};
+    var ajaxData = window.PCV_AJAX_DATA || {};
     var currentEditId = null;
 
     // Crea modal HTML se non esiste
