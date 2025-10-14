@@ -259,6 +259,11 @@ class PCV_List_Table extends WP_List_Table {
             return;
         }
 
+        // Se il flag è impostato, non mostrare i filtri
+        if ( isset( $this->_hide_extra_tablenav ) && $this->_hide_extra_tablenav ) {
+            return;
+        }
+
         $f_comune_raw = isset( $_GET['f_comune'] ) ? wp_unslash( $_GET['f_comune'] ) : '';
         $f_comune = sanitize_text_field( $f_comune_raw );
 
@@ -349,21 +354,26 @@ class PCV_List_Table extends WP_List_Table {
      * @return void
      */
     public function display_table_only() {
-        // Sovrascrivi completamente la funzione display() per non mostrare mai i filtri extra
-        $this->display_tablenav( 'top' );
-        $this->display_rows_or_placeholder();
-        $this->display_tablenav( 'bottom' );
+        // Usa la funzione display() standard ma con un flag per nascondere extra_tablenav
+        $this->_hide_extra_tablenav = true;
+        parent::display();
+        $this->_hide_extra_tablenav = false;
     }
 
     /**
-     * Sovrascrive la funzione display() per non mostrare mai i filtri extra
+     * Sovrascrive la funzione display() per controllare quando mostrare i filtri extra
      *
      * @return void
      */
     public function display() {
-        // Chiama solo le funzioni necessarie senza extra_tablenav()
-        $this->display_tablenav( 'top' );
-        $this->display_rows_or_placeholder();
-        $this->display_tablenav( 'bottom' );
+        // Se il flag è impostato, non mostrare extra_tablenav
+        if ( isset( $this->_hide_extra_tablenav ) && $this->_hide_extra_tablenav ) {
+            $this->display_tablenav( 'top' );
+            $this->display_rows_or_placeholder();
+            $this->display_tablenav( 'bottom' );
+        } else {
+            // Comportamento standard
+            parent::display();
+        }
     }
 }
