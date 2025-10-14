@@ -41,11 +41,12 @@ class PCV_Repository {
         $defaults = [
             'orderby' => 'created_at',
             'order'   => 'DESC',
-            'limit'   => 20,
+            'limit'   => 100,
             'offset'  => 0,
             'search'  => '',
             'comune'  => '',
             'provincia' => '',
+            'categoria' => '',
         ];
 
         $args = wp_parse_args( $args, $defaults );
@@ -54,19 +55,24 @@ class PCV_Repository {
         $params = [];
 
         if ( $args['comune'] !== '' ) {
-            $where .= " AND comune LIKE %s";
-            $params[] = '%' . $wpdb->esc_like( $args['comune'] ) . '%';
+            $where .= " AND comune = %s";
+            $params[] = $args['comune'];
         }
 
         if ( $args['provincia'] !== '' ) {
-            $where .= " AND provincia LIKE %s";
-            $params[] = '%' . $wpdb->esc_like( $args['provincia'] ) . '%';
+            $where .= " AND provincia = %s";
+            $params[] = $args['provincia'];
+        }
+
+        if ( $args['categoria'] !== '' ) {
+            $where .= " AND categoria = %s";
+            $params[] = $args['categoria'];
         }
 
         if ( $args['search'] !== '' ) {
             $like = '%' . $wpdb->esc_like( $args['search'] ) . '%';
-            $where .= " AND ( nome LIKE %s OR cognome LIKE %s OR email LIKE %s OR telefono LIKE %s OR categoria LIKE %s )";
-            array_push( $params, $like, $like, $like, $like, $like );
+            $where .= " AND ( nome LIKE %s OR cognome LIKE %s OR email LIKE %s OR telefono LIKE %s OR categoria LIKE %s OR comune LIKE %s )";
+            array_push( $params, $like, $like, $like, $like, $like, $like );
         }
 
         $orderby = sanitize_key( $args['orderby'] );
@@ -98,6 +104,7 @@ class PCV_Repository {
             'search'    => '',
             'comune'    => '',
             'provincia' => '',
+            'categoria' => '',
         ];
 
         $args = wp_parse_args( $args, $defaults );
@@ -106,19 +113,24 @@ class PCV_Repository {
         $params = [];
 
         if ( $args['comune'] !== '' ) {
-            $where .= " AND comune LIKE %s";
-            $params[] = '%' . $wpdb->esc_like( $args['comune'] ) . '%';
+            $where .= " AND comune = %s";
+            $params[] = $args['comune'];
         }
 
         if ( $args['provincia'] !== '' ) {
-            $where .= " AND provincia LIKE %s";
-            $params[] = '%' . $wpdb->esc_like( $args['provincia'] ) . '%';
+            $where .= " AND provincia = %s";
+            $params[] = $args['provincia'];
+        }
+
+        if ( $args['categoria'] !== '' ) {
+            $where .= " AND categoria = %s";
+            $params[] = $args['categoria'];
         }
 
         if ( $args['search'] !== '' ) {
             $like = '%' . $wpdb->esc_like( $args['search'] ) . '%';
-            $where .= " AND ( nome LIKE %s OR cognome LIKE %s OR email LIKE %s OR telefono LIKE %s OR categoria LIKE %s )";
-            array_push( $params, $like, $like, $like, $like, $like );
+            $where .= " AND ( nome LIKE %s OR cognome LIKE %s OR email LIKE %s OR telefono LIKE %s OR categoria LIKE %s OR comune LIKE %s )";
+            array_push( $params, $like, $like, $like, $like, $like, $like );
         }
 
         $sql = "SELECT COUNT(*) FROM {$table} {$where}";

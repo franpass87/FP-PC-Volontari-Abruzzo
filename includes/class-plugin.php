@@ -9,7 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 class PCV_Plugin {
 
-    const VERSION = '1.1.0';
+    const VERSION = '1.2.0';
     const TEXT_DOMAIN = 'pc-volontari-abruzzo';
 
     private $plugin_file;
@@ -143,8 +143,9 @@ class PCV_Plugin {
 
         $settings_page = new PCV_Settings_Page( $this->sanitizer );
         $import_page = new PCV_Import_Page( $this->importer, $this->sanitizer );
+        $categories_page = new PCV_Categories_Page();
 
-        $this->admin_menu = new PCV_Admin_Menu( $this->list_table, $settings_page, $import_page );
+        $this->admin_menu = new PCV_Admin_Menu( $this->list_table, $settings_page, $import_page, $categories_page );
 
         $this->admin_assets = new PCV_Admin_Assets(
             $this->plugin_file,
@@ -181,6 +182,9 @@ class PCV_Plugin {
         add_action( 'admin_menu', [ $this, 'init_and_register_admin_menu' ] );
         add_action( 'admin_enqueue_scripts', [ $this, 'init_and_enqueue_admin_assets' ] );
         add_action( 'admin_init', [ $this, 'maybe_export_csv' ] );
+        
+        // Dashboard widget
+        add_action( 'wp_dashboard_setup', [ 'PCV_Dashboard_Widget', 'register' ] );
         
         // Admin AJAX - deve essere sempre registrato nell'area admin
         if ( is_admin() ) {
@@ -273,6 +277,7 @@ class PCV_Plugin {
         $filters = [
             'comune'    => isset( $_GET['f_comune'] ) ? sanitize_text_field( wp_unslash( $_GET['f_comune'] ) ) : '',
             'provincia' => isset( $_GET['f_prov'] ) ? sanitize_text_field( wp_unslash( $_GET['f_prov'] ) ) : '',
+            'categoria' => isset( $_GET['f_cat'] ) ? sanitize_text_field( wp_unslash( $_GET['f_cat'] ) ) : '',
             'search'    => isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '',
         ];
 

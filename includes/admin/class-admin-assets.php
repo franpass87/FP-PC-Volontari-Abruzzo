@@ -9,7 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 class PCV_Admin_Assets {
 
-    const VERSION = '1.1.0';
+    const VERSION = '1.2.0';
     const TEXT_DOMAIN = 'pc-volontari-abruzzo';
     const MENU_SLUG = 'pcv-volontari';
 
@@ -45,7 +45,7 @@ class PCV_Admin_Assets {
             $selected_comune = '';
         }
 
-        wp_register_script( 'pcv-admin', plugins_url( 'assets/js/admin.js', $this->plugin_file ), [ 'jquery' ], self::VERSION, true );
+        wp_enqueue_script( 'pcv-admin', plugins_url( 'assets/js/admin.js', $this->plugin_file ), [ 'jquery' ], self::VERSION, true );
         wp_localize_script( 'pcv-admin', 'PCV_ADMIN_DATA', [
             'province'           => $this->province_data,
             'comuni'             => $this->comuni_data,
@@ -61,14 +61,13 @@ class PCV_Admin_Assets {
         ] );
         
         wp_localize_script( 'pcv-admin', 'PCV_AJAX_DATA', [
-            'ajax_url' => admin_url( 'admin-ajax.php' ),
-            'nonce'    => wp_create_nonce( 'pcv_ajax_nonce' ),
-            'province' => $this->province_data,
-            'comuni'   => $this->comuni_data,
-            'allComuni' => $this->all_comuni,
+            'ajax_url'   => admin_url( 'admin-ajax.php' ),
+            'nonce'      => wp_create_nonce( 'pcv_ajax_nonce' ),
+            'province'   => $this->province_data,
+            'comuni'     => $this->comuni_data,
+            'allComuni'  => $this->all_comuni,
+            'categories' => PCV_Category_Manager::get_categories_for_select(),
         ] );
-        
-        wp_enqueue_script( 'pcv-admin' );
         
         // Enqueue CSS per i modal
         wp_enqueue_style( 'pcv-admin-modal', plugins_url( 'assets/css/frontend.css', $this->plugin_file ), [], self::VERSION );

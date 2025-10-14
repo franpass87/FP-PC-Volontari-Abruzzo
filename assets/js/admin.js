@@ -68,22 +68,117 @@
         selectedComune = comuneSelect.value || '';
       }
 
+      function loadComuniAjax(prov, preferredComune) {
+        if (!prov) {
+          refreshComuni('', preferredComune);
+          return;
+        }
+        
+        jQuery.post(window.PCV_AJAX_DATA.ajax_url, {
+          action: 'pcv_get_comuni',
+          nonce: window.PCV_AJAX_DATA.nonce,
+          provincia: prov
+        }, function(response) {
+          if (response.success && response.data.comuni) {
+            var list = response.data.comuni;
+            var keepComune = preferredComune || '';
+            if (keepComune && list.indexOf(keepComune) === -1) {
+              keepComune = '';
+            }
+            buildOptions(list, keepComune);
+            selectedComune = comuneSelect.value || '';
+          } else {
+            // Fallback ai dati locali
+            refreshComuni(prov, preferredComune);
+          }
+        }).fail(function() {
+          // Fallback ai dati locali in caso di errore
+          refreshComuni(prov, preferredComune);
+        });
+      }
+
       var initialProvince = provSelect.value || data.selectedProvincia || '';
       if (initialProvince && provSelect.value !== initialProvince) {
         provSelect.value = initialProvince;
       }
 
-      refreshComuni(initialProvince, selectedComune);
+      // Carica comuni iniziali
+      if (typeof window.PCV_AJAX_DATA !== 'undefined' && window.PCV_AJAX_DATA.ajax_url && initialProvince) {
+        loadComuniAjax(initialProvince, selectedComune);
+      } else {
+        refreshComuni(initialProvince, selectedComune);
+      }
 
       provSelect.addEventListener('change', function(){
         var prov = provSelect.value || '';
         selectedComune = '';
-        refreshComuni(prov, '');
+        
+        // Se abbiamo dati AJAX disponibili, carica i comuni dinamicamente
+        if (typeof window.PCV_AJAX_DATA !== 'undefined' && window.PCV_AJAX_DATA.ajax_url) {
+          loadComuniAjax(prov, '');
+        } else {
+          refreshComuni(prov, '');
+        }
+        
+        // Auto-submit del form quando cambia provincia
+        setTimeout(function() {
+          var submitBtn = document.querySelector('#pcv-filter-form input[type="submit"]');
+          if (submitBtn) {
+            submitBtn.value = 'Filtra...';
+            submitBtn.disabled = true;
+          }
+          document.getElementById('pcv-filter-form').submit();
+        }, 100);
       });
 
       comuneSelect.addEventListener('change', function(){
         selectedComune = comuneSelect.value || '';
+        
+        // Auto-submit del form quando cambia comune
+        setTimeout(function() {
+          var submitBtn = document.querySelector('#pcv-filter-form input[type="submit"]');
+          if (submitBtn) {
+            submitBtn.value = 'Filtra...';
+            submitBtn.disabled = true;
+          }
+          document.getElementById('pcv-filter-form').submit();
+        }, 100);
       });
+
+      // Auto-submit quando cambia categoria
+      var categoriaSelect = document.getElementById('pcv-admin-categoria');
+      if (categoriaSelect) {
+        categoriaSelect.addEventListener('change', function(){
+          setTimeout(function() {
+            var submitBtn = document.querySelector('#pcv-filter-form input[type="submit"]');
+            if (submitBtn) {
+              submitBtn.value = 'Filtra...';
+              submitBtn.disabled = true;
+            }
+            document.getElementById('pcv-filter-form').submit();
+          }, 100);
+        });
+      }
+
+      // Gestione ricerca con debounce
+      var searchInput = document.querySelector('#pcv-filter-form input[name="s"]');
+      if (searchInput) {
+        var searchTimeout;
+        searchInput.addEventListener('input', function() {
+          clearTimeout(searchTimeout);
+          searchTimeout = setTimeout(function() {
+            // Aggiungi indicatore di caricamento
+            var submitBtn = document.querySelector('#pcv-filter-form input[type="submit"]');
+            if (submitBtn) {
+              submitBtn.value = 'Ricerca...';
+              submitBtn.disabled = true;
+            }
+            
+            // Auto-submit del form dopo 500ms di inattività
+            document.getElementById('pcv-filter-form').submit();
+          }, 500);
+        });
+      }
     }
     }
 
@@ -131,7 +226,7 @@
               </div>
               <div class="pcv-form-row">
                 <label>Categoria</label>
-                <input type="text" name="categoria">
+                <select name="categoria" id="pcv-modal-categoria"></select>
               </div>
               <div class="pcv-form-row">
                 <label><input type="checkbox" name="privacy" value="1"> Privacy</label>
@@ -166,7 +261,9 @@
             <form id="pcv-bulk-form">
               <div class="pcv-form-row">
                 <label>Categoria</label>
-                <input type="text" name="categoria" placeholder="Lascia vuoto per non modificare">
+                <select name="categoria" id="pcv-bulk-categoria">
+                  <option value="">Non modificare</option>
+                </select>
               </div>
               <div class="pcv-form-row">
                 <label>Privacy</label>
@@ -249,6 +346,41 @@
       });
     }
 
+    // Funzione per popolare select categorie
+    function populateCategorieSelect(selectEl, selectedValue, includeEmpty) {
+      selectEl.innerHTML = '';
+      
+      if (includeEmpty) {
+        var emptyOption = document.createElement('option');
+        emptyOption.value = '';
+        emptyOption.textContent = 'Seleziona categoria';
+        selectEl.appendChild(emptyOption);
+      }
+      
+      var categorie = ajaxData.categories || [];
+      categorie.forEach(function(cat) {
+        var option = document.createElement('option');
+        option.value = cat;
+        option.textContent = cat;
+        if (cat === selectedValue) {
+          option.selected = true;
+        }
+        selectEl.appendChild(option);
+      });
+    }
+
+    // Popola select categoria bulk edit
+    var bulkCatSelect = document.getElementById('pcv-bulk-categoria');
+    if (bulkCatSelect && ajaxData.categories) {
+      var categorie = ajaxData.categories || [];
+      categorie.forEach(function(cat) {
+        var option = document.createElement('option');
+        option.value = cat;
+        option.textContent = cat;
+        bulkCatSelect.appendChild(option);
+      });
+    }
+
     // Event listener per cambio provincia nel modal (aggiunto una sola volta)
     var modalProvSelect = document.getElementById('pcv-modal-provincia');
     var modalComuneSelect = document.getElementById('pcv-modal-comune');
@@ -288,9 +420,11 @@
             
             var provSelect = document.getElementById('pcv-modal-provincia');
             var comuneSelect = document.getElementById('pcv-modal-comune');
+            var catSelect = document.getElementById('pcv-modal-categoria');
             
             populateModalProvinceSelect(provSelect, v.provincia);
             populateModalComuneSelect(v.provincia, comuneSelect, v.comune);
+            populateCategorieSelect(catSelect, v.categoria, true);
             
             document.getElementById('pcv-edit-modal').style.display = 'block';
           } else {
@@ -313,6 +447,7 @@
           id: id
         }, function(response) {
           if (response.success) {
+            closeModals();
             alert(response.data.message);
             location.reload();
           } else {
@@ -322,12 +457,42 @@
       }
     });
 
+    // Funzione per chiudere i modal
+    function closeModals() {
+      document.getElementById('pcv-edit-modal').style.display = 'none';
+      document.getElementById('pcv-bulk-modal').style.display = 'none';
+      currentEditId = null;
+      
+      // Reset del form bulk
+      var bulkForm = document.getElementById('pcv-bulk-form');
+      if (bulkForm) {
+        bulkForm.reset();
+      }
+      
+      // Reset del titolo del modal bulk
+      var bulkModal = document.getElementById('pcv-bulk-modal');
+      var title = bulkModal.querySelector('h2');
+      if (title) {
+        title.textContent = 'Modifica Multipla';
+      }
+    }
+    
     // Chiudi modal
     document.addEventListener('click', function(e) {
       if (e.target.classList.contains('pcv-modal-close') || e.target.classList.contains('pcv-modal-cancel')) {
-        document.getElementById('pcv-edit-modal').style.display = 'none';
-        document.getElementById('pcv-bulk-modal').style.display = 'none';
-        currentEditId = null;
+        closeModals();
+      }
+      
+      // Chiudi modal cliccando fuori dal contenuto
+      if (e.target.classList.contains('pcv-admin-modal')) {
+        closeModals();
+      }
+    });
+    
+    // Chiudi modal con tasto ESC
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeModals();
       }
     });
 
@@ -356,6 +521,7 @@
       
       jQuery.post(ajaxData.ajax_url, data, function(response) {
         if (response.success) {
+          closeModals();
           alert(response.data.message);
           location.reload();
         } else {
@@ -364,25 +530,70 @@
       });
     });
 
-    // Gestione bulk edit - intercetta il form submit
-    var topForm = document.getElementById('posts-filter');
-    if (topForm) {
-      topForm.addEventListener('submit', function(e) {
+    // Gestione bulk edit - intercetta il click sul pulsante Applica
+    document.addEventListener('click', function(e) {
+      // Controlla se è il pulsante "Applica" o "Do Action"
+      if (e.target.type === 'submit' && 
+          (e.target.value === 'Applica' || e.target.value === 'Do Action' || 
+           e.target.classList.contains('button') && e.target.closest('#posts-filter'))) {
+        
         var action1 = document.querySelector('select[name="action"]');
         var action2 = document.querySelector('select[name="action2"]');
         var action = (action1 && action1.value) || (action2 && action2.value);
         
         if (action === 'bulk_edit') {
           e.preventDefault();
+          e.stopPropagation();
+          
           var checkboxes = document.querySelectorAll('input[name="id[]"]:checked');
           if (checkboxes.length === 0) {
-            alert('Seleziona almeno un volontario');
+            // Mostra un messaggio più user-friendly
+            var message = document.createElement('div');
+            message.className = 'notice notice-error';
+            message.style.cssText = 'margin: 15px 0; padding: 12px; background: #fef2f2; border-left: 4px solid #ef4444; color: #7f1d1d;';
+            message.innerHTML = '<p><strong>Errore:</strong> Seleziona almeno un volontario per effettuare la modifica bulk.</p>';
+            
+            // Rimuovi eventuali messaggi precedenti
+            var existingNotice = document.querySelector('.pcv-bulk-notice');
+            if (existingNotice) {
+              existingNotice.remove();
+            }
+            
+            message.className += ' pcv-bulk-notice';
+            
+            // Inserisci il messaggio dopo la toolbar
+            var toolbar = document.querySelector('.tablenav.top');
+            if (toolbar) {
+              toolbar.insertAdjacentElement('afterend', message);
+            } else {
+              // Fallback: inserisci all'inizio della tabella
+              var table = document.querySelector('.wp-list-table');
+              if (table) {
+                table.insertAdjacentElement('beforebegin', message);
+              }
+            }
+            
+            // Rimuovi il messaggio dopo 5 secondi
+            setTimeout(function() {
+              if (message && message.parentNode) {
+                message.remove();
+              }
+            }, 5000);
+            
             return;
           }
-          document.getElementById('pcv-bulk-modal').style.display = 'block';
+          
+          // Mostra il numero di elementi selezionati nel modal
+          var modal = document.getElementById('pcv-bulk-modal');
+          var title = modal.querySelector('h2');
+          if (title) {
+            title.textContent = 'Modifica Multipla (' + checkboxes.length + ' volontari selezionati)';
+          }
+          
+          modal.style.display = 'block';
         }
-      });
-    }
+      }
+    });
 
     // Salva modifica bulk
     document.getElementById('pcv-bulk-form').addEventListener('submit', function(e) {
@@ -411,6 +622,7 @@
       
       jQuery.post(ajaxData.ajax_url, data, function(response) {
         if (response.success) {
+          closeModals();
           alert(response.data.message);
           location.reload();
         } else {

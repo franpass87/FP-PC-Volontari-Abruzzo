@@ -198,7 +198,7 @@ class PCV_List_Table extends WP_List_Table {
     public function prepare_items() {
         $this->process_bulk_action();
 
-        $per_page = 20;
+        $per_page = 100;
         $current_page = $this->get_pagenum();
 
         $orderby_raw = isset( $_GET['orderby'] ) ? wp_unslash( $_GET['orderby'] ) : 'created_at';
@@ -218,6 +218,9 @@ class PCV_List_Table extends WP_List_Table {
         $f_prov_raw = isset( $_GET['f_prov'] ) ? wp_unslash( $_GET['f_prov'] ) : '';
         $f_prov = trim( sanitize_text_field( $f_prov_raw ) );
 
+        $f_cat_raw = isset( $_GET['f_cat'] ) ? wp_unslash( $_GET['f_cat'] ) : '';
+        $f_cat = trim( sanitize_text_field( $f_cat_raw ) );
+
         $s_raw = isset( $_GET['s'] ) ? wp_unslash( $_GET['s'] ) : '';
         $s = trim( sanitize_text_field( $s_raw ) );
 
@@ -228,6 +231,7 @@ class PCV_List_Table extends WP_List_Table {
             'offset'    => ( $current_page - 1 ) * $per_page,
             'comune'    => $f_comune,
             'provincia' => $f_prov,
+            'categoria' => $f_cat,
             'search'    => $s,
         ];
 
@@ -261,6 +265,9 @@ class PCV_List_Table extends WP_List_Table {
         $f_prov_raw = isset( $_GET['f_prov'] ) ? wp_unslash( $_GET['f_prov'] ) : '';
         $f_prov = strtoupper( sanitize_text_field( $f_prov_raw ) );
 
+        $f_cat_raw = isset( $_GET['f_cat'] ) ? wp_unslash( $_GET['f_cat'] ) : '';
+        $f_cat = sanitize_text_field( $f_cat_raw );
+
         $s_raw = isset( $_GET['s'] ) ? wp_unslash( $_GET['s'] ) : '';
         $s = sanitize_text_field( $s_raw );
 
@@ -282,9 +289,12 @@ class PCV_List_Table extends WP_List_Table {
         $comuni_options = array_values( array_unique( $comuni_options ) );
         sort( $comuni_options, SORT_NATURAL | SORT_FLAG_CASE );
 
-        $url_no_vars = remove_query_arg( [ 'f_comune', 'f_prov', 's', 'paged' ] );
+        // Ottieni categorie per filtro
+        $categories = PCV_Category_Manager::get_categories_for_select();
 
-        echo '<div class="pcv-topbar"><form method="get">';
+        $url_no_vars = remove_query_arg( [ 'f_comune', 'f_prov', 'f_cat', 's', 'paged' ] );
+
+        echo '<div class="pcv-topbar"><form method="get" id="pcv-filter-form">';
         echo '<input type="hidden" name="page" value="pcv-volontari">';
 
         echo '<label class="screen-reader-text" for="pcv-admin-provincia">' . esc_html__( 'Filtra per Provincia', self::TEXT_DOMAIN ) . '</label>';
@@ -303,6 +313,15 @@ class PCV_List_Table extends WP_List_Table {
         foreach ( $comuni_options as $comune_name ) {
             $selected_attr = selected( $f_comune, $comune_name, false );
             echo '<option value="' . esc_attr( $comune_name ) . '"' . $selected_attr . '>' . esc_html( $comune_name ) . '</option>';
+        }
+        echo '</select>';
+
+        echo '<label class="screen-reader-text" for="pcv-admin-categoria">' . esc_html__( 'Filtra per Categoria', self::TEXT_DOMAIN ) . '</label>';
+        echo '<select name="f_cat" id="pcv-admin-categoria">';
+        echo '<option value="">' . esc_html__( 'Tutte le categorie', self::TEXT_DOMAIN ) . '</option>';
+        foreach ( $categories as $cat_name ) {
+            $selected_attr = selected( $f_cat, $cat_name, false );
+            echo '<option value="' . esc_attr( $cat_name ) . '"' . $selected_attr . '>' . esc_html( $cat_name ) . '</option>';
         }
         echo '</select>';
 

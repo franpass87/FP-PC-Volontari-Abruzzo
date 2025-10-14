@@ -15,14 +15,16 @@ class PCV_Admin_Menu {
     private $list_table;
     private $settings_page;
     private $import_page;
+    private $categories_page;
 
     /**
      * Costruttore
      */
-    public function __construct( $list_table, $settings_page, $import_page ) {
+    public function __construct( $list_table, $settings_page, $import_page, $categories_page ) {
         $this->list_table = $list_table;
         $this->settings_page = $settings_page;
         $this->import_page = $import_page;
+        $this->categories_page = $categories_page;
     }
 
     /**
@@ -57,6 +59,15 @@ class PCV_Admin_Menu {
             PCV_Role_Manager::CAP_IMPORT_VOLUNTEERS,
             self::MENU_SLUG . '-import',
             [ $this->import_page, 'render' ]
+        );
+
+        add_submenu_page(
+            self::MENU_SLUG,
+            __( 'Gestione Categorie', self::TEXT_DOMAIN ),
+            __( 'Categorie', self::TEXT_DOMAIN ),
+            PCV_Role_Manager::CAP_MANAGE_SETTINGS,
+            self::MENU_SLUG . '-categories',
+            [ $this->categories_page, 'render' ]
         );
     }
 

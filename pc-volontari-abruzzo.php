@@ -2,7 +2,7 @@
 /**
  * Plugin Name: PC Volontari Abruzzo
  * Description: Raccolta iscrizioni volontari (Protezione Civile Abruzzo) con form via shortcode, popup comune, lista completa Comuni/Province Abruzzo, reCAPTCHA v2 e gestionale backend.
- * Version: 1.1.0
+ * Version: 1.2.0
  * Author: Francesco Passeri
  * Author URI: https://francescopasseri.com
  * License: GPLv2 or later
