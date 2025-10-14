@@ -255,6 +255,11 @@ class PCV_List_Table extends WP_List_Table {
      * @return void
      */
     public function extra_tablenav( $which ) {
+        // Se siamo in modalità "table only", non mostrare i filtri
+        if ( isset( $this->_displaying_table_only ) && $this->_displaying_table_only ) {
+            return;
+        }
+        
         if ( $which !== 'top' ) {
             return;
         }
@@ -349,9 +354,16 @@ class PCV_List_Table extends WP_List_Table {
      * @return void
      */
     public function display_table_only() {
+        // Imposta il flag per non mostrare i filtri extra
+        $this->_displaying_table_only = true;
+        
         // Mostra solo la tabella senza i filtri extra
         $this->display_tablenav( 'top' );
         $this->display_rows_or_placeholder();
         $this->display_tablenav( 'bottom' );
+        
+        // Rimuovi il flag
+        unset( $this->_displaying_table_only );
     }
+
 }
