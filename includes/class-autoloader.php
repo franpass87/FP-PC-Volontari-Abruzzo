@@ -44,9 +44,10 @@ class PCV_Autoloader {
         // Mappa classi => file
         $class_map = [
             // Core
-            'PCV_Plugin'      => 'class-plugin.php',
-            'PCV_Installer'   => 'class-installer.php',
-            'PCV_Data_Loader' => 'class-data-loader.php',
+            'PCV_Plugin'       => 'class-plugin.php',
+            'PCV_Installer'    => 'class-installer.php',
+            'PCV_Data_Loader'  => 'class-data-loader.php',
+            'PCV_Role_Manager' => 'class-role-manager.php',
 
             // Data
             'PCV_Database'   => 'data/class-database.php',
