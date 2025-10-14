@@ -16,6 +16,7 @@ class PCV_Admin_Menu {
     private $settings_page;
     private $import_page;
     private $categories_page;
+    private $comuni_normalizer;
 
     /**
      * Costruttore
@@ -25,6 +26,7 @@ class PCV_Admin_Menu {
         $this->settings_page = $settings_page;
         $this->import_page = $import_page;
         $this->categories_page = $categories_page;
+        $this->comuni_normalizer = new PCV_Comuni_Normalizer();
     }
 
     /**
@@ -68,6 +70,15 @@ class PCV_Admin_Menu {
             PCV_Role_Manager::CAP_MANAGE_SETTINGS,
             self::MENU_SLUG . '-categories',
             [ $this->categories_page, 'render' ]
+        );
+
+        add_submenu_page(
+            self::MENU_SLUG,
+            __( 'Normalizzazione Comuni', self::TEXT_DOMAIN ),
+            __( 'Normalizza Comuni', self::TEXT_DOMAIN ),
+            PCV_Role_Manager::CAP_MANAGE_SETTINGS,
+            self::MENU_SLUG . '-normalize',
+            [ $this->comuni_normalizer, 'render_admin_page' ]
         );
     }
 
