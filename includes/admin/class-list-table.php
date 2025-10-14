@@ -255,25 +255,9 @@ class PCV_List_Table extends WP_List_Table {
      * @return void
      */
     public function extra_tablenav( $which ) {
-        // Debug: verifica il flag
-        error_log( 'PCV extra_tablenav called with which: ' . $which );
-        error_log( 'PCV _displaying_table_only flag: ' . ( isset( $this->_displaying_table_only ) ? 'SET' : 'NOT SET' ) );
-        if ( isset( $this->_displaying_table_only ) ) {
-            error_log( 'PCV _displaying_table_only value: ' . ( $this->_displaying_table_only ? 'TRUE' : 'FALSE' ) );
-        }
-        
-        // Se siamo in modalità "table only", non mostrare i filtri
-        if ( isset( $this->_displaying_table_only ) && $this->_displaying_table_only ) {
-            error_log( 'PCV extra_tablenav: SKIPPING filters due to table_only flag' );
-            return;
-        }
-        
         if ( $which !== 'top' ) {
-            error_log( 'PCV extra_tablenav: SKIPPING filters due to which != top' );
             return;
         }
-        
-        error_log( 'PCV extra_tablenav: SHOWING filters' );
 
         $f_comune_raw = isset( $_GET['f_comune'] ) ? wp_unslash( $_GET['f_comune'] ) : '';
         $f_comune = sanitize_text_field( $f_comune_raw );
@@ -365,18 +349,9 @@ class PCV_List_Table extends WP_List_Table {
      * @return void
      */
     public function display_table_only() {
-        error_log( 'PCV display_table_only: STARTING' );
-        
-        // Imposta il flag per non mostrare i filtri extra
-        $this->_displaying_table_only = true;
-        error_log( 'PCV display_table_only: Flag set to TRUE' );
-        
-        // Usa la funzione display() normale ma senza filtri extra
-        $this->display();
-        error_log( 'PCV display_table_only: display() completed' );
-        
-        // Rimuovi il flag
-        unset( $this->_displaying_table_only );
-        error_log( 'PCV display_table_only: Flag removed' );
+        // Sovrascrivi la funzione display() per non mostrare i filtri extra
+        $this->display_tablenav( 'top' );
+        $this->display_rows_or_placeholder();
+        $this->display_tablenav( 'bottom' );
     }
 }
