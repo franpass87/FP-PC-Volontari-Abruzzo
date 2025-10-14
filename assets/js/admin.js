@@ -255,7 +255,6 @@
         // Il form verrà comunque sottoposto normalmente
       });
     }
-    }
 
     // =====================================================
     // GESTIONE MODIFICA ED ELIMINAZIONE VOLONTARI
