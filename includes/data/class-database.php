@@ -18,12 +18,22 @@ class PCV_Database {
      */
     public static function create_or_upgrade_schema() {
         global $wpdb;
+        
+        // Verifica che $wpdb sia disponibile
+        if ( ! isset( $wpdb ) ) {
+            throw new Exception( 'Database WordPress ($wpdb) non disponibile' );
+        }
+        
         $table = self::get_table_name();
         $charset = $wpdb->get_charset_collate();
 
         $sql = self::get_schema_sql( $table, $charset );
 
-        require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+        // Carica dbDelta se non disponibile
+        if ( ! function_exists( 'dbDelta' ) ) {
+            require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+        }
+        
         dbDelta( $sql );
     }
 

@@ -25,6 +25,21 @@ class PCV_Installer {
                 throw new Exception( 'Classe PCV_Role_Manager non trovata' );
             }
             
+            // Verifica che le funzioni necessarie di WordPress siano disponibili
+            if ( ! function_exists( 'dbDelta' ) ) {
+                require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+            }
+            
+            if ( ! function_exists( 'add_role' ) || ! function_exists( 'get_role' ) ) {
+                throw new Exception( 'Funzioni di gestione ruoli di WordPress non disponibili' );
+            }
+            
+            // Verifica che $wpdb sia disponibile
+            global $wpdb;
+            if ( ! isset( $wpdb ) ) {
+                throw new Exception( 'Database WordPress non disponibile' );
+            }
+            
             // Crea schema database
             PCV_Database::create_or_upgrade_schema();
             
@@ -33,6 +48,8 @@ class PCV_Installer {
             
         } catch ( Exception $e ) {
             // Log dell'errore
+            error_log( 'PC Volontari Abruzzo - Errore attivazione: ' . $e->getMessage() );
+            
             if ( function_exists( 'wp_die' ) ) {
                 wp_die(
                     sprintf(
@@ -45,7 +62,6 @@ class PCV_Installer {
                 );
             } else {
                 // Fallback se wp_die non è disponibile
-                error_log( 'PC Volontari Abruzzo - Errore attivazione: ' . $e->getMessage() );
                 die( 'Errore durante l\'attivazione del plugin: ' . esc_html( $e->getMessage() ) );
             }
         }
