@@ -105,7 +105,7 @@ class PCV_Admin_Menu {
         
         echo '<form method="post">';
         wp_nonce_field( 'pcv_bulk_action' );
-        $this->list_table->display();
+        $this->list_table->display_table_only();
         echo '</form>';
         echo '</div>';
     }

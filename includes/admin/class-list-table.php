@@ -342,4 +342,16 @@ class PCV_List_Table extends WP_List_Table {
         // Chiama direttamente la funzione che genera i filtri
         $this->extra_tablenav( 'top' );
     }
+
+    /**
+     * Mostra solo la tabella senza i filtri extra
+     *
+     * @return void
+     */
+    public function display_table_only() {
+        // Mostra solo la tabella senza i filtri extra
+        $this->display_tablenav( 'top' );
+        $this->display_rows_or_placeholder();
+        $this->display_tablenav( 'bottom' );
+    }
 }
