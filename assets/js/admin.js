@@ -13,6 +13,20 @@
     var data = window.PCV_ADMIN_DATA || {};
     var provSelect = document.getElementById('pcv-admin-provincia');
     var comuneSelect = document.getElementById('pcv-admin-comune');
+    
+    // Debug: verifica se i dati sono caricati
+    console.log('PCV_ADMIN_DATA:', data);
+    console.log('PCV_AJAX_DATA:', window.PCV_AJAX_DATA);
+    console.log('Provincia select:', provSelect);
+    console.log('Comune select:', comuneSelect);
+    
+    // Verifica se i dati sono presenti
+    if (!data || Object.keys(data).length === 0) {
+      console.error('PCV_ADMIN_DATA is empty or not loaded');
+    }
+    if (!window.PCV_AJAX_DATA) {
+      console.error('PCV_AJAX_DATA is not loaded');
+    }
 
     if (provSelect && comuneSelect) {
       var allComuni = toArray(data.allComuni);
@@ -121,12 +135,18 @@
         
         // Auto-submit del form quando cambia provincia
         setTimeout(function() {
-          var submitBtn = document.querySelector('#pcv-filter-form input[type="submit"]');
-          if (submitBtn) {
-            submitBtn.value = 'Filtra...';
-            submitBtn.disabled = true;
+          var form = document.getElementById('pcv-filter-form') || document.querySelector('form[method="get"]');
+          if (form) {
+            var submitBtn = form.querySelector('input[type="submit"]');
+            if (submitBtn) {
+              submitBtn.value = 'Filtra...';
+              submitBtn.disabled = true;
+            }
+            console.log('Submitting form after provincia change');
+            form.submit();
+          } else {
+            console.error('Form not found');
           }
-          document.getElementById('pcv-filter-form').submit();
         }, 100);
       });
 
@@ -135,36 +155,60 @@
         
         // Auto-submit del form quando cambia comune
         setTimeout(function() {
-          var submitBtn = document.querySelector('#pcv-filter-form input[type="submit"]');
-          if (submitBtn) {
-            submitBtn.value = 'Filtra...';
-            submitBtn.disabled = true;
+          var form = document.getElementById('pcv-filter-form') || document.querySelector('form[method="get"]');
+          if (form) {
+            var submitBtn = form.querySelector('input[type="submit"]');
+            if (submitBtn) {
+              submitBtn.value = 'Filtra...';
+              submitBtn.disabled = true;
+            }
+            console.log('Submitting form after comune change');
+            form.submit();
+          } else {
+            console.error('Form not found');
           }
-          document.getElementById('pcv-filter-form').submit();
         }, 100);
       });
 
       // Auto-submit quando cambia categoria
       var categoriaSelect = document.getElementById('pcv-admin-categoria');
       if (categoriaSelect) {
+        console.log('Categoria select found:', categoriaSelect);
         categoriaSelect.addEventListener('change', function(){
           setTimeout(function() {
-            var submitBtn = document.querySelector('#pcv-filter-form input[type="submit"]');
-            if (submitBtn) {
-              submitBtn.value = 'Filtra...';
-              submitBtn.disabled = true;
+            var form = document.getElementById('pcv-filter-form') || document.querySelector('form[method="get"]');
+            if (form) {
+              var submitBtn = form.querySelector('input[type="submit"]');
+              if (submitBtn) {
+                submitBtn.value = 'Filtra...';
+                submitBtn.disabled = true;
+              }
+              console.log('Submitting form after categoria change');
+              form.submit();
+            } else {
+              console.error('Form not found');
             }
-            document.getElementById('pcv-filter-form').submit();
           }, 100);
         });
+      } else {
+        console.log('Categoria select not found');
       }
 
     }
     
     // Gestione ricerca con debounce (indipendente dai filtri provincia/comune)
     var filterForm = document.getElementById('pcv-filter-form');
+    console.log('Filter form found:', filterForm);
+    
+    // Se il form non viene trovato, proviamo a cercarlo in altri modi
+    if (!filterForm) {
+      filterForm = document.querySelector('form[method="get"]');
+      console.log('Alternative form found:', filterForm);
+    }
+    
     if (filterForm) {
       var searchInput = filterForm.querySelector('input[name="s"]');
+      console.log('Search input found:', searchInput);
       if (searchInput) {
         var searchTimeout;
         searchInput.addEventListener('input', function() {
@@ -177,6 +221,7 @@
               submitBtn.disabled = true;
             }
             
+            console.log('Submitting form after search input');
             // Auto-submit del form dopo 500ms di inattività
             filterForm.submit();
           }, 500);
@@ -186,13 +231,17 @@
         searchInput.addEventListener('keypress', function(e) {
           if (e.key === 'Enter') {
             clearTimeout(searchTimeout);
+            console.log('Submitting form after Enter key');
             filterForm.submit();
           }
         });
+      } else {
+        console.log('Search input not found');
       }
       
       // Gestione submit manuale del form di ricerca
       filterForm.addEventListener('submit', function(e) {
+        console.log('Form submit event triggered');
         // Aggiungi indicatore di caricamento
         var submitBtn = filterForm.querySelector('input[type="submit"]');
         if (submitBtn) {
@@ -207,7 +256,16 @@
     // =====================================================
     // GESTIONE MODIFICA ED ELIMINAZIONE VOLONTARI
     // =====================================================
-    if (typeof window.PCV_AJAX_DATA !== 'undefined') {
+    if (typeof window.PCV_AJAX_DATA === 'undefined') {
+      console.error('PCV_AJAX_DATA non è definito');
+      return;
+    }
+    
+    if (typeof jQuery === 'undefined') {
+      console.error('jQuery non è disponibile');
+      return;
+    }
+    
     var ajaxData = window.PCV_AJAX_DATA || {};
     var currentEditId = null;
 
@@ -415,18 +473,25 @@
     // Apri modal modifica singola
     document.addEventListener('click', function(e) {
       if (e.target.classList.contains('pcv-edit-volunteer')) {
+        console.log('Click su modifica intercettato');
         e.preventDefault();
         var id = parseInt(e.target.getAttribute('data-id'));
-        if (!id) return;
+        console.log('ID volontario:', id);
+        if (!id) {
+          console.error('ID non valido');
+          return;
+        }
         
         currentEditId = id;
         
         // Carica dati volontario
+        console.log('Invio richiesta AJAX per ottenere dati volontario');
         jQuery.post(ajaxData.ajax_url, {
           action: 'pcv_get_volunteer',
           nonce: ajaxData.nonce,
           id: id
         }, function(response) {
+          console.log('Risposta AJAX ricevuta:', response);
           if (response.success && response.data.volunteer) {
             var v = response.data.volunteer;
             var form = document.getElementById('pcv-edit-form');
@@ -450,8 +515,12 @@
             
             document.getElementById('pcv-edit-modal').style.display = 'block';
           } else {
-            alert('Errore nel caricamento dei dati');
+            console.error('Errore nella risposta:', response);
+            alert('Errore nel caricamento dei dati: ' + (response.data && response.data.message ? response.data.message : 'Errore sconosciuto'));
           }
+        }).fail(function(xhr, status, error) {
+          console.error('Errore AJAX:', status, error);
+          alert('Errore di connessione: ' + error);
         });
       }
     });
@@ -652,6 +721,5 @@
         }
       });
     });
-    }
   });
 })();
