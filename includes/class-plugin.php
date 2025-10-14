@@ -50,16 +50,11 @@ class PCV_Plugin {
         // Carica dati comuni/province
         $this->data_loader = new PCV_Data_Loader( dirname( $plugin_file ) );
 
-        // Inizializza componenti
+        // Inizializza componenti base
         $this->init_services();
         $this->init_data();
         $this->init_import_export();
         $this->init_frontend();
-        
-        // Inizializza admin solo se siamo in area admin
-        if ( is_admin() ) {
-            $this->init_admin();
-        }
 
         // Hook WordPress
         $this->register_hooks();
@@ -182,11 +177,39 @@ class PCV_Plugin {
         add_action( 'wp_enqueue_scripts', [ $this->assets_manager, 'register_assets' ] );
         add_action( 'init', [ $this->form_handler, 'maybe_handle_submission' ] );
 
-        // Admin - solo se siamo in area admin
-        if ( is_admin() ) {
-            add_action( 'admin_menu', [ $this->admin_menu, 'register_menus' ] );
-            add_action( 'admin_enqueue_scripts', [ $this->admin_assets, 'enqueue' ] );
-            add_action( 'admin_init', [ $this, 'maybe_export_csv' ] );
+        // Admin - lazy loading
+        add_action( 'admin_menu', [ $this, 'init_and_register_admin_menu' ] );
+        add_action( 'admin_enqueue_scripts', [ $this, 'init_and_enqueue_admin_assets' ] );
+        add_action( 'admin_init', [ $this, 'maybe_export_csv' ] );
+    }
+
+    /**
+     * Inizializza admin e registra menu (lazy loading)
+     *
+     * @return void
+     */
+    public function init_and_register_admin_menu() {
+        if ( ! $this->admin_menu ) {
+            $this->init_admin();
+        }
+        
+        if ( $this->admin_menu ) {
+            $this->admin_menu->register_menus();
+        }
+    }
+
+    /**
+     * Inizializza admin e registra assets (lazy loading)
+     *
+     * @return void
+     */
+    public function init_and_enqueue_admin_assets( $hook ) {
+        if ( ! $this->admin_assets ) {
+            $this->init_admin();
+        }
+        
+        if ( $this->admin_assets ) {
+            $this->admin_assets->enqueue( $hook );
         }
     }
 
@@ -224,6 +247,11 @@ class PCV_Plugin {
         $export_nonce = isset( $_GET['_wpnonce'] ) ? wp_unslash( $_GET['_wpnonce'] ) : '';
         if ( ! wp_verify_nonce( $export_nonce, 'pcv_export' ) ) {
             wp_die( esc_html__( 'Nonce non valido', self::TEXT_DOMAIN ) );
+        }
+
+        // Assicurati che exporter sia inizializzato
+        if ( ! $this->exporter ) {
+            return;
         }
 
         $filters = [

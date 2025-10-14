@@ -10,10 +10,16 @@
 ### Problema Principale
 Le classi admin venivano caricate anche nel frontend, causando errori fatali perché richiedevano `WP_List_Table` (disponibile solo in area admin).
 
-### Soluzione Implementata
-- **Caricamento condizionale**: Le classi admin si caricano SOLO quando `is_admin()` è true
-- **Hook protetti**: Gli hook admin vengono registrati solo in area admin
+### Soluzione Implementata (V3 - LAZY LOADING)
+- **Lazy Loading Admin**: Le classi admin vengono caricate SOLO quando WordPress chiama gli hook admin (`admin_menu`, `admin_enqueue_scripts`)
+- **Inizializzazione differita**: I componenti admin non vengono creati nel costruttore, ma solo quando servono
+- **Protezione doppia**: Verifica sia dell'hook che della disponibilità delle classi WordPress
 - **Controlli di sicurezza**: Verifiche versione PHP e WordPress prima dell'attivazione
+
+### Perché Lazy Loading?
+- ✅ WordPress chiama gli hook admin SOLO in area admin
+- ✅ Quando l'hook viene chiamato, `WP_List_Table` è già disponibile
+- ✅ Zero overhead nel frontend (le classi admin non vengono MAI caricate)
 
 ## 📋 Come Testare
 
