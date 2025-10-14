@@ -99,7 +99,7 @@
       if (!document.getElementById('pcv-edit-modal')) {
         var editModal = document.createElement('div');
         editModal.id = 'pcv-edit-modal';
-        editModal.className = 'pcv-modal';
+        editModal.className = 'pcv-admin-modal';
         editModal.innerHTML = `
           <div class="pcv-modal-content">
             <span class="pcv-modal-close">&times;</span>
@@ -158,7 +158,7 @@
       if (!document.getElementById('pcv-bulk-modal')) {
         var bulkModal = document.createElement('div');
         bulkModal.id = 'pcv-bulk-modal';
-        bulkModal.className = 'pcv-modal';
+        bulkModal.className = 'pcv-admin-modal';
         bulkModal.innerHTML = `
           <div class="pcv-modal-content">
             <span class="pcv-modal-close">&times;</span>
