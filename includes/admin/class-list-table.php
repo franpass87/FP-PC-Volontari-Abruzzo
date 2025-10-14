@@ -339,6 +339,7 @@ class PCV_List_Table extends WP_List_Table {
      * @return void
      */
     public function display_filters() {
-        $this->display_extra_tablenav( 'top' );
+        // Chiama direttamente la funzione che genera i filtri
+        $this->extra_tablenav( 'top' );
     }
 }
