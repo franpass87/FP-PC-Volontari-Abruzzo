@@ -341,17 +341,6 @@ class PCV_List_Table extends WP_List_Table {
         echo '</form></div>';
     }
 
-    /**
-     * Override del metodo display per nascondere i filtri duplicati
-     *
-     * @return void
-     */
-    public function display() {
-        // Mostra i filtri solo una volta in alto
-        $this->display_tablenav( 'top' );
-        $this->display_table();
-        $this->display_tablenav( 'bottom' );
-    }
 
 
 }
