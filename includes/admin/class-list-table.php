@@ -225,6 +225,7 @@ class PCV_List_Table extends WP_List_Table {
         $s_raw = isset( $_GET['s'] ) ? wp_unslash( $_GET['s'] ) : '';
         $s = trim( sanitize_text_field( $s_raw ) );
 
+
         $args = [
             'orderby'   => $orderby,
             'order'     => $order,
@@ -302,7 +303,7 @@ class PCV_List_Table extends WP_List_Table {
 
         $url_no_vars = remove_query_arg( [ 'f_comune', 'f_prov', 'f_cat', 's', 'paged' ] );
 
-        echo '<div class="pcv-topbar"><form method="get" id="pcv-filter-form">';
+        echo '<div class="pcv-topbar"><form method="get" id="pcv-filter-form" action="' . esc_url( admin_url( 'admin.php' ) ) . '">';
         echo '<input type="hidden" name="page" value="pcv-volontari">';
 
         echo '<label class="screen-reader-text" for="pcv-admin-provincia">' . esc_html__( 'Filtra per Provincia', self::TEXT_DOMAIN ) . '</label>';
