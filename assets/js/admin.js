@@ -8,6 +8,132 @@
     return [];
   }
 
+  // Funzione per filtrare volontari via AJAX
+  function filterVolunteersAjax() {
+    if (typeof window.PCV_AJAX_DATA === 'undefined') {
+      console.error('PCV_AJAX_DATA non è definito');
+      return;
+    }
+    
+    if (typeof jQuery === 'undefined') {
+      console.error('jQuery non è disponibile');
+      return;
+    }
+
+    // Recupera valori dei filtri
+    var provSelect = document.getElementById('pcv-admin-provincia');
+    var comuneSelect = document.getElementById('pcv-admin-comune');
+    var categoriaSelect = document.getElementById('pcv-admin-categoria');
+    var searchInput = document.querySelector('input[name="s"]');
+    
+    var filterData = {
+      action: 'pcv_filter_volunteers',
+      nonce: window.PCV_AJAX_DATA.nonce,
+      f_prov: provSelect ? provSelect.value : '',
+      f_comune: comuneSelect ? comuneSelect.value : '',
+      f_cat: categoriaSelect ? categoriaSelect.value : '',
+      s: searchInput ? searchInput.value : '',
+      paged: 1
+    };
+
+    console.log('Sending AJAX filter request:', filterData);
+
+    // Mostra indicatore di caricamento
+    var tableContainer = document.querySelector('.wp-list-table');
+    if (tableContainer) {
+      tableContainer.style.opacity = '0.5';
+    }
+
+    jQuery.post(window.PCV_AJAX_DATA.ajax_url, filterData, function(response) {
+      console.log('AJAX filter response:', response);
+      
+      if (response.success) {
+        updateTableWithData(response.data);
+      } else {
+        console.error('Filter error:', response.data);
+        alert('Errore nel filtraggio: ' + (response.data.message || 'Errore sconosciuto'));
+      }
+    }).fail(function(xhr, status, error) {
+      console.error('AJAX filter failed:', status, error);
+      alert('Errore di connessione: ' + error);
+    }).always(function() {
+      // Nascondi indicatore di caricamento
+      if (tableContainer) {
+        tableContainer.style.opacity = '1';
+      }
+    });
+  }
+
+  // Funzione per aggiornare la tabella con i nuovi dati
+  function updateTableWithData(data) {
+    var tableBody = document.querySelector('.wp-list-table tbody');
+    if (!tableBody) {
+      console.error('Table body not found');
+      return;
+    }
+
+    // Svuota la tabella
+    tableBody.innerHTML = '';
+
+    // Aggiungi i nuovi dati
+    if (data.items && data.items.length > 0) {
+      data.items.forEach(function(item) {
+        var row = createTableRow(item);
+        tableBody.appendChild(row);
+      });
+    } else {
+      var row = document.createElement('tr');
+      row.innerHTML = '<td colspan="12" style="text-align: center; padding: 20px;">Nessun volontario trovato</td>';
+      tableBody.appendChild(row);
+    }
+
+    // Aggiorna la paginazione
+    updatePagination(data);
+  }
+
+  // Funzione per creare una riga della tabella
+  function createTableRow(item) {
+    var row = document.createElement('tr');
+    row.innerHTML = `
+      <th scope="row" class="check-column">
+        <input type="checkbox" name="id[]" value="${item.id}">
+      </th>
+      <td>${formatDate(item.created_at)}</td>
+      <td>${escapeHtml(item.nome || '')}</td>
+      <td>${escapeHtml(item.cognome || '')}</td>
+      <td>${escapeHtml(item.comune || '')}</td>
+      <td>${escapeHtml(item.provincia || '')}</td>
+      <td>${escapeHtml(item.email || '')}</td>
+      <td>${escapeHtml(item.telefono || '')}</td>
+      <td>${escapeHtml(item.categoria || '')}</td>
+      <td>${item.privacy ? 'Sì' : 'No'}</td>
+      <td>${item.partecipa ? 'Sì' : 'No'}</td>
+      <td>${item.dorme ? 'Sì' : 'No'}</td>
+      <td>${item.mangia ? 'Sì' : 'No'}</td>
+    `;
+    return row;
+  }
+
+  // Funzione per formattare la data
+  function formatDate(dateString) {
+    if (!dateString) return '';
+    var date = new Date(dateString);
+    return date.toLocaleDateString('it-IT') + ' ' + date.toLocaleTimeString('it-IT', {hour: '2-digit', minute: '2-digit'});
+  }
+
+  // Funzione per escape HTML
+  function escapeHtml(text) {
+    var div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  // Funzione per aggiornare la paginazione
+  function updatePagination(data) {
+    // Implementa l'aggiornamento della paginazione se necessario
+    console.log('Updating pagination:', data);
+  }
+
   function initAdmin() {
     console.log('=== INIT ADMIN TRIGGERED ===');
     console.log('DOM ready state:', document.readyState);
@@ -142,56 +268,20 @@
           refreshComuni(prov, '');
         }
         
-        // Auto-submit del form quando cambia provincia
+        // Filtra via AJAX quando cambia provincia
         setTimeout(function() {
-          var form = document.getElementById('pcv-filter-form');
-          if (!form) {
-            // Fallback: cerca il form che contiene il select provincia
-            form = provSelect.closest('form');
-          }
-          if (!form) {
-            // Fallback: cerca qualsiasi form GET
-            form = document.querySelector('form[method="get"]');
-          }
-          if (form) {
-            var submitBtn = form.querySelector('input[type="submit"]');
-            if (submitBtn) {
-              submitBtn.value = 'Filtra...';
-              submitBtn.disabled = true;
-            }
-            console.log('Submitting form after provincia change');
-            form.submit();
-          } else {
-            console.error('Form not found - provSelect:', provSelect, 'closest form:', provSelect ? provSelect.closest('form') : 'N/A');
-          }
+          console.log('Filtering via AJAX after provincia change');
+          filterVolunteersAjax();
         }, 100);
       });
 
       comuneSelect.addEventListener('change', function(){
         selectedComune = comuneSelect.value || '';
         
-        // Auto-submit del form quando cambia comune
+        // Filtra via AJAX quando cambia comune
         setTimeout(function() {
-          var form = document.getElementById('pcv-filter-form');
-          if (!form) {
-            // Fallback: cerca il form che contiene il select comune
-            form = comuneSelect.closest('form');
-          }
-          if (!form) {
-            // Fallback: cerca qualsiasi form GET
-            form = document.querySelector('form[method="get"]');
-          }
-          if (form) {
-            var submitBtn = form.querySelector('input[type="submit"]');
-            if (submitBtn) {
-              submitBtn.value = 'Filtra...';
-              submitBtn.disabled = true;
-            }
-            console.log('Submitting form after comune change');
-            form.submit();
-          } else {
-            console.error('Form not found - comuneSelect:', comuneSelect, 'closest form:', comuneSelect ? comuneSelect.closest('form') : 'N/A');
-          }
+          console.log('Filtering via AJAX after comune change');
+          filterVolunteersAjax();
         }, 100);
       });
 
@@ -201,26 +291,8 @@
         console.log('Categoria select found:', categoriaSelect);
         categoriaSelect.addEventListener('change', function(){
           setTimeout(function() {
-            var form = document.getElementById('pcv-filter-form');
-            if (!form) {
-              // Fallback: cerca il form che contiene il select categoria
-              form = categoriaSelect.closest('form');
-            }
-            if (!form) {
-              // Fallback: cerca qualsiasi form GET
-              form = document.querySelector('form[method="get"]');
-            }
-            if (form) {
-              var submitBtn = form.querySelector('input[type="submit"]');
-              if (submitBtn) {
-                submitBtn.value = 'Filtra...';
-                submitBtn.disabled = true;
-              }
-              console.log('Submitting form after categoria change');
-              form.submit();
-            } else {
-              console.error('Form not found - categoriaSelect:', categoriaSelect, 'closest form:', categoriaSelect ? categoriaSelect.closest('form') : 'N/A');
-            }
+            console.log('Filtering via AJAX after categoria change');
+            filterVolunteersAjax();
           }, 100);
         });
       } else {
@@ -259,16 +331,8 @@
         searchInput.addEventListener('input', function() {
           clearTimeout(searchTimeout);
           searchTimeout = setTimeout(function() {
-            // Aggiungi indicatore di caricamento
-            var submitBtn = filterForm.querySelector('input[type="submit"]');
-            if (submitBtn) {
-              submitBtn.value = 'Ricerca...';
-              submitBtn.disabled = true;
-            }
-            
-            console.log('Submitting form after search input');
-            // Auto-submit del form dopo 500ms di inattività
-            filterForm.submit();
+            console.log('Filtering via AJAX after search input');
+            filterVolunteersAjax();
           }, 500);
         });
         
@@ -276,8 +340,8 @@
         searchInput.addEventListener('keypress', function(e) {
           if (e.key === 'Enter') {
             clearTimeout(searchTimeout);
-            console.log('Submitting form after Enter key');
-            filterForm.submit();
+            console.log('Filtering via AJAX after Enter key');
+            filterVolunteersAjax();
           }
         });
       } else {

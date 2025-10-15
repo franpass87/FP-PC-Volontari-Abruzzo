@@ -41,6 +41,7 @@ class PCV_Ajax_Handler {
         add_action( 'wp_ajax_pcv_delete_volunteer', [ $this, 'delete_volunteer' ] );
         add_action( 'wp_ajax_pcv_bulk_update', [ $this, 'bulk_update' ] );
         add_action( 'wp_ajax_pcv_get_comuni', [ $this, 'get_comuni' ] );
+        add_action( 'wp_ajax_pcv_filter_volunteers', [ $this, 'filter_volunteers' ] );
     }
 
     /**
@@ -249,5 +250,63 @@ class PCV_Ajax_Handler {
         }
 
         wp_send_json_success( [ 'comuni' => array_values( $this->comuni_data[ $provincia ] ) ] );
+    }
+
+    /**
+     * Filtra volontari via AJAX
+     *
+     * @return void
+     */
+    public function filter_volunteers() {
+        // Verifica nonce
+        if ( ! wp_verify_nonce( $_POST['nonce'], 'pcv_admin_nonce' ) ) {
+            wp_send_json_error( [ 'message' => __( 'Nonce non valido', self::TEXT_DOMAIN ) ] );
+        }
+
+        // Verifica permessi
+        if ( ! PCV_Role_Manager::can_view_volunteers() ) {
+            wp_send_json_error( [ 'message' => __( 'Permessi insufficienti', self::TEXT_DOMAIN ) ] );
+        }
+
+        // Recupera parametri
+        $f_prov = isset( $_POST['f_prov'] ) ? sanitize_text_field( wp_unslash( $_POST['f_prov'] ) ) : '';
+        $f_comune = isset( $_POST['f_comune'] ) ? sanitize_text_field( wp_unslash( $_POST['f_comune'] ) ) : '';
+        $f_cat = isset( $_POST['f_cat'] ) ? sanitize_text_field( wp_unslash( $_POST['f_cat'] ) ) : '';
+        $search = isset( $_POST['s'] ) ? sanitize_text_field( wp_unslash( $_POST['s'] ) ) : '';
+        $page = isset( $_POST['paged'] ) ? absint( $_POST['paged'] ) : 1;
+        $per_page = 100;
+
+        // Prepara argomenti per la query
+        $args = [
+            'orderby'   => 'created_at',
+            'order'     => 'DESC',
+            'limit'     => $per_page,
+            'offset'    => ( $page - 1 ) * $per_page,
+            'comune'    => $f_comune,
+            'provincia' => $f_prov,
+            'categoria' => $f_cat,
+            'search'    => $search,
+        ];
+
+        // Recupera dati
+        $total_items = $this->repository->count_volunteers( $args );
+        $items = $this->repository->get_volunteers( $args );
+
+        // Prepara dati per la risposta
+        $response_data = [
+            'items' => $items,
+            'total_items' => $total_items,
+            'per_page' => $per_page,
+            'total_pages' => ceil( $total_items / $per_page ),
+            'current_page' => $page,
+            'filters' => [
+                'provincia' => $f_prov,
+                'comune' => $f_comune,
+                'categoria' => $f_cat,
+                'search' => $search,
+            ]
+        ];
+
+        wp_send_json_success( $response_data );
     }
 }

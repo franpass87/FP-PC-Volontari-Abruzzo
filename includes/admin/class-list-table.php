@@ -226,6 +226,7 @@ class PCV_List_Table extends WP_List_Table {
         $s = trim( sanitize_text_field( $s_raw ) );
 
 
+
         $args = [
             'orderby'   => $orderby,
             'order'     => $order,
