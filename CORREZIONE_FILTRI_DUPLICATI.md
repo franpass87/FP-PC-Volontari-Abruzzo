@@ -15,16 +15,9 @@ Questo causava:
 
 ### 1. Modifica del metodo `display_table_only()`
 
-Il metodo è stato migliorato per utilizzare un flag `_hide_extra_tablenav` che impedisce la visualizzazione dei filtri duplicati.
+Il metodo è stato completamente riscritto per evitare di chiamare `parent::display()` che generava i filtri duplicati tramite `extra_tablenav()`. Ora mostra direttamente solo la tabella senza i filtri extra.
 
-### 2. Override del metodo `display()`
-
-È stato aggiunto un override del metodo `display()` che:
-- Controlla il flag `_hide_extra_tablenav`
-- Se il flag è `true`, mostra solo la tabella senza i filtri extra
-- Se il flag è `false`, usa il comportamento standard
-
-### 3. Flusso di Esecuzione Corretto
+### 2. Flusso di Esecuzione Corretto
 
 ```php
 // In class-admin-menu.php
@@ -38,21 +31,15 @@ $this->list_table->display_table_only();     // Mostra tabella senza filtri dupl
 
 ```php
 /**
- * Override del metodo display per nascondere completamente i filtri duplicati
+ * Mostra solo la tabella senza i filtri extra
  *
  * @return void
  */
-public function display() {
-    // Se il flag è impostato, mostra solo la tabella senza i filtri extra
-    if ( isset( $this->_hide_extra_tablenav ) && $this->_hide_extra_tablenav ) {
-        $this->display_tablenav( 'top' );
-        $this->display_table();
-        $this->display_tablenav( 'bottom' );
-        return;
-    }
-    
-    // Altrimenti usa il comportamento standard
-    parent::display();
+public function display_table_only() {
+    // Mostra solo la tabella senza i filtri extra
+    $this->display_tablenav( 'top' );
+    $this->display_table();
+    $this->display_tablenav( 'bottom' );
 }
 ```
 
@@ -80,10 +67,11 @@ Per verificare che la correzione funzioni:
 
 ## Note Tecniche
 
-- Il flag `_hide_extra_tablenav` viene impostato e resettato automaticamente
-- La soluzione è retrocompatibile
+- Il metodo `display_table_only()` ora evita completamente di chiamare `parent::display()`
+- La soluzione è retrocompatibile e più semplice
 - Non modifica il comportamento dei filtri esistenti
 - Mantiene la funzionalità di esportazione CSV
+- Elimina completamente la possibilità di filtri duplicati
 
 ## File Coinvolti
 
