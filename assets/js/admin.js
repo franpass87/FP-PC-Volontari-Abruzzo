@@ -144,7 +144,15 @@
         
         // Auto-submit del form quando cambia provincia
         setTimeout(function() {
-          var form = document.getElementById('pcv-filter-form') || document.querySelector('form[method="get"]');
+          var form = document.getElementById('pcv-filter-form');
+          if (!form) {
+            // Fallback: cerca il form che contiene il select provincia
+            form = provSelect.closest('form');
+          }
+          if (!form) {
+            // Fallback: cerca qualsiasi form GET
+            form = document.querySelector('form[method="get"]');
+          }
           if (form) {
             var submitBtn = form.querySelector('input[type="submit"]');
             if (submitBtn) {
@@ -154,7 +162,7 @@
             console.log('Submitting form after provincia change');
             form.submit();
           } else {
-            console.error('Form not found');
+            console.error('Form not found - provSelect:', provSelect, 'closest form:', provSelect ? provSelect.closest('form') : 'N/A');
           }
         }, 100);
       });
@@ -164,7 +172,15 @@
         
         // Auto-submit del form quando cambia comune
         setTimeout(function() {
-          var form = document.getElementById('pcv-filter-form') || document.querySelector('form[method="get"]');
+          var form = document.getElementById('pcv-filter-form');
+          if (!form) {
+            // Fallback: cerca il form che contiene il select comune
+            form = comuneSelect.closest('form');
+          }
+          if (!form) {
+            // Fallback: cerca qualsiasi form GET
+            form = document.querySelector('form[method="get"]');
+          }
           if (form) {
             var submitBtn = form.querySelector('input[type="submit"]');
             if (submitBtn) {
@@ -174,7 +190,7 @@
             console.log('Submitting form after comune change');
             form.submit();
           } else {
-            console.error('Form not found');
+            console.error('Form not found - comuneSelect:', comuneSelect, 'closest form:', comuneSelect ? comuneSelect.closest('form') : 'N/A');
           }
         }, 100);
       });
@@ -185,7 +201,15 @@
         console.log('Categoria select found:', categoriaSelect);
         categoriaSelect.addEventListener('change', function(){
           setTimeout(function() {
-            var form = document.getElementById('pcv-filter-form') || document.querySelector('form[method="get"]');
+            var form = document.getElementById('pcv-filter-form');
+            if (!form) {
+              // Fallback: cerca il form che contiene il select categoria
+              form = categoriaSelect.closest('form');
+            }
+            if (!form) {
+              // Fallback: cerca qualsiasi form GET
+              form = document.querySelector('form[method="get"]');
+            }
             if (form) {
               var submitBtn = form.querySelector('input[type="submit"]');
               if (submitBtn) {
@@ -195,7 +219,7 @@
               console.log('Submitting form after categoria change');
               form.submit();
             } else {
-              console.error('Form not found');
+              console.error('Form not found - categoriaSelect:', categoriaSelect, 'closest form:', categoriaSelect ? categoriaSelect.closest('form') : 'N/A');
             }
           }, 100);
         });

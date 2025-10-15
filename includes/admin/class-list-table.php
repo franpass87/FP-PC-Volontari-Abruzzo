@@ -19,6 +19,7 @@ class PCV_List_Table extends WP_List_Table {
     private $province_data;
     private $comuni_data;
     private $all_comuni;
+    private $filters_displayed = false;
 
     /**
      * Costruttore
@@ -260,11 +261,10 @@ class PCV_List_Table extends WP_List_Table {
         }
 
         // Controlla se i filtri sono già stati mostrati
-        static $filters_shown = false;
-        if ( $filters_shown ) {
+        if ( $this->filters_displayed ) {
             return;
         }
-        $filters_shown = true;
+        $this->filters_displayed = true;
 
 
         $f_comune_raw = isset( $_GET['f_comune'] ) ? wp_unslash( $_GET['f_comune'] ) : '';
