@@ -354,10 +354,42 @@ class PCV_List_Table extends WP_List_Table {
      * @return void
      */
     public function display_table_only() {
+        // Imposta il flag per nascondere i filtri in extra_tablenav
+        $this->_hide_extra_tablenav = true;
+        
         // Mostra solo la tabella senza i filtri extra
         $this->display_tablenav( 'top' );
         $this->display_table();
         $this->display_tablenav( 'bottom' );
+        
+        // Resetta il flag
+        $this->_hide_extra_tablenav = false;
+    }
+
+    /**
+     * Override di display_tablenav per controllare i filtri
+     *
+     * @param string $which
+     * @return void
+     */
+    public function display_tablenav( $which ) {
+        if ( 'top' === $which ) {
+            wp_nonce_field( 'bulk-' . $this->_args['plural'] );
+        }
+        ?>
+        <div class="tablenav <?php echo esc_attr( $which ); ?>">
+            <?php if ( $this->has_items() ) : ?>
+                <div class="alignleft actions bulkactions">
+                    <?php $this->bulk_actions( $which ); ?>
+                </div>
+            <?php endif; ?>
+            <?php
+            $this->extra_tablenav( $which );
+            $this->pagination( $which );
+            ?>
+            <br class="clear" />
+        </div>
+        <?php
     }
 
 }
