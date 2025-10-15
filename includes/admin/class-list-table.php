@@ -354,26 +354,14 @@ class PCV_List_Table extends WP_List_Table {
      * @return void
      */
     public function display_table_only() {
-        // Usa la funzione display() standard ma con un flag per nascondere extra_tablenav
+        // Imposta il flag per nascondere i filtri in extra_tablenav
         $this->_hide_extra_tablenav = true;
+        
+        // Usa il metodo display() standard della classe parent
+        // Il flag _hide_extra_tablenav impedirà a extra_tablenav() di mostrare i filtri
         parent::display();
+        
+        // Resetta il flag
         $this->_hide_extra_tablenav = false;
-    }
-
-    /**
-     * Sovrascrive la funzione display() per controllare quando mostrare i filtri extra
-     *
-     * @return void
-     */
-    public function display() {
-        // Se il flag è impostato, non mostrare extra_tablenav
-        if ( isset( $this->_hide_extra_tablenav ) && $this->_hide_extra_tablenav ) {
-            $this->display_tablenav( 'top' );
-            $this->display_rows_or_placeholder();
-            $this->display_tablenav( 'bottom' );
-        } else {
-            // Comportamento standard
-            parent::display();
-        }
     }
 }
