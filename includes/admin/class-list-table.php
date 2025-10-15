@@ -357,36 +357,9 @@ class PCV_List_Table extends WP_List_Table {
         // Imposta il flag per nascondere i filtri in extra_tablenav
         $this->_hide_extra_tablenav = true;
         
-        // Chiama i componenti della tabella uno per uno
-        // Questo evita che extra_tablenav venga chiamato
-        $this->display_tablenav( 'top' );
-        
-        ?>
-        <table class="wp-list-table <?php echo esc_attr( implode( ' ', $this->get_table_classes() ) ); ?>">
-            <?php $this->print_table_description(); ?>
-            <thead>
-                <tr>
-                    <?php $this->print_column_headers(); ?>
-                </tr>
-            </thead>
-
-            <tbody id="the-list"<?php
-                if ( $this->_args['singular'] ) {
-                    echo ' data-wp-lists="list:' . esc_attr( $this->_args['singular'] ) . '"';
-                }
-            ?>>
-                <?php $this->display_rows_or_placeholder(); ?>
-            </tbody>
-
-            <tfoot>
-                <tr>
-                    <?php $this->print_column_headers( false ); ?>
-                </tr>
-            </tfoot>
-        </table>
-        <?php
-        
-        $this->display_tablenav( 'bottom' );
+        // Usa il metodo display() standard della classe parent
+        // Il flag _hide_extra_tablenav impedirà a extra_tablenav() di mostrare i filtri
+        parent::display();
         
         // Resetta il flag
         $this->_hide_extra_tablenav = false;
