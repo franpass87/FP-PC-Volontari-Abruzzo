@@ -81,9 +81,13 @@
         var row = createTableRow(item);
         tableBody.appendChild(row);
       });
+      
+      // I listener per i pulsanti sono già attivi tramite event delegation
+      // quindi non è necessario riattaccarli
+      console.log('Tabella aggiornata con', data.items.length, 'volontari');
     } else {
       var row = document.createElement('tr');
-      row.innerHTML = '<td colspan="12" style="text-align: center; padding: 20px;">Nessun volontario trovato</td>';
+      row.innerHTML = '<td colspan="13" style="text-align: center; padding: 20px;">Nessun volontario trovato</td>';
       tableBody.appendChild(row);
     }
 
@@ -94,12 +98,33 @@
   // Funzione per creare una riga della tabella
   function createTableRow(item) {
     var row = document.createElement('tr');
+    
+    // Crea la colonna nome con i pulsanti di azione
+    var nomeCell = document.createElement('td');
+    nomeCell.innerHTML = `
+      <strong>${escapeHtml(item.nome || '')}</strong>
+      <div class="row-actions">
+        <span class="edit">
+          <a href="#" class="pcv-edit-volunteer" data-id="${item.id}">Modifica</a> | 
+        </span>
+        <span class="delete">
+          <a href="#" class="pcv-delete-volunteer" data-id="${item.id}">Elimina</a>
+        </span>
+      </div>
+    `;
+    
     row.innerHTML = `
       <th scope="row" class="check-column">
         <input type="checkbox" name="id[]" value="${item.id}">
       </th>
       <td>${formatDate(item.created_at)}</td>
-      <td>${escapeHtml(item.nome || '')}</td>
+    `;
+    
+    // Aggiungi la cella nome con le azioni
+    row.appendChild(nomeCell);
+    
+    // Aggiungi le altre celle
+    row.innerHTML += `
       <td>${escapeHtml(item.cognome || '')}</td>
       <td>${escapeHtml(item.comune || '')}</td>
       <td>${escapeHtml(item.provincia || '')}</td>
@@ -111,6 +136,7 @@
       <td>${item.dorme ? 'Sì' : 'No'}</td>
       <td>${item.mangia ? 'Sì' : 'No'}</td>
     `;
+    
     return row;
   }
 

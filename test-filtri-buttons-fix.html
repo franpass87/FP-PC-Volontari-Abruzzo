@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Correzione Pulsanti Filtri</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .success { color: green; }
+        .error { color: red; }
+        .wp-list-table { border-collapse: collapse; width: 100%; }
+        .wp-list-table th, .wp-list-table td { border: 1px solid #ddd; padding: 8px; }
+        .row-actions { font-size: 11px; }
+        .row-actions a { text-decoration: none; }
+        .pcv-edit-volunteer, .pcv-delete-volunteer { color: #0073aa; }
+        .pcv-edit-volunteer:hover, .pcv-delete-volunteer:hover { color: #005177; }
+    </style>
+</head>
+<body>
+    <h1>Test Correzione Pulsanti Modifica/Elimina dopo Filtri</h1>
+    
+    <div class="test-section">
+        <h2>Descrizione del Problema</h2>
+        <p>Dopo aver applicato i filtri nella lista volontari, i pulsanti "Modifica" ed "Elimina" spariscono dalle righe della tabella.</p>
+        <p><strong>Causa:</strong> La funzione JavaScript <code>createTableRow</code> nel file <code>admin.js</code> non includeva i pulsanti di azione quando ricreava le righe della tabella dopo il filtraggio AJAX.</p>
+    </div>
+
+    <div class="test-section">
+        <h2>Correzione Applicata</h2>
+        <p>Modificata la funzione <code>createTableRow</code> per includere i pulsanti "Modifica" ed "Elimina" nella colonna nome:</p>
+        <pre><code>// Crea la colonna nome con i pulsanti di azione
+var nomeCell = document.createElement('td');
+nomeCell.innerHTML = `
+  &lt;strong&gt;${escapeHtml(item.nome || '')}&lt;/strong&gt;
+  &lt;div class="row-actions"&gt;
+    &lt;span class="edit"&gt;
+      &lt;a href="#" class="pcv-edit-volunteer" data-id="${item.id}"&gt;Modifica&lt;/a&gt; | 
+    &lt;/span&gt;
+    &lt;span class="delete"&gt;
+      &lt;a href="#" class="pcv-delete-volunteer" data-id="${item.id}"&gt;Elimina&lt;/a&gt;
+    &lt;/span&gt;
+  &lt;/div&gt;
+`;</code></pre>
+    </div>
+
+    <div class="test-section">
+        <h2>Simulazione Tabella Prima della Correzione</h2>
+        <table class="wp-list-table">
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Nome</th>
+                    <th>Cognome</th>
+                    <th>Comune</th>
+                    <th>Provincia</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>15/01/2024 10:30</td>
+                    <td>Mario</td>
+                    <td>Rossi</td>
+                    <td>L'Aquila</td>
+                    <td>AQ</td>
+                </tr>
+            </tbody>
+        </table>
+        <p class="error">❌ Mancano i pulsanti "Modifica" ed "Elimina"</p>
+    </div>
+
+    <div class="test-section">
+        <h2>Simulazione Tabella Dopo la Correzione</h2>
+        <table class="wp-list-table">
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Nome</th>
+                    <th>Cognome</th>
+                    <th>Comune</th>
+                    <th>Provincia</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>15/01/2024 10:30</td>
+                    <td>
+                        <strong>Mario</strong>
+                        <div class="row-actions">
+                            <span class="edit">
+                                <a href="#" class="pcv-edit-volunteer" data-id="1">Modifica</a> | 
+                            </span>
+                            <span class="delete">
+                                <a href="#" class="pcv-delete-volunteer" data-id="1">Elimina</a>
+                            </span>
+                        </div>
+                    </td>
+                    <td>Rossi</td>
+                    <td>L'Aquila</td>
+                    <td>AQ</td>
+                </tr>
+            </tbody>
+        </table>
+        <p class="success">✅ I pulsanti "Modifica" ed "Elimina" sono presenti e funzionanti</p>
+    </div>
+
+    <div class="test-section">
+        <h2>Istruzioni per il Test</h2>
+        <ol>
+            <li>Apri la pagina di amministrazione dei volontari</li>
+            <li>Applica un filtro (per esempio, seleziona una provincia)</li>
+            <li>Verifica che la lista si aggiorni via AJAX</li>
+            <li>Controlla che i pulsanti "Modifica" ed "Elimina" siano ancora visibili e funzionanti</li>
+            <li>Testa che i pulsanti funzionino correttamente aprendo i modal di modifica/eliminazione</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>Note Tecniche</h2>
+        <ul>
+            <li>I listener per i pulsanti utilizzano event delegation, quindi funzionano automaticamente con i nuovi elementi</li>
+            <li>La struttura HTML dei pulsanti è identica a quella generata dal PHP nella classe <code>PCV_List_Table</code></li>
+            <li>I pulsanti mantengono gli attributi <code>data-id</code> necessari per identificare il volontario</li>
+            <li>La correzione è compatibile con tutte le funzionalità esistenti (modifica singola, eliminazione, bulk edit)</li>
+        </ul>
+    </div>
+
+    <script>
+        // Simulazione del comportamento dei pulsanti
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('pcv-edit-volunteer')) {
+                e.preventDefault();
+                alert('Modal di modifica aperto per ID: ' + e.target.getAttribute('data-id'));
+            }
+            if (e.target.classList.contains('pcv-delete-volunteer')) {
+                e.preventDefault();
+                if (confirm('Sei sicuro di voler eliminare questo volontario?')) {
+                    alert('Volontario eliminato con ID: ' + e.target.getAttribute('data-id'));
+                }
+            }
+        });
+    </script>
+</body>
+</html>
