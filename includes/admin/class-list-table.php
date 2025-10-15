@@ -259,6 +259,13 @@ class PCV_List_Table extends WP_List_Table {
             return;
         }
 
+        // Controlla se i filtri sono già stati mostrati
+        static $filters_shown = false;
+        if ( $filters_shown ) {
+            return;
+        }
+        $filters_shown = true;
+
 
         $f_comune_raw = isset( $_GET['f_comune'] ) ? wp_unslash( $_GET['f_comune'] ) : '';
         $f_comune = sanitize_text_field( $f_comune_raw );
@@ -346,33 +353,5 @@ class PCV_List_Table extends WP_List_Table {
         $this->display_tablenav( 'bottom' );
     }
 
-    /**
-     * Override di display_tablenav per controllare i filtri
-     *
-     * @param string $which
-     * @return void
-     */
-    public function display_tablenav( $which ) {
-        if ( 'top' === $which ) {
-            wp_nonce_field( 'bulk-' . $this->_args['plural'] );
-        }
-        ?>
-        <div class="tablenav <?php echo esc_attr( $which ); ?>">
-            <?php if ( $this->has_items() ) : ?>
-                <div class="alignleft actions bulkactions">
-                    <?php $this->bulk_actions( $which ); ?>
-                </div>
-            <?php endif; ?>
-            <?php
-            // Mostra i filtri solo nella tablenav superiore
-            if ( 'top' === $which ) {
-                $this->extra_tablenav( $which );
-            }
-            $this->pagination( $which );
-            ?>
-            <br class="clear" />
-        </div>
-        <?php
-    }
 
 }
