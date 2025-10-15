@@ -258,10 +258,8 @@ class PCV_Ajax_Handler {
      * @return void
      */
     public function filter_volunteers() {
-        // Verifica nonce
-        if ( ! wp_verify_nonce( $_POST['nonce'], 'pcv_admin_nonce' ) ) {
-            wp_send_json_error( [ 'message' => __( 'Nonce non valido', self::TEXT_DOMAIN ) ] );
-        }
+        // Verifica nonce usando check_ajax_referer (più robusto per AJAX)
+        check_ajax_referer( 'pcv_ajax_nonce', 'nonce' );
 
         // Verifica permessi
         if ( ! PCV_Role_Manager::can_view_volunteers() ) {
