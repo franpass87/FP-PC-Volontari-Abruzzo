@@ -354,26 +354,41 @@ class PCV_List_Table extends WP_List_Table {
      * @return void
      */
     public function display_table_only() {
-        // Usa la funzione display() standard ma con un flag per nascondere extra_tablenav
+        // Imposta il flag per nascondere i filtri in extra_tablenav
         $this->_hide_extra_tablenav = true;
-        parent::display();
-        $this->_hide_extra_tablenav = false;
-    }
+        
+        // Chiama i componenti della tabella uno per uno
+        // Questo evita che extra_tablenav venga chiamato
+        $this->display_tablenav( 'top' );
+        
+        ?>
+        <table class="wp-list-table <?php echo esc_attr( implode( ' ', $this->get_table_classes() ) ); ?>">
+            <?php $this->print_table_description(); ?>
+            <thead>
+                <tr>
+                    <?php $this->print_column_headers(); ?>
+                </tr>
+            </thead>
 
-    /**
-     * Sovrascrive la funzione display() per controllare quando mostrare i filtri extra
-     *
-     * @return void
-     */
-    public function display() {
-        // Se il flag è impostato, non mostrare extra_tablenav
-        if ( isset( $this->_hide_extra_tablenav ) && $this->_hide_extra_tablenav ) {
-            $this->display_tablenav( 'top' );
-            $this->display_rows_or_placeholder();
-            $this->display_tablenav( 'bottom' );
-        } else {
-            // Comportamento standard
-            parent::display();
-        }
+            <tbody id="the-list"<?php
+                if ( $this->_args['singular'] ) {
+                    echo ' data-wp-lists="list:' . esc_attr( $this->_args['singular'] ) . '"';
+                }
+            ?>>
+                <?php $this->display_rows_or_placeholder(); ?>
+            </tbody>
+
+            <tfoot>
+                <tr>
+                    <?php $this->print_column_headers( false ); ?>
+                </tr>
+            </tfoot>
+        </table>
+        <?php
+        
+        $this->display_tablenav( 'bottom' );
+        
+        // Resetta il flag
+        $this->_hide_extra_tablenav = false;
     }
 }
