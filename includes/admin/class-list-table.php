@@ -259,10 +259,6 @@ class PCV_List_Table extends WP_List_Table {
             return;
         }
 
-        // Se il flag è impostato, non mostrare i filtri
-        if ( isset( $this->_hide_extra_tablenav ) && $this->_hide_extra_tablenav ) {
-            return;
-        }
 
         $f_comune_raw = isset( $_GET['f_comune'] ) ? wp_unslash( $_GET['f_comune'] ) : '';
         $f_comune = sanitize_text_field( $f_comune_raw );
@@ -339,31 +335,15 @@ class PCV_List_Table extends WP_List_Table {
     }
 
     /**
-     * Mostra i filtri (separato dalla tabella)
+     * Override del metodo display per nascondere i filtri duplicati
      *
      * @return void
      */
-    public function display_filters() {
-        // Chiama direttamente la funzione che genera i filtri
-        $this->extra_tablenav( 'top' );
-    }
-
-    /**
-     * Mostra solo la tabella senza i filtri extra
-     *
-     * @return void
-     */
-    public function display_table_only() {
-        // Imposta il flag per nascondere i filtri in extra_tablenav
-        $this->_hide_extra_tablenav = true;
-        
-        // Mostra solo la tabella senza i filtri extra
+    public function display() {
+        // Mostra i filtri solo una volta in alto
         $this->display_tablenav( 'top' );
         $this->display_table();
         $this->display_tablenav( 'bottom' );
-        
-        // Resetta il flag
-        $this->_hide_extra_tablenav = false;
     }
 
     /**
@@ -384,7 +364,10 @@ class PCV_List_Table extends WP_List_Table {
                 </div>
             <?php endif; ?>
             <?php
-            $this->extra_tablenav( $which );
+            // Mostra i filtri solo nella tablenav superiore
+            if ( 'top' === $which ) {
+                $this->extra_tablenav( $which );
+            }
             $this->pagination( $which );
             ?>
             <br class="clear" />
