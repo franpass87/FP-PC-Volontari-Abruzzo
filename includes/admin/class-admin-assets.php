@@ -38,7 +38,7 @@ class PCV_Admin_Assets {
         
         error_log( 'PCV Assets loading for hook: ' . $hook );
 
-        $css = ".pcv-topbar{display:flex;gap:10px;align-items:center;margin:12px 0}.pcv-topbar form{display:flex;gap:8px;align-items:center}.wrap .tablenav{overflow:visible}.pcv-topbar, .pcv-topbar form{flex-wrap:wrap}.pcv-topbar select{min-width:180px}";
+        $css = ".pcv-topbar{display:flex;gap:10px;align-items:center;margin:0 0 6px 0;padding:8px 0;min-height:32px}.pcv-topbar form{display:flex;gap:8px;align-items:center}.wrap .tablenav{overflow:visible}.pcv-topbar, .pcv-topbar form{flex-wrap:wrap}.pcv-topbar select{min-width:180px}.tablenav.top{margin-top:0;padding-top:0}";
         wp_register_style( 'pcv-admin-inline', false );
         wp_enqueue_style( 'pcv-admin-inline' );
         wp_add_inline_style( 'pcv-admin-inline', $css );
