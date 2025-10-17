@@ -81,7 +81,6 @@ class PCV_Autoloader {
             'PCV_Import_Page'      => 'admin/class-import-page.php',
             'PCV_Ajax_Handler'     => 'admin/class-ajax-handler.php',
             'PCV_Categories_Page'  => 'admin/class-categories-page.php',
-            'PCV_Notes_Page'       => 'admin/class-notes-page.php',
             'PCV_Dashboard_Widget' => 'admin/class-dashboard-widget.php',
             'PCV_Comuni_Normalizer' => 'admin/class-comuni-normalizer.php',
 

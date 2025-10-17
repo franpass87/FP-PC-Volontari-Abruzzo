@@ -124,6 +124,10 @@ class PCV_Ajax_Handler {
             $data['categoria'] = sanitize_text_field( wp_unslash( $_POST['categoria'] ) );
         }
 
+        if ( isset( $_POST['note'] ) ) {
+            $data['note'] = wp_kses_post( wp_unslash( $_POST['note'] ) );
+        }
+
         if ( isset( $_POST['privacy'] ) ) {
             $data['privacy'] = absint( $_POST['privacy'] );
         }
@@ -318,4 +322,5 @@ class PCV_Ajax_Handler {
 
         wp_send_json_success( $response_data );
     }
+
 }

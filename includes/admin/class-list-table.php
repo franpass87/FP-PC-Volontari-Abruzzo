@@ -100,13 +100,6 @@ class PCV_List_Table extends WP_List_Table {
                 $item->id,
                 esc_html__( 'Modifica', self::TEXT_DOMAIN )
             ),
-            'notes' => sprintf(
-                '<a href="#" class="pcv-edit-notes" data-id="%d" data-nome="%s" data-cognome="%s">%s</a>',
-                $item->id,
-                esc_attr( $item->nome ),
-                esc_attr( $item->cognome ),
-                esc_html__( 'Note', self::TEXT_DOMAIN )
-            ),
             'delete' => sprintf(
                 '<a href="#" class="pcv-delete-volunteer" data-id="%d">%s</a>',
                 $item->id,
@@ -146,7 +139,9 @@ class PCV_List_Table extends WP_List_Table {
             case 'partecipa':
             case 'dorme':
             case 'mangia':
-                return $item->$col ? esc_html__( 'Sì', self::TEXT_DOMAIN ) : esc_html__( 'No', self::TEXT_DOMAIN );
+                // Conversione esplicita per evitare problemi con i tipi di dati
+                $value = (int) $item->$col;
+                return $value === 1 ? esc_html__( 'Sì', self::TEXT_DOMAIN ) : esc_html__( 'No', self::TEXT_DOMAIN );
             default:
                 return '';
         }

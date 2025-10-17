@@ -131,10 +131,10 @@
       <td>${escapeHtml(item.email || '')}</td>
       <td>${escapeHtml(item.telefono || '')}</td>
       <td>${escapeHtml(item.categoria || '')}</td>
-      <td>${item.privacy ? 'Sì' : 'No'}</td>
-      <td>${item.partecipa ? 'Sì' : 'No'}</td>
-      <td>${item.dorme ? 'Sì' : 'No'}</td>
-      <td>${item.mangia ? 'Sì' : 'No'}</td>
+      <td>${parseInt(item.privacy) === 1 ? 'Sì' : 'No'}</td>
+      <td>${parseInt(item.partecipa) === 1 ? 'Sì' : 'No'}</td>
+      <td>${parseInt(item.dorme) === 1 ? 'Sì' : 'No'}</td>
+      <td>${parseInt(item.mangia) === 1 ? 'Sì' : 'No'}</td>
     `;
     
     return row;
@@ -443,6 +443,10 @@
                 <select name="categoria" id="pcv-modal-categoria"></select>
               </div>
               <div class="pcv-form-row">
+                <label>Note</label>
+                <textarea name="note" rows="4" placeholder="Inserisci note aggiuntive per questo contatto..."></textarea>
+              </div>
+              <div class="pcv-form-row">
                 <label><input type="checkbox" name="privacy" value="1"> Privacy</label>
               </div>
               <div class="pcv-form-row">
@@ -654,6 +658,7 @@
             form.querySelector('[name="email"]').value = v.email || '';
             form.querySelector('[name="telefono"]').value = v.telefono || '';
             form.querySelector('[name="categoria"]').value = v.categoria || '';
+            form.querySelector('[name="note"]').value = v.note || '';
             form.querySelector('[name="privacy"]').checked = parseInt(v.privacy) === 1;
             form.querySelector('[name="partecipa"]').checked = parseInt(v.partecipa) === 1;
             form.querySelector('[name="dorme"]').checked = parseInt(v.dorme) === 1;
@@ -758,6 +763,7 @@
         provincia: formData.get('provincia'),
         comune: formData.get('comune'),
         categoria: formData.get('categoria'),
+        note: formData.get('note'),
         privacy: formData.get('privacy') ? 1 : 0,
         partecipa: formData.get('partecipa') ? 1 : 0,
         dorme: formData.get('dorme') ? 1 : 0,
@@ -890,26 +896,4 @@
     setTimeout(initAdmin, 100);
   }
 
-  // Gestione link Note
-  function initNotesHandlers() {
-    if (typeof jQuery === 'undefined') {
-      return;
-    }
-
-    jQuery(document).on('click', '.pcv-edit-notes', function(e) {
-      e.preventDefault();
-      
-      var volunteerId = jQuery(this).data('id');
-      var nome = jQuery(this).data('nome');
-      var cognome = jQuery(this).data('cognome');
-      
-      if (volunteerId) {
-        var notesUrl = 'admin.php?page=pcv-volontari-notes&volunteer_id=' + volunteerId;
-        window.location.href = notesUrl;
-      }
-    });
-  }
-
-  // Inizializza gestori note
-  initNotesHandlers();
 })();
