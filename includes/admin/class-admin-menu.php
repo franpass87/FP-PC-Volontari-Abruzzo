@@ -16,16 +16,18 @@ class PCV_Admin_Menu {
     private $settings_page;
     private $import_page;
     private $categories_page;
+    private $notes_page;
     private $comuni_normalizer;
 
     /**
      * Costruttore
      */
-    public function __construct( $list_table, $settings_page, $import_page, $categories_page ) {
+    public function __construct( $list_table, $settings_page, $import_page, $categories_page, $notes_page ) {
         $this->list_table = $list_table;
         $this->settings_page = $settings_page;
         $this->import_page = $import_page;
         $this->categories_page = $categories_page;
+        $this->notes_page = $notes_page;
         $this->comuni_normalizer = new PCV_Comuni_Normalizer();
     }
 
@@ -79,6 +81,15 @@ class PCV_Admin_Menu {
             PCV_Role_Manager::CAP_MANAGE_SETTINGS,
             self::MENU_SLUG . '-normalize',
             [ $this->comuni_normalizer, 'render_admin_page' ]
+        );
+
+        add_submenu_page(
+            self::MENU_SLUG,
+            __( 'Gestione Note', self::TEXT_DOMAIN ),
+            __( 'Note', self::TEXT_DOMAIN ),
+            PCV_Role_Manager::CAP_MANAGE_SETTINGS,
+            self::MENU_SLUG . '-notes',
+            [ $this->notes_page, 'render' ]
         );
     }
 

@@ -35,6 +35,11 @@ class PCV_Database {
         }
         
         dbDelta( $sql );
+        
+        // Crea anche la tabella delle note se la classe esiste
+        if ( class_exists( 'PCV_Notes_Manager' ) ) {
+            PCV_Notes_Manager::create_table();
+        }
     }
 
     /**
@@ -66,13 +71,22 @@ class PCV_Database {
             }
         }
 
-        if ( ! $needs_upgrade ) {
-            return;
+        if ( $needs_upgrade ) {
+            require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+            $charset = $wpdb->get_charset_collate();
+            dbDelta( self::get_schema_sql( $table, $charset ) );
         }
-
-        require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-        $charset = $wpdb->get_charset_collate();
-        dbDelta( self::get_schema_sql( $table, $charset ) );
+        
+        // Verifica se la tabella delle note esiste e la crea se necessario
+        if ( class_exists( 'PCV_Notes_Manager' ) ) {
+            $notes_table = PCV_Notes_Manager::get_table_name();
+            $notes_table_like = $wpdb->esc_like( $notes_table );
+            $notes_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $notes_table_like ) );
+            
+            if ( $notes_exists !== $notes_table ) {
+                PCV_Notes_Manager::create_table();
+            }
+        }
     }
 
     /**
