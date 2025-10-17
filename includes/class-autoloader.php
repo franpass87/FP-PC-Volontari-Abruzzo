@@ -87,9 +87,6 @@ class PCV_Autoloader {
 
             // Categories
             'PCV_Category_Manager' => 'class-category-manager.php',
-            
-            // Notes
-            'PCV_Notes_Manager'    => 'class-notes-manager.php',
         ];
 
         if ( isset( $class_map[ $class ] ) ) {

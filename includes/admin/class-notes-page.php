@@ -1,6 +1,6 @@
 <?php
 /**
- * Pagina gestione note
+ * Pagina gestione note per singoli contatti
  *
  * @package PC_Volontari_Abruzzo
  */
@@ -10,6 +10,12 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 class PCV_Notes_Page {
 
     const TEXT_DOMAIN = 'pc-volontari-abruzzo';
+
+    private $repository;
+
+    public function __construct( $repository ) {
+        $this->repository = $repository;
+    }
 
     /**
      * Renderizza la pagina note
@@ -25,54 +31,42 @@ class PCV_Notes_Page {
         $message = '';
         $error = '';
 
-        if ( isset( $_POST['pcv_add_note'] ) && check_admin_referer( 'pcv_add_note_nonce' ) ) {
-            $title = isset( $_POST['note_title'] ) ? sanitize_text_field( wp_unslash( $_POST['note_title'] ) ) : '';
-            $content = isset( $_POST['note_content'] ) ? wp_kses_post( wp_unslash( $_POST['note_content'] ) ) : '';
+        if ( isset( $_POST['pcv_update_note'] ) && check_admin_referer( 'pcv_update_note_nonce' ) ) {
+            $volunteer_id = isset( $_POST['volunteer_id'] ) ? absint( $_POST['volunteer_id'] ) : 0;
+            $note = isset( $_POST['note'] ) ? wp_kses_post( wp_unslash( $_POST['note'] ) ) : '';
             
-            if ( ! empty( $title ) && ! empty( $content ) ) {
-                if ( PCV_Notes_Manager::add_note( $title, $content ) ) {
-                    $message = __( 'Nota aggiunta con successo.', self::TEXT_DOMAIN );
-                } else {
-                    $error = __( 'Errore durante il salvataggio della nota.', self::TEXT_DOMAIN );
-                }
-            } else {
-                $error = __( 'Titolo e contenuto sono obbligatori.', self::TEXT_DOMAIN );
-            }
-        }
-
-        if ( isset( $_POST['pcv_edit_note'] ) && check_admin_referer( 'pcv_edit_note_nonce' ) ) {
-            $note_id = isset( $_POST['note_id'] ) ? absint( $_POST['note_id'] ) : 0;
-            $title = isset( $_POST['note_title'] ) ? sanitize_text_field( wp_unslash( $_POST['note_title'] ) ) : '';
-            $content = isset( $_POST['note_content'] ) ? wp_kses_post( wp_unslash( $_POST['note_content'] ) ) : '';
-            
-            if ( $note_id > 0 && ! empty( $title ) && ! empty( $content ) ) {
-                if ( PCV_Notes_Manager::update_note( $note_id, $title, $content ) ) {
+            if ( $volunteer_id > 0 ) {
+                $result = $this->repository->update( $volunteer_id, [ 'note' => $note ] );
+                if ( $result !== false ) {
                     $message = __( 'Nota aggiornata con successo.', self::TEXT_DOMAIN );
                 } else {
                     $error = __( 'Errore durante l\'aggiornamento della nota.', self::TEXT_DOMAIN );
                 }
             } else {
-                $error = __( 'Dati non validi per l\'aggiornamento.', self::TEXT_DOMAIN );
+                $error = __( 'ID volontario non valido.', self::TEXT_DOMAIN );
             }
         }
 
-        if ( isset( $_POST['pcv_delete_note'] ) && check_admin_referer( 'pcv_delete_note_nonce' ) ) {
-            $note_id = isset( $_POST['note_id'] ) ? absint( $_POST['note_id'] ) : 0;
-            
-            if ( $note_id > 0 ) {
-                if ( PCV_Notes_Manager::delete_note( $note_id ) ) {
-                    $message = __( 'Nota eliminata con successo.', self::TEXT_DOMAIN );
-                } else {
-                    $error = __( 'Errore durante l\'eliminazione della nota.', self::TEXT_DOMAIN );
-                }
-            }
+        // Recupera ID volontario se specificato
+        $volunteer_id = isset( $_GET['volunteer_id'] ) ? absint( $_GET['volunteer_id'] ) : 0;
+        $volunteer = null;
+        
+        if ( $volunteer_id > 0 ) {
+            $volunteer = $this->repository->get_by_id( $volunteer_id );
         }
-
-        // Recupera tutte le note
-        $notes = PCV_Notes_Manager::get_all_notes();
 
         echo '<div class="wrap">';
-        printf( '<h1 class="wp-heading-inline">%s</h1>', esc_html__( 'Gestione Note', self::TEXT_DOMAIN ) );
+        
+        if ( $volunteer ) {
+            printf( 
+                '<h1 class="wp-heading-inline">%s - %s %s</h1>', 
+                esc_html__( 'Note per', self::TEXT_DOMAIN ),
+                esc_html( $volunteer->nome ),
+                esc_html( $volunteer->cognome )
+            );
+        } else {
+            printf( '<h1 class="wp-heading-inline">%s</h1>', esc_html__( 'Gestione Note', self::TEXT_DOMAIN ) );
+        }
         
         // Mostra messaggi
         if ( ! empty( $message ) ) {
@@ -83,118 +77,87 @@ class PCV_Notes_Page {
             echo '<div class="error notice notice-error is-dismissible"><p>' . esc_html( $error ) . '</p></div>';
         }
 
-        echo '<div class="pcv-notes-container">';
-        
-        // Form per aggiungere nuova nota
-        echo '<div class="pcv-add-note-section">';
-        echo '<h2>' . esc_html__( 'Aggiungi Nuova Nota', self::TEXT_DOMAIN ) . '</h2>';
-        echo '<form method="post" class="pcv-note-form">';
-        wp_nonce_field( 'pcv_add_note_nonce' );
-        echo '<table class="form-table">';
-        echo '<tr>';
-        echo '<th scope="row"><label for="note_title">' . esc_html__( 'Titolo', self::TEXT_DOMAIN ) . '</label></th>';
-        echo '<td><input type="text" id="note_title" name="note_title" class="regular-text" required /></td>';
-        echo '</tr>';
-        echo '<tr>';
-        echo '<th scope="row"><label for="note_content">' . esc_html__( 'Contenuto', self::TEXT_DOMAIN ) . '</label></th>';
-        echo '<td><textarea id="note_content" name="note_content" rows="6" class="large-text" required></textarea></td>';
-        echo '</tr>';
-        echo '</table>';
-        submit_button( __( 'Aggiungi Nota', self::TEXT_DOMAIN ), 'primary', 'pcv_add_note' );
-        echo '</form>';
-        echo '</div>';
-
-        // Lista delle note esistenti
-        if ( ! empty( $notes ) ) {
-            echo '<div class="pcv-notes-list">';
-            echo '<h2>' . esc_html__( 'Note Esistenti', self::TEXT_DOMAIN ) . '</h2>';
+        if ( $volunteer ) {
+            // Form per modificare la nota del volontario specifico
+            echo '<div class="pcv-note-form-container">';
+            echo '<form method="post" class="pcv-note-form">';
+            wp_nonce_field( 'pcv_update_note_nonce' );
+            echo '<input type="hidden" name="volunteer_id" value="' . esc_attr( $volunteer_id ) . '" />';
             
-            foreach ( $notes as $note ) {
-                echo '<div class="pcv-note-item" data-note-id="' . esc_attr( $note->id ) . '">';
-                echo '<div class="pcv-note-header">';
-                echo '<h3 class="pcv-note-title">' . esc_html( $note->title ) . '</h3>';
-                echo '<div class="pcv-note-meta">';
-                printf( 
-                    '<span class="pcv-note-date">%s</span>',
-                    esc_html( mysql2date( 'd/m/Y H:i', $note->created_at ) )
-                );
-                echo '</div>';
-                echo '</div>';
-                
-                echo '<div class="pcv-note-content">';
-                echo wp_kses_post( $note->content );
-                echo '</div>';
-                
-                echo '<div class="pcv-note-actions">';
-                echo '<button type="button" class="button button-secondary pcv-edit-note" data-note-id="' . esc_attr( $note->id ) . '">' . esc_html__( 'Modifica', self::TEXT_DOMAIN ) . '</button>';
-                echo '<form method="post" style="display: inline-block; margin-left: 5px;">';
-                wp_nonce_field( 'pcv_delete_note_nonce' );
-                echo '<input type="hidden" name="note_id" value="' . esc_attr( $note->id ) . '" />';
-                echo '<input type="submit" name="pcv_delete_note" class="button button-link-delete" value="' . esc_attr__( 'Elimina', self::TEXT_DOMAIN ) . '" onclick="return confirm(\'' . esc_js( __( 'Sei sicuro di voler eliminare questa nota?', self::TEXT_DOMAIN ) ) . '\');" />';
-                echo '</form>';
-                echo '</div>';
-                echo '</div>';
-            }
+            echo '<table class="form-table">';
+            echo '<tr>';
+            echo '<th scope="row"><label for="note">' . esc_html__( 'Note per', self::TEXT_DOMAIN ) . ' ' . esc_html( $volunteer->nome ) . ' ' . esc_html( $volunteer->cognome ) . '</label></th>';
+            echo '<td>';
+            $current_note = isset( $volunteer->note ) ? $volunteer->note : '';
+            echo '<textarea id="note" name="note" rows="8" class="large-text" placeholder="' . esc_attr__( 'Inserisci le note per questo contatto...', self::TEXT_DOMAIN ) . '">' . esc_textarea( $current_note ) . '</textarea>';
+            echo '<p class="description">' . esc_html__( 'Queste note sono visibili solo agli amministratori e possono contenere informazioni aggiuntive sul contatto.', self::TEXT_DOMAIN ) . '</p>';
+            echo '</td>';
+            echo '</tr>';
+            echo '</table>';
             
+            submit_button( __( 'Salva Note', self::TEXT_DOMAIN ), 'primary', 'pcv_update_note' );
+            echo '</form>';
             echo '</div>';
+
+            // Informazioni aggiuntive sul contatto
+            echo '<div class="pcv-volunteer-info">';
+            echo '<h3>' . esc_html__( 'Informazioni Contatto', self::TEXT_DOMAIN ) . '</h3>';
+            echo '<table class="widefat fixed striped">';
+            echo '<tr><td><strong>' . esc_html__( 'Email:', self::TEXT_DOMAIN ) . '</strong></td><td>' . esc_html( $volunteer->email ) . '</td></tr>';
+            echo '<tr><td><strong>' . esc_html__( 'Telefono:', self::TEXT_DOMAIN ) . '</strong></td><td>' . esc_html( $volunteer->telefono ) . '</td></tr>';
+            echo '<tr><td><strong>' . esc_html__( 'Comune:', self::TEXT_DOMAIN ) . '</strong></td><td>' . esc_html( $volunteer->comune ) . '</td></tr>';
+            echo '<tr><td><strong>' . esc_html__( 'Provincia:', self::TEXT_DOMAIN ) . '</strong></td><td>' . esc_html( $volunteer->provincia ) . '</td></tr>';
+            echo '<tr><td><strong>' . esc_html__( 'Categoria:', self::TEXT_DOMAIN ) . '</strong></td><td>' . esc_html( $volunteer->categoria ) . '</td></tr>';
+            echo '<tr><td><strong>' . esc_html__( 'Data registrazione:', self::TEXT_DOMAIN ) . '</strong></td><td>' . esc_html( mysql2date( 'd/m/Y H:i', $volunteer->created_at ) ) . '</td></tr>';
+            echo '</table>';
+            echo '</div>';
+
         } else {
-            echo '<div class="pcv-no-notes">';
-            echo '<p>' . esc_html__( 'Nessuna nota presente.', self::TEXT_DOMAIN ) . '</p>';
+            // Lista di tutti i volontari con note
+            echo '<div class="pcv-notes-overview">';
+            echo '<p>' . esc_html__( 'Seleziona un contatto dalla lista principale per gestire le sue note, oppure utilizza i link "Note" nella colonna Nome.', self::TEXT_DOMAIN ) . '</p>';
+            echo '<p><a href="' . esc_url( admin_url( 'admin.php?page=pcv-volontari' ) ) . '" class="button button-primary">' . esc_html__( 'Torna alla Lista Volontari', self::TEXT_DOMAIN ) . '</a></p>';
             echo '</div>';
         }
 
-        echo '</div>'; // .pcv-notes-container
         echo '</div>'; // .wrap
 
-        // Form nascosto per modifica
-        echo '<div id="pcv-edit-note-modal" style="display: none;">';
-        echo '<form method="post" class="pcv-note-form">';
-        wp_nonce_field( 'pcv_edit_note_nonce' );
-        echo '<input type="hidden" name="note_id" id="edit_note_id" />';
-        echo '<table class="form-table">';
-        echo '<tr>';
-        echo '<th scope="row"><label for="edit_note_title">' . esc_html__( 'Titolo', self::TEXT_DOMAIN ) . '</label></th>';
-        echo '<td><input type="text" id="edit_note_title" name="note_title" class="regular-text" required /></td>';
-        echo '</tr>';
-        echo '<tr>';
-        echo '<th scope="row"><label for="edit_note_content">' . esc_html__( 'Contenuto', self::TEXT_DOMAIN ) . '</label></th>';
-        echo '<td><textarea id="edit_note_content" name="note_content" rows="6" class="large-text" required></textarea></td>';
-        echo '</tr>';
-        echo '</table>';
-        submit_button( __( 'Aggiorna Nota', self::TEXT_DOMAIN ), 'primary', 'pcv_edit_note' );
-        echo '</form>';
-        echo '</div>';
-
-        // CSS e JavaScript inline per la funzionalità
+        // CSS per la pagina
         echo '<style>
-        .pcv-notes-container { margin-top: 20px; }
-        .pcv-add-note-section { background: #fff; padding: 20px; border: 1px solid #ccd0d4; margin-bottom: 20px; }
-        .pcv-notes-list { background: #fff; padding: 20px; border: 1px solid #ccd0d4; }
-        .pcv-note-item { border: 1px solid #ddd; margin-bottom: 15px; padding: 15px; background: #f9f9f9; }
-        .pcv-note-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .pcv-note-title { margin: 0; color: #23282d; }
-        .pcv-note-meta { font-size: 12px; color: #666; }
-        .pcv-note-content { margin-bottom: 15px; line-height: 1.6; }
-        .pcv-note-actions { border-top: 1px solid #ddd; padding-top: 10px; }
-        .pcv-no-notes { text-align: center; padding: 40px; color: #666; }
+        .pcv-note-form-container { 
+            background: #fff; 
+            padding: 20px; 
+            border: 1px solid #ccd0d4; 
+            margin: 20px 0; 
+            border-radius: 4px;
+        }
+        .pcv-volunteer-info { 
+            background: #fff; 
+            padding: 20px; 
+            border: 1px solid #ccd0d4; 
+            margin: 20px 0; 
+            border-radius: 4px;
+        }
+        .pcv-volunteer-info h3 { 
+            margin-top: 0; 
+            color: #23282d; 
+        }
+        .pcv-notes-overview { 
+            background: #fff; 
+            padding: 20px; 
+            border: 1px solid #ccd0d4; 
+            margin: 20px 0; 
+            border-radius: 4px;
+            text-align: center;
+        }
+        .pcv-note-preview { 
+            cursor: help; 
+            border-bottom: 1px dotted #666; 
+        }
+        .pcv-no-note { 
+            color: #999; 
+            font-style: italic; 
+        }
         </style>';
-
-        echo '<script>
-        jQuery(document).ready(function($) {
-            $(".pcv-edit-note").on("click", function() {
-                var noteId = $(this).data("note-id");
-                var noteItem = $(".pcv-note-item[data-note-id=\'" + noteId + "\']");
-                var title = noteItem.find(".pcv-note-title").text();
-                var content = noteItem.find(".pcv-note-content").html();
-                
-                $("#edit_note_id").val(noteId);
-                $("#edit_note_title").val(title);
-                $("#edit_note_content").val(content.replace(/<br\s*\/?>/gi, "\n"));
-                
-                $("#pcv-edit-note-modal").show();
-                $("html, body").animate({ scrollTop: 0 }, 500);
-            });
-        });
-        </script>';
     }
 }

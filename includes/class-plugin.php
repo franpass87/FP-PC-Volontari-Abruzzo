@@ -144,7 +144,7 @@ class PCV_Plugin {
         $settings_page = new PCV_Settings_Page( $this->sanitizer );
         $import_page = new PCV_Import_Page( $this->importer, $this->sanitizer );
         $categories_page = new PCV_Categories_Page();
-        $notes_page = new PCV_Notes_Page();
+        $notes_page = new PCV_Notes_Page( $this->repository );
 
         $this->admin_menu = new PCV_Admin_Menu( $this->list_table, $settings_page, $import_page, $categories_page, $notes_page );
 

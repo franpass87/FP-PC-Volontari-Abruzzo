@@ -889,4 +889,27 @@
     // Aspetta un po' anche se il DOM è già caricato
     setTimeout(initAdmin, 100);
   }
+
+  // Gestione link Note
+  function initNotesHandlers() {
+    if (typeof jQuery === 'undefined') {
+      return;
+    }
+
+    jQuery(document).on('click', '.pcv-edit-notes', function(e) {
+      e.preventDefault();
+      
+      var volunteerId = jQuery(this).data('id');
+      var nome = jQuery(this).data('nome');
+      var cognome = jQuery(this).data('cognome');
+      
+      if (volunteerId) {
+        var notesUrl = 'admin.php?page=pcv-volontari-notes&volunteer_id=' + volunteerId;
+        window.location.href = notesUrl;
+      }
+    });
+  }
+
+  // Inizializza gestori note
+  initNotesHandlers();
 })();

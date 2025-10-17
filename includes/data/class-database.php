@@ -35,11 +35,6 @@ class PCV_Database {
         }
         
         dbDelta( $sql );
-        
-        // Crea anche la tabella delle note se la classe esiste
-        if ( class_exists( 'PCV_Notes_Manager' ) ) {
-            PCV_Notes_Manager::create_table();
-        }
     }
 
     /**
@@ -60,7 +55,7 @@ class PCV_Database {
         }
 
         $needs_upgrade = false;
-        foreach ( [ 'dorme', 'mangia', 'categoria' ] as $column ) {
+        foreach ( [ 'dorme', 'mangia', 'categoria', 'note' ] as $column ) {
             $column_exists = $wpdb->get_var(
                 $wpdb->prepare( "SHOW COLUMNS FROM `{$table}` LIKE %s", $column )
             );
@@ -75,17 +70,6 @@ class PCV_Database {
             require_once ABSPATH . 'wp-admin/includes/upgrade.php';
             $charset = $wpdb->get_charset_collate();
             dbDelta( self::get_schema_sql( $table, $charset ) );
-        }
-        
-        // Verifica se la tabella delle note esiste e la crea se necessario
-        if ( class_exists( 'PCV_Notes_Manager' ) ) {
-            $notes_table = PCV_Notes_Manager::get_table_name();
-            $notes_table_like = $wpdb->esc_like( $notes_table );
-            $notes_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $notes_table_like ) );
-            
-            if ( $notes_exists !== $notes_table ) {
-                PCV_Notes_Manager::create_table();
-            }
         }
     }
 
@@ -121,6 +105,7 @@ class PCV_Database {
             partecipa TINYINT(1) NOT NULL DEFAULT 0,
             dorme TINYINT(1) NOT NULL DEFAULT 0,
             mangia TINYINT(1) NOT NULL DEFAULT 0,
+            note TEXT NULL,
             ip VARCHAR(45) NULL,
             user_agent TEXT NULL,
             PRIMARY KEY (id),

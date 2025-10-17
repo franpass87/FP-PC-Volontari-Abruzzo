@@ -53,6 +53,7 @@ class PCV_List_Table extends WP_List_Table {
             'email'      => esc_html__( 'Email', self::TEXT_DOMAIN ),
             'telefono'   => esc_html__( 'Telefono', self::TEXT_DOMAIN ),
             'categoria'  => esc_html__( 'Categoria', self::TEXT_DOMAIN ),
+            'note'       => esc_html__( 'Note', self::TEXT_DOMAIN ),
             'privacy'    => esc_html__( 'Privacy', self::TEXT_DOMAIN ),
             'partecipa'  => esc_html__( 'Partecipa', self::TEXT_DOMAIN ),
             'dorme'      => esc_html__( 'Pernotta', self::TEXT_DOMAIN ),
@@ -99,6 +100,13 @@ class PCV_List_Table extends WP_List_Table {
                 $item->id,
                 esc_html__( 'Modifica', self::TEXT_DOMAIN )
             ),
+            'notes' => sprintf(
+                '<a href="#" class="pcv-edit-notes" data-id="%d" data-nome="%s" data-cognome="%s">%s</a>',
+                $item->id,
+                esc_attr( $item->nome ),
+                esc_attr( $item->cognome ),
+                esc_html__( 'Note', self::TEXT_DOMAIN )
+            ),
             'delete' => sprintf(
                 '<a href="#" class="pcv-delete-volunteer" data-id="%d">%s</a>',
                 $item->id,
@@ -127,6 +135,13 @@ class PCV_List_Table extends WP_List_Table {
             case 'telefono':
             case 'categoria':
                 return esc_html( $item->$col );
+            case 'note':
+                $note = isset( $item->note ) ? $item->note : '';
+                if ( empty( $note ) ) {
+                    return '<span class="pcv-no-note">' . esc_html__( 'Nessuna nota', self::TEXT_DOMAIN ) . '</span>';
+                }
+                $truncated = strlen( $note ) > 50 ? substr( $note, 0, 50 ) . '...' : $note;
+                return '<span class="pcv-note-preview" title="' . esc_attr( $note ) . '">' . esc_html( $truncated ) . '</span>';
             case 'privacy':
             case 'partecipa':
             case 'dorme':
