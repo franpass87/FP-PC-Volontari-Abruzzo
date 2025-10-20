@@ -107,10 +107,8 @@
   // Funzione per creare una riga della tabella
   function createTableRow(item) {
     var row = document.createElement('tr');
-    
-    // Crea la colonna nome con i pulsanti di azione
-    var nomeCell = document.createElement('td');
-    nomeCell.innerHTML = `
+
+    var nomeCellHtml = `
       <strong>${escapeHtml(item.nome || '')}</strong>
       <div class="row-actions">
         <span class="edit">
@@ -121,19 +119,11 @@
         </span>
       </div>
     `;
-    
+
     row.innerHTML = `
-      <th scope="row" class="check-column">
-        <input type="checkbox" name="id[]" value="${item.id}">
-      </th>
+      <th scope="row" class="check-column"><input type="checkbox" name="id[]" value="${item.id}"></th>
       <td>${formatDate(item.created_at)}</td>
-    `;
-    
-    // Aggiungi la cella nome con le azioni
-    row.appendChild(nomeCell);
-    
-    // Aggiungi le altre celle
-    row.innerHTML += `
+      <td>${nomeCellHtml}</td>
       <td>${escapeHtml(item.cognome || '')}</td>
       <td>${escapeHtml(item.comune || '')}</td>
       <td>${escapeHtml(item.provincia || '')}</td>
@@ -146,7 +136,7 @@
       <td>${parseInt(item.dorme) === 1 ? 'Sì' : 'No'}</td>
       <td>${parseInt(item.mangia) === 1 ? 'Sì' : 'No'}</td>
     `;
-    
+
     return row;
   }
 
