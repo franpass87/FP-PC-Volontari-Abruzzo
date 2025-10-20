@@ -82,7 +82,9 @@
     }
 
     // Svuota la tabella
-    tableBody.innerHTML = '';
+    while (tableBody.firstChild) {
+      tableBody.removeChild(tableBody.firstChild);
+    }
 
     // Aggiungi i nuovi dati
     if (data.items && data.items.length > 0) {
@@ -131,6 +133,7 @@
       <td>${escapeHtml(item.telefono || '')}</td>
       <td>${escapeHtml(item.categoria || '')}</td>
       <td>${parseInt(item.chiamato) === 1 ? 'Sì' : 'No'}</td>
+      <td>${formatNoteCell(item.note)}</td>
       <td>${parseInt(item.privacy) === 1 ? 'Sì' : 'No'}</td>
       <td>${parseInt(item.partecipa) === 1 ? 'Sì' : 'No'}</td>
       <td>${parseInt(item.dorme) === 1 ? 'Sì' : 'No'}</td>
@@ -145,6 +148,14 @@
     if (!dateString) return '';
     var date = new Date(dateString);
     return date.toLocaleDateString('it-IT') + ' ' + date.toLocaleTimeString('it-IT', {hour: '2-digit', minute: '2-digit'});
+  }
+
+  // Rende la cella note coerente con la colonna "Note" della list table
+  function formatNoteCell(note) {
+    if (!note || (typeof note === 'string' && note.trim() === '')) {
+      return 'No';
+    }
+    return 'Sì';
   }
 
   // Funzione per escape HTML
