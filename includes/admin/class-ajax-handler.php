@@ -324,11 +324,15 @@ class PCV_Ajax_Handler {
         // Recupera dati
         $total_items = $this->repository->count_volunteers( $args );
         $items = $this->repository->get_volunteers( $args );
+        
+        // Recupera il totale senza filtri per il contatore
+        $total_count = $this->repository->count_volunteers();
 
         // Prepara dati per la risposta
         $response_data = [
             'items' => $items,
             'total_items' => $total_items,
+            'total_count' => $total_count,
             'per_page' => $per_page,
             'total_pages' => ceil( $total_items / $per_page ),
             'current_page' => $page,

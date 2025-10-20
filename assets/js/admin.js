@@ -81,29 +81,85 @@
       return;
     }
 
+    console.log('=== AGGIORNAMENTO TABELLA ===');
+    console.log('Dati ricevuti:', data);
+    console.log('Numero di items:', data.items ? data.items.length : 0);
+
+    // Aggiorna il contatore
+    updateCounter(data);
+
     // Svuota la tabella
+    console.log('Svuotamento tabella...');
     while (tableBody.firstChild) {
       tableBody.removeChild(tableBody.firstChild);
     }
+    console.log('Tabella svuotata');
 
     // Aggiungi i nuovi dati
     if (data.items && data.items.length > 0) {
-      data.items.forEach(function(item) {
+      console.log('Aggiunta di', data.items.length, 'righe alla tabella');
+      data.items.forEach(function(item, index) {
+        console.log('Creazione riga', index + 1, 'per item ID:', item.id);
         var row = createTableRow(item);
         tableBody.appendChild(row);
+        console.log('Riga', index + 1, 'aggiunta alla tabella');
       });
       
       // I listener per i pulsanti sono già attivi tramite event delegation
       // quindi non è necessario riattaccarli
       console.log('Tabella aggiornata con', data.items.length, 'volontari');
+      
+      // Verifica finale della struttura della tabella
+      var finalRows = tableBody.querySelectorAll('tr');
+      console.log('Righe finali nella tabella:', finalRows.length);
+      if (finalRows.length > 0) {
+        var firstRowCells = finalRows[0].querySelectorAll('td, th');
+        console.log('Celle nella prima riga:', firstRowCells.length);
+      }
     } else {
+      console.log('Nessun item trovato, aggiunta riga vuota');
       var row = document.createElement('tr');
-      row.innerHTML = '<td colspan="14" style="text-align: center; padding: 20px;">Nessun volontario trovato</td>';
+      row.innerHTML = '<td colspan="16" style="text-align: center; padding: 20px;">Nessun volontario trovato</td>';
       tableBody.appendChild(row);
     }
 
     // Aggiorna la paginazione
     updatePagination(data);
+    console.log('=== FINE AGGIORNAMENTO TABELLA ===');
+  }
+
+  // Funzione per aggiornare il contatore
+  function updateCounter(data) {
+    var counterElement = document.querySelector('.pcv-counter-info');
+    if (!counterElement) {
+      console.warn('Contatore non trovato');
+      return;
+    }
+
+    var filteredCount = data.total_items || 0;
+    var totalCount = data.total_count || filteredCount; // Se non abbiamo il totale, usiamo il filtrato
+    
+    // Se abbiamo filtri attivi, mostra "Volontari filtrati", altrimenti "Totale volontari"
+    var hasActiveFilters = data.filters && (
+      data.filters.provincia || 
+      data.filters.comune || 
+      data.filters.categoria || 
+      data.filters.partecipa || 
+      data.filters.dorme || 
+      data.filters.mangia || 
+      data.filters.chiamato || 
+      data.filters.search
+    );
+
+    var counterText;
+    if (hasActiveFilters && filteredCount !== totalCount) {
+      counterText = '<strong>Volontari filtrati</strong>: ' + filteredCount + ' di ' + totalCount + ' record totali';
+    } else {
+      counterText = '<strong>Totale volontari</strong>: ' + filteredCount + ' record';
+    }
+
+    counterElement.innerHTML = counterText;
+    console.log('Contatore aggiornato:', counterText);
   }
 
   // Funzione per creare una riga della tabella
@@ -122,7 +178,7 @@
       </div>
     `;
 
-    row.innerHTML = `
+    var rowHtml = `
       <th scope="row" class="check-column"><input type="checkbox" name="id[]" value="${item.id}"></th>
       <td>${formatDate(item.created_at)}</td>
       <td>${nomeCellHtml}</td>
@@ -141,6 +197,22 @@
       <td>${parseInt(item.mangia) === 1 ? 'Sì' : 'No'}</td>
     `;
 
+    // Debug: conta le celle generate
+    var cellCount = (rowHtml.match(/<t[dh][^>]*>/g) || []).length;
+    console.log('Riga generata per ID', item.id, '- Celle:', cellCount);
+    console.log('HTML riga:', rowHtml);
+
+    row.innerHTML = rowHtml;
+
+    // Verifica che la riga sia stata creata correttamente
+    var actualCells = row.querySelectorAll('td, th');
+    console.log('Celle effettive nella riga:', actualCells.length);
+    
+    if (actualCells.length !== 16) {
+      console.error('ERRORE: Numero di celle non corretto! Attese: 16, Trovate:', actualCells.length);
+      console.error('Item data:', item);
+    }
+
     return row;
   }
 
@@ -154,17 +226,21 @@
   // Rende la cella note coerente con la colonna "Note" della list table
   function formatNoteCell(note) {
     if (!note || (typeof note === 'string' && note.trim() === '')) {
-      return 'No';
+      return '<span class="pcv-no-note">Nessuna nota</span>';
     }
-    return 'Sì';
+    
+    var truncated = note.length > 50 ? note.substring(0, 50) + '...' : note;
+    return '<span class="pcv-note-preview" title="' + escapeHtml(note) + '">' + escapeHtml(truncated) + '</span>';
   }
 
   // Rende la cella accompagnatori coerente con la colonna "Accompagnatori" della list table
   function formatAccompagnatoriCell(accompagnatori) {
     if (!accompagnatori || (typeof accompagnatori === 'string' && accompagnatori.trim() === '')) {
-      return 'No';
+      return '<span class="pcv-no-accompagnatori">Nessun accompagnatore</span>';
     }
-    return 'Sì';
+    
+    var truncated = accompagnatori.length > 50 ? accompagnatori.substring(0, 50) + '...' : accompagnatori;
+    return '<span class="pcv-accompagnatori-preview" title="' + escapeHtml(accompagnatori) + '">' + escapeHtml(truncated) + '</span>';
   }
 
   // Funzione per escape HTML
