@@ -47,6 +47,11 @@ class PCV_Repository {
             'comune'  => '',
             'provincia' => '',
             'categoria' => '',
+            // Filtri booleani opzionali: '', '1', '0'
+            'partecipa' => '',
+            'dorme' => '',
+            'mangia' => '',
+            'chiamato' => '',
         ];
 
         $args = wp_parse_args( $args, $defaults );
@@ -67,6 +72,14 @@ class PCV_Repository {
         if ( $args['categoria'] !== '' ) {
             $where .= " AND categoria = %s";
             $params[] = $args['categoria'];
+        }
+
+        // Filtri booleani (tri-state). Se forniti come '1' o '0', applichiamo filtro esatto.
+        foreach ( [ 'partecipa', 'dorme', 'mangia', 'chiamato' ] as $boolField ) {
+            if ( $args[ $boolField ] !== '' ) {
+                $where .= " AND {$boolField} = %d";
+                $params[] = (int) $args[ $boolField ];
+            }
         }
 
         if ( $args['search'] !== '' ) {
@@ -105,6 +118,10 @@ class PCV_Repository {
             'comune'    => '',
             'provincia' => '',
             'categoria' => '',
+            'partecipa' => '',
+            'dorme' => '',
+            'mangia' => '',
+            'chiamato' => '',
         ];
 
         $args = wp_parse_args( $args, $defaults );
@@ -125,6 +142,13 @@ class PCV_Repository {
         if ( $args['categoria'] !== '' ) {
             $where .= " AND categoria = %s";
             $params[] = $args['categoria'];
+        }
+
+        foreach ( [ 'partecipa', 'dorme', 'mangia', 'chiamato' ] as $boolField ) {
+            if ( $args[ $boolField ] !== '' ) {
+                $where .= " AND {$boolField} = %d";
+                $params[] = (int) $args[ $boolField ];
+            }
         }
 
         if ( $args['search'] !== '' ) {

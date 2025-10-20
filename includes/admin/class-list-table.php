@@ -234,6 +234,19 @@ class PCV_List_Table extends WP_List_Table {
         $f_cat_raw = isset( $_GET['f_cat'] ) ? wp_unslash( $_GET['f_cat'] ) : '';
         $f_cat = trim( sanitize_text_field( $f_cat_raw ) );
 
+        // Filtri booleani tri-state: '', '1', '0'
+        $f_partecipa_raw = isset( $_GET['f_partecipa'] ) ? wp_unslash( $_GET['f_partecipa'] ) : '';
+        $f_partecipa = ($f_partecipa_raw === '1' || $f_partecipa_raw === '0') ? $f_partecipa_raw : '';
+
+        $f_dorme_raw = isset( $_GET['f_dorme'] ) ? wp_unslash( $_GET['f_dorme'] ) : '';
+        $f_dorme = ($f_dorme_raw === '1' || $f_dorme_raw === '0') ? $f_dorme_raw : '';
+
+        $f_mangia_raw = isset( $_GET['f_mangia'] ) ? wp_unslash( $_GET['f_mangia'] ) : '';
+        $f_mangia = ($f_mangia_raw === '1' || $f_mangia_raw === '0') ? $f_mangia_raw : '';
+
+        $f_chiamato_raw = isset( $_GET['f_chiamato'] ) ? wp_unslash( $_GET['f_chiamato'] ) : '';
+        $f_chiamato = ($f_chiamato_raw === '1' || $f_chiamato_raw === '0') ? $f_chiamato_raw : '';
+
         $s_raw = isset( $_GET['s'] ) ? wp_unslash( $_GET['s'] ) : '';
         $s = trim( sanitize_text_field( $s_raw ) );
 
@@ -248,6 +261,10 @@ class PCV_List_Table extends WP_List_Table {
             'provincia' => $f_prov,
             'categoria' => $f_cat,
             'search'    => $s,
+            'partecipa' => $f_partecipa,
+            'dorme'     => $f_dorme,
+            'mangia'    => $f_mangia,
+            'chiamato'  => $f_chiamato,
         ];
 
         $total_items = $this->repository->count_volunteers( $args );
@@ -293,6 +310,15 @@ class PCV_List_Table extends WP_List_Table {
         $s_raw = isset( $_GET['s'] ) ? wp_unslash( $_GET['s'] ) : '';
         $s = sanitize_text_field( $s_raw );
 
+        $f_partecipa_raw = isset( $_GET['f_partecipa'] ) ? wp_unslash( $_GET['f_partecipa'] ) : '';
+        $f_partecipa = ($f_partecipa_raw === '1' || $f_partecipa_raw === '0') ? $f_partecipa_raw : '';
+
+        $f_dorme_raw = isset( $_GET['f_dorme'] ) ? wp_unslash( $_GET['f_dorme'] ) : '';
+        $f_dorme = ($f_dorme_raw === '1' || $f_dorme_raw === '0') ? $f_dorme_raw : '';
+
+        $f_mangia_raw = isset( $_GET['f_mangia'] ) ? wp_unslash( $_GET['f_mangia'] ) : '';
+        $f_mangia = ($f_mangia_raw === '1' || $f_mangia_raw === '0') ? $f_mangia_raw : '';
+
         if ( ! array_key_exists( $f_prov, $this->province_data ) ) {
             $f_prov = '';
         }
@@ -314,7 +340,7 @@ class PCV_List_Table extends WP_List_Table {
         // Ottieni categorie per filtro
         $categories = PCV_Category_Manager::get_categories_for_select();
 
-        $url_no_vars = remove_query_arg( [ 'f_comune', 'f_prov', 'f_cat', 's', 'paged' ] );
+        $url_no_vars = remove_query_arg( [ 'f_comune', 'f_prov', 'f_cat', 'f_partecipa', 'f_dorme', 'f_mangia', 'f_chiamato', 's', 'paged' ] );
 
         echo '<div class="pcv-topbar"><form method="get" id="pcv-filter-form" action="' . esc_url( admin_url( 'admin.php' ) ) . '">';
         echo '<input type="hidden" name="page" value="pcv-volontari">';
@@ -345,6 +371,38 @@ class PCV_List_Table extends WP_List_Table {
             $selected_attr = selected( $f_cat, $cat_name, false );
             echo '<option value="' . esc_attr( $cat_name ) . '"' . $selected_attr . '>' . esc_html( $cat_name ) . '</option>';
         }
+        echo '</select>';
+
+        // Select tri-state Partecipa
+        echo '<label class="screen-reader-text" for="pcv-admin-partecipa">' . esc_html__( 'Filtra per Partecipa', self::TEXT_DOMAIN ) . '</label>';
+        echo '<select name="f_partecipa" id="pcv-admin-partecipa">';
+        echo '<option value="">' . esc_html__( 'Partecipa: tutti', self::TEXT_DOMAIN ) . '</option>';
+        echo '<option value="1"' . selected( $f_partecipa, '1', false ) . '>' . esc_html__( 'Partecipa: Sì', self::TEXT_DOMAIN ) . '</option>';
+        echo '<option value="0"' . selected( $f_partecipa, '0', false ) . '>' . esc_html__( 'Partecipa: No', self::TEXT_DOMAIN ) . '</option>';
+        echo '</select>';
+
+        // Select tri-state Dorme (Pernotta)
+        echo '<label class="screen-reader-text" for="pcv-admin-dorme">' . esc_html__( 'Filtra per Pernotta', self::TEXT_DOMAIN ) . '</label>';
+        echo '<select name="f_dorme" id="pcv-admin-dorme">';
+        echo '<option value="">' . esc_html__( 'Pernotta: tutti', self::TEXT_DOMAIN ) . '</option>';
+        echo '<option value="1"' . selected( $f_dorme, '1', false ) . '>' . esc_html__( 'Pernotta: Sì', self::TEXT_DOMAIN ) . '</option>';
+        echo '<option value="0"' . selected( $f_dorme, '0', false ) . '>' . esc_html__( 'Pernotta: No', self::TEXT_DOMAIN ) . '</option>';
+        echo '</select>';
+
+        // Select tri-state Mangia (Pasti)
+        echo '<label class="screen-reader-text" for="pcv-admin-mangia">' . esc_html__( 'Filtra per Pasti', self::TEXT_DOMAIN ) . '</label>';
+        echo '<select name="f_mangia" id="pcv-admin-mangia">';
+        echo '<option value="">' . esc_html__( 'Pasti: tutti', self::TEXT_DOMAIN ) . '</option>';
+        echo '<option value="1"' . selected( $f_mangia, '1', false ) . '>' . esc_html__( 'Pasti: Sì', self::TEXT_DOMAIN ) . '</option>';
+        echo '<option value="0"' . selected( $f_mangia, '0', false ) . '>' . esc_html__( 'Pasti: No', self::TEXT_DOMAIN ) . '</option>';
+        echo '</select>';
+
+        // Select tri-state Chiamato
+        echo '<label class="screen-reader-text" for="pcv-admin-chiamato">' . esc_html__( 'Filtra per Già chiamato', self::TEXT_DOMAIN ) . '</label>';
+        echo '<select name="f_chiamato" id="pcv-admin-chiamato">';
+        echo '<option value="">' . esc_html__( 'Già chiamato: tutti', self::TEXT_DOMAIN ) . '</option>';
+        echo '<option value="1"' . selected( $f_chiamato, '1', false ) . '>' . esc_html__( 'Già chiamato: Sì', self::TEXT_DOMAIN ) . '</option>';
+        echo '<option value="0"' . selected( $f_chiamato, '0', false ) . '>' . esc_html__( 'Già chiamato: No', self::TEXT_DOMAIN ) . '</option>';
         echo '</select>';
 
         echo '<input type="search" name="s" value="' . esc_attr( $s ) . '" placeholder="' . esc_attr__( 'Cerca…', self::TEXT_DOMAIN ) . '">';

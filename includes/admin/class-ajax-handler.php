@@ -293,6 +293,10 @@ class PCV_Ajax_Handler {
         $f_prov = isset( $_POST['f_prov'] ) ? sanitize_text_field( wp_unslash( $_POST['f_prov'] ) ) : '';
         $f_comune = isset( $_POST['f_comune'] ) ? sanitize_text_field( wp_unslash( $_POST['f_comune'] ) ) : '';
         $f_cat = isset( $_POST['f_cat'] ) ? sanitize_text_field( wp_unslash( $_POST['f_cat'] ) ) : '';
+        $f_partecipa = isset( $_POST['f_partecipa'] ) ? wp_unslash( $_POST['f_partecipa'] ) : '';
+        $f_dorme = isset( $_POST['f_dorme'] ) ? wp_unslash( $_POST['f_dorme'] ) : '';
+        $f_mangia = isset( $_POST['f_mangia'] ) ? wp_unslash( $_POST['f_mangia'] ) : '';
+        $f_chiamato = isset( $_POST['f_chiamato'] ) ? wp_unslash( $_POST['f_chiamato'] ) : '';
         $search = isset( $_POST['s'] ) ? sanitize_text_field( wp_unslash( $_POST['s'] ) ) : '';
         $page = isset( $_POST['paged'] ) ? absint( $_POST['paged'] ) : 1;
         $per_page = 100;
@@ -306,6 +310,10 @@ class PCV_Ajax_Handler {
             'comune'    => $f_comune,
             'provincia' => $f_prov,
             'categoria' => $f_cat,
+            'partecipa' => ($f_partecipa === '1' || $f_partecipa === '0') ? $f_partecipa : '',
+            'dorme'     => ($f_dorme === '1' || $f_dorme === '0') ? $f_dorme : '',
+            'mangia'    => ($f_mangia === '1' || $f_mangia === '0') ? $f_mangia : '',
+            'chiamato'  => ($f_chiamato === '1' || $f_chiamato === '0') ? $f_chiamato : '',
             'search'    => $search,
         ];
 
@@ -324,6 +332,10 @@ class PCV_Ajax_Handler {
                 'provincia' => $f_prov,
                 'comune' => $f_comune,
                 'categoria' => $f_cat,
+                'partecipa' => ($f_partecipa === '1' || $f_partecipa === '0') ? $f_partecipa : '',
+                'dorme' => ($f_dorme === '1' || $f_dorme === '0') ? $f_dorme : '',
+                'mangia' => ($f_mangia === '1' || $f_mangia === '0') ? $f_mangia : '',
+                'chiamato' => ($f_chiamato === '1' || $f_chiamato === '0') ? $f_chiamato : '',
                 'search' => $search,
             ]
         ];

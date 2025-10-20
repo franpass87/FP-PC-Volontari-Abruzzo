@@ -24,6 +24,10 @@
     var provSelect = document.getElementById('pcv-admin-provincia');
     var comuneSelect = document.getElementById('pcv-admin-comune');
     var categoriaSelect = document.getElementById('pcv-admin-categoria');
+    var partecipaSelect = document.getElementById('pcv-admin-partecipa');
+    var dormeSelect = document.getElementById('pcv-admin-dorme');
+    var mangiaSelect = document.getElementById('pcv-admin-mangia');
+    var chiamatoSelect = document.getElementById('pcv-admin-chiamato');
     var searchInput = document.querySelector('input[name="s"]');
     
     var filterData = {
@@ -33,6 +37,10 @@
       f_comune: comuneSelect ? comuneSelect.value : '',
       f_cat: categoriaSelect ? categoriaSelect.value : '',
       s: searchInput ? searchInput.value : '',
+      f_partecipa: partecipaSelect ? partecipaSelect.value : '',
+      f_dorme: dormeSelect ? dormeSelect.value : '',
+      f_mangia: mangiaSelect ? mangiaSelect.value : '',
+      f_chiamato: chiamatoSelect ? chiamatoSelect.value : '',
       paged: 1
     };
 
@@ -324,6 +332,40 @@
         });
       } else {
         console.log('Categoria select not found');
+      }
+
+      // Auto-submit per i filtri booleani
+      if (partecipaSelect) {
+        partecipaSelect.addEventListener('change', function(){
+          setTimeout(function(){
+            console.log('Filtering via AJAX after partecipa change');
+            filterVolunteersAjax();
+          }, 100);
+        });
+      }
+      if (dormeSelect) {
+        dormeSelect.addEventListener('change', function(){
+          setTimeout(function(){
+            console.log('Filtering via AJAX after dorme change');
+            filterVolunteersAjax();
+          }, 100);
+        });
+      }
+      if (mangiaSelect) {
+        mangiaSelect.addEventListener('change', function(){
+          setTimeout(function(){
+            console.log('Filtering via AJAX after mangia change');
+            filterVolunteersAjax();
+          }, 100);
+        });
+      }
+      if (chiamatoSelect) {
+        chiamatoSelect.addEventListener('change', function(){
+          setTimeout(function(){
+            console.log('Filtering via AJAX after chiamato change');
+            filterVolunteersAjax();
+          }, 100);
+        });
       }
 
     }
