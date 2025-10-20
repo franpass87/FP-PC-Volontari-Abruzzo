@@ -190,6 +190,7 @@ class PCV_Repository {
             'partecipa' => '%d',
             'dorme' => '%d',
             'mangia' => '%d',
+            'chiamato' => '%d',
             'note' => '%s',
         ];
 

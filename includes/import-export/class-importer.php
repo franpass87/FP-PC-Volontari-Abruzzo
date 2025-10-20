@@ -203,6 +203,7 @@ class PCV_Importer {
             $partecipa = $this->sanitizer->normalize_boolean_input( $row['partecipa'] ?? '0' );
             $dorme     = $this->sanitizer->normalize_boolean_input( $row['dorme'] ?? '0' );
             $mangia    = $this->sanitizer->normalize_boolean_input( $row['mangia'] ?? ( $row['pasti'] ?? '0' ) );
+            $chiamato  = $this->sanitizer->normalize_boolean_input( $row['chiamato'] ?? ( $row['gia_chiamato'] ?? '0' ) );
 
             $created_at = $this->sanitizer->normalize_datetime_input( $row['created_at'] ?? ( $row['data'] ?? '' ) );
             $ip         = isset( $row['ip'] ) ? sanitize_text_field( $row['ip'] ) : '';
@@ -223,10 +224,11 @@ class PCV_Importer {
                     'partecipa'  => $partecipa,
                     'dorme'      => $dorme,
                     'mangia'     => $mangia,
+                    'chiamato'   => $chiamato,
                     'ip'         => $ip,
                     'user_agent' => $user_agent,
                 ],
-                [ '%s','%s','%s','%s','%s','%s','%s','%s','%d','%d','%d','%d','%s','%s' ]
+                [ '%s','%s','%s','%s','%s','%s','%s','%s','%d','%d','%d','%d','%d','%s','%s' ]
             );
 
             if ( $inserted ) {
@@ -294,6 +296,11 @@ class PCV_Importer {
                 'label'       => __( 'Pasti', self::TEXT_DOMAIN ),
                 'required'    => false,
                 'description' => __( 'Indica se il volontario consumerà i pasti (1/0, si/no, true/false).', self::TEXT_DOMAIN ),
+            ],
+            'chiamato' => [
+                'label'       => __( 'Già chiamato', self::TEXT_DOMAIN ),
+                'required'    => false,
+                'description' => __( 'Indica se il volontario è già stato contattato (1/0, si/no, true/false).', self::TEXT_DOMAIN ),
             ],
             'created_at' => [
                 'label'       => __( 'Data iscrizione', self::TEXT_DOMAIN ),

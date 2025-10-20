@@ -144,6 +144,10 @@ class PCV_Ajax_Handler {
             $data['mangia'] = absint( $_POST['mangia'] );
         }
 
+        if ( isset( $_POST['chiamato'] ) ) {
+            $data['chiamato'] = absint( $_POST['chiamato'] );
+        }
+
         $result = $this->repository->update( $id, $data );
 
         if ( $result === false ) {
@@ -219,6 +223,10 @@ class PCV_Ajax_Handler {
 
         if ( isset( $_POST['mangia'] ) ) {
             $data['mangia'] = absint( $_POST['mangia'] );
+        }
+
+        if ( isset( $_POST['chiamato'] ) ) {
+            $data['chiamato'] = absint( $_POST['chiamato'] );
         }
 
         if ( empty( $data ) ) {

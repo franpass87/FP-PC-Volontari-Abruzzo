@@ -131,6 +131,7 @@
       <td>${escapeHtml(item.email || '')}</td>
       <td>${escapeHtml(item.telefono || '')}</td>
       <td>${escapeHtml(item.categoria || '')}</td>
+      <td>${parseInt(item.chiamato) === 1 ? 'Sì' : 'No'}</td>
       <td>${parseInt(item.privacy) === 1 ? 'Sì' : 'No'}</td>
       <td>${parseInt(item.partecipa) === 1 ? 'Sì' : 'No'}</td>
       <td>${parseInt(item.dorme) === 1 ? 'Sì' : 'No'}</td>
@@ -458,6 +459,9 @@
               <div class="pcv-form-row">
                 <label><input type="checkbox" name="mangia" value="1"> Pasti</label>
               </div>
+              <div class="pcv-form-row">
+                <label><input type="checkbox" name="chiamato" value="1"> Già chiamato</label>
+              </div>
               <div class="pcv-form-actions">
                 <button type="submit" class="button button-primary">Salva</button>
                 <button type="button" class="button pcv-modal-cancel">Annulla</button>
@@ -510,6 +514,14 @@
               <div class="pcv-form-row">
                 <label>Pasti</label>
                 <select name="mangia">
+                  <option value="">Non modificare</option>
+                  <option value="1">Sì</option>
+                  <option value="0">No</option>
+                </select>
+              </div>
+              <div class="pcv-form-row">
+                <label>Già chiamato</label>
+                <select name="chiamato">
                   <option value="">Non modificare</option>
                   <option value="1">Sì</option>
                   <option value="0">No</option>
@@ -663,6 +675,10 @@
             form.querySelector('[name="partecipa"]').checked = parseInt(v.partecipa) === 1;
             form.querySelector('[name="dorme"]').checked = parseInt(v.dorme) === 1;
             form.querySelector('[name="mangia"]').checked = parseInt(v.mangia) === 1;
+            var chiamatoInput = form.querySelector('[name="chiamato"]');
+            if (chiamatoInput) {
+              chiamatoInput.checked = parseInt(v.chiamato) === 1;
+            }
             
             var provSelect = document.getElementById('pcv-modal-provincia');
             var comuneSelect = document.getElementById('pcv-modal-comune');
@@ -767,7 +783,8 @@
         privacy: formData.get('privacy') ? 1 : 0,
         partecipa: formData.get('partecipa') ? 1 : 0,
         dorme: formData.get('dorme') ? 1 : 0,
-        mangia: formData.get('mangia') ? 1 : 0
+        mangia: formData.get('mangia') ? 1 : 0,
+        chiamato: formData.get('chiamato') ? 1 : 0
       };
       
       jQuery.post(ajaxData.ajax_url, data, function(response) {
@@ -870,6 +887,7 @@
       if (formData.get('partecipa') !== '') data.partecipa = parseInt(formData.get('partecipa'));
       if (formData.get('dorme') !== '') data.dorme = parseInt(formData.get('dorme'));
       if (formData.get('mangia') !== '') data.mangia = parseInt(formData.get('mangia'));
+      if (formData.get('chiamato') !== '') data.chiamato = parseInt(formData.get('chiamato'));
       
       jQuery.post(ajaxData.ajax_url, data, function(response) {
         if (response.success) {

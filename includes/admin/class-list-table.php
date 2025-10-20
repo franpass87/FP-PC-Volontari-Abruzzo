@@ -53,6 +53,7 @@ class PCV_List_Table extends WP_List_Table {
             'email'      => esc_html__( 'Email', self::TEXT_DOMAIN ),
             'telefono'   => esc_html__( 'Telefono', self::TEXT_DOMAIN ),
             'categoria'  => esc_html__( 'Categoria', self::TEXT_DOMAIN ),
+            'chiamato'   => esc_html__( 'Chiamato', self::TEXT_DOMAIN ),
             'note'       => esc_html__( 'Note', self::TEXT_DOMAIN ),
             'privacy'    => esc_html__( 'Privacy', self::TEXT_DOMAIN ),
             'partecipa'  => esc_html__( 'Partecipa', self::TEXT_DOMAIN ),
@@ -135,6 +136,7 @@ class PCV_List_Table extends WP_List_Table {
                 }
                 $truncated = strlen( $note ) > 50 ? substr( $note, 0, 50 ) . '...' : $note;
                 return '<span class="pcv-note-preview" title="' . esc_attr( $note ) . '">' . esc_html( $truncated ) . '</span>';
+            case 'chiamato':
             case 'privacy':
             case 'partecipa':
             case 'dorme':

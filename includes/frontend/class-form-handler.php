@@ -124,6 +124,7 @@ class PCV_Form_Handler {
             'partecipa'  => $partecipa,
             'dorme'      => $dorme,
             'mangia'     => $mangia,
+            'chiamato'   => 0,
             'ip'         => $ip_address,
             'user_agent' => $user_agent,
         ];
