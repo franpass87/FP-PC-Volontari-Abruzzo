@@ -22,7 +22,7 @@ class PCV_Repository {
         $inserted = $wpdb->insert(
             $table,
             $data,
-            [ '%s','%s','%s','%s','%s','%s','%s','%s','%d','%d','%d','%d','%s','%s','%s' ]
+            [ '%s','%s','%s','%s','%s','%s','%s','%s','%d','%d','%d','%d','%s','%s','%s','%s' ]
         );
 
         return $inserted ? (int) $wpdb->insert_id : false;
@@ -84,8 +84,8 @@ class PCV_Repository {
 
         if ( $args['search'] !== '' ) {
             $like = '%' . $wpdb->esc_like( $args['search'] ) . '%';
-            $where .= " AND ( nome LIKE %s OR cognome LIKE %s OR email LIKE %s OR telefono LIKE %s OR categoria LIKE %s OR comune LIKE %s )";
-            array_push( $params, $like, $like, $like, $like, $like, $like );
+            $where .= " AND ( nome LIKE %s OR cognome LIKE %s OR email LIKE %s OR telefono LIKE %s OR categoria LIKE %s OR comune LIKE %s OR accompagnatori LIKE %s )";
+            array_push( $params, $like, $like, $like, $like, $like, $like, $like );
         }
 
         $orderby = sanitize_key( $args['orderby'] );
@@ -153,8 +153,8 @@ class PCV_Repository {
 
         if ( $args['search'] !== '' ) {
             $like = '%' . $wpdb->esc_like( $args['search'] ) . '%';
-            $where .= " AND ( nome LIKE %s OR cognome LIKE %s OR email LIKE %s OR telefono LIKE %s OR categoria LIKE %s OR comune LIKE %s )";
-            array_push( $params, $like, $like, $like, $like, $like, $like );
+            $where .= " AND ( nome LIKE %s OR cognome LIKE %s OR email LIKE %s OR telefono LIKE %s OR categoria LIKE %s OR comune LIKE %s OR accompagnatori LIKE %s )";
+            array_push( $params, $like, $like, $like, $like, $like, $like, $like );
         }
 
         $sql = "SELECT COUNT(*) FROM {$table} {$where}";
@@ -216,6 +216,7 @@ class PCV_Repository {
             'mangia' => '%d',
             'chiamato' => '%d',
             'note' => '%s',
+            'accompagnatori' => '%s',
         ];
 
         // Filtra solo i campi permessi

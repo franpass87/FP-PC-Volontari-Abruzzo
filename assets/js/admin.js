@@ -98,7 +98,7 @@
       console.log('Tabella aggiornata con', data.items.length, 'volontari');
     } else {
       var row = document.createElement('tr');
-      row.innerHTML = '<td colspan="13" style="text-align: center; padding: 20px;">Nessun volontario trovato</td>';
+      row.innerHTML = '<td colspan="14" style="text-align: center; padding: 20px;">Nessun volontario trovato</td>';
       tableBody.appendChild(row);
     }
 
@@ -134,6 +134,7 @@
       <td>${escapeHtml(item.categoria || '')}</td>
       <td>${parseInt(item.chiamato) === 1 ? 'Sì' : 'No'}</td>
       <td>${formatNoteCell(item.note)}</td>
+      <td>${formatAccompagnatoriCell(item.accompagnatori)}</td>
       <td>${parseInt(item.privacy) === 1 ? 'Sì' : 'No'}</td>
       <td>${parseInt(item.partecipa) === 1 ? 'Sì' : 'No'}</td>
       <td>${parseInt(item.dorme) === 1 ? 'Sì' : 'No'}</td>
@@ -153,6 +154,14 @@
   // Rende la cella note coerente con la colonna "Note" della list table
   function formatNoteCell(note) {
     if (!note || (typeof note === 'string' && note.trim() === '')) {
+      return 'No';
+    }
+    return 'Sì';
+  }
+
+  // Rende la cella accompagnatori coerente con la colonna "Accompagnatori" della list table
+  function formatAccompagnatoriCell(accompagnatori) {
+    if (!accompagnatori || (typeof accompagnatori === 'string' && accompagnatori.trim() === '')) {
       return 'No';
     }
     return 'Sì';
@@ -487,6 +496,10 @@
                 <textarea name="note" rows="4" placeholder="Inserisci note aggiuntive per questo contatto..."></textarea>
               </div>
               <div class="pcv-form-row">
+                <label>Accompagnatori</label>
+                <textarea name="accompagnatori" rows="4" placeholder="Inserisci gli accompagnatori, uno per riga..."></textarea>
+              </div>
+              <div class="pcv-form-row">
                 <label><input type="checkbox" name="privacy" value="1"> Privacy</label>
               </div>
               <div class="pcv-form-row">
@@ -710,6 +723,7 @@
             form.querySelector('[name="telefono"]').value = v.telefono || '';
             form.querySelector('[name="categoria"]').value = v.categoria || '';
             form.querySelector('[name="note"]').value = v.note || '';
+            form.querySelector('[name="accompagnatori"]').value = v.accompagnatori || '';
             form.querySelector('[name="privacy"]').checked = parseInt(v.privacy) === 1;
             form.querySelector('[name="partecipa"]').checked = parseInt(v.partecipa) === 1;
             form.querySelector('[name="dorme"]').checked = parseInt(v.dorme) === 1;
@@ -819,6 +833,7 @@
         comune: formData.get('comune'),
         categoria: formData.get('categoria'),
         note: formData.get('note'),
+        accompagnatori: formData.get('accompagnatori'),
         privacy: formData.get('privacy') ? 1 : 0,
         partecipa: formData.get('partecipa') ? 1 : 0,
         dorme: formData.get('dorme') ? 1 : 0,

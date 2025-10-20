@@ -53,8 +53,8 @@ class PCV_Exporter {
         if ( ! empty( $filters['search'] ) ) {
             $search = sanitize_text_field( $filters['search'] );
             $like = '%' . $wpdb->esc_like( $search ) . '%';
-            $where .= " AND ( nome LIKE %s OR cognome LIKE %s OR email LIKE %s OR telefono LIKE %s OR categoria LIKE %s )";
-            array_push( $params, $like, $like, $like, $like, $like );
+            $where .= " AND ( nome LIKE %s OR cognome LIKE %s OR email LIKE %s OR telefono LIKE %s OR categoria LIKE %s OR accompagnatori LIKE %s )";
+            array_push( $params, $like, $like, $like, $like, $like, $like );
         }
 
         $sql = "SELECT * FROM {$table} {$where} ORDER BY created_at DESC";
@@ -78,6 +78,8 @@ class PCV_Exporter {
             __( 'Telefono', self::TEXT_DOMAIN ),
             __( 'Categoria', self::TEXT_DOMAIN ),
             __( 'Chiamato', self::TEXT_DOMAIN ),
+            __( 'Note', self::TEXT_DOMAIN ),
+            __( 'Accompagnatori', self::TEXT_DOMAIN ),
             __( 'Privacy', self::TEXT_DOMAIN ),
             __( 'Partecipa', self::TEXT_DOMAIN ),
             __( 'Pernotta', self::TEXT_DOMAIN ),
@@ -99,6 +101,8 @@ class PCV_Exporter {
                 $this->sanitizer->csv_text_guard( $r['telefono'] ),
                 $this->sanitizer->csv_text_guard( isset( $r['categoria'] ) ? $r['categoria'] : '' ),
                 ! empty( $r['chiamato'] ) ? '1' : '0',
+                $this->sanitizer->csv_text_guard( isset( $r['note'] ) ? $r['note'] : '' ),
+                $this->sanitizer->csv_text_guard( isset( $r['accompagnatori'] ) ? $r['accompagnatori'] : '' ),
                 $r['privacy'] ? '1' : '0',
                 $r['partecipa'] ? '1' : '0',
                 ! empty( $r['dorme'] ) ? '1' : '0',

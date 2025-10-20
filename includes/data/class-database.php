@@ -55,7 +55,7 @@ class PCV_Database {
         }
 
         $needs_upgrade = false;
-        foreach ( [ 'dorme', 'mangia', 'categoria', 'note', 'chiamato' ] as $column ) {
+        foreach ( [ 'dorme', 'mangia', 'categoria', 'note', 'chiamato', 'accompagnatori' ] as $column ) {
             $column_exists = $wpdb->get_var(
                 $wpdb->prepare( "SHOW COLUMNS FROM `{$table}` LIKE %s", $column )
             );
@@ -107,6 +107,7 @@ class PCV_Database {
             mangia TINYINT(1) NOT NULL DEFAULT 0,
             chiamato TINYINT(1) NOT NULL DEFAULT 0,
             note TEXT NULL,
+            accompagnatori TEXT NULL,
             ip VARCHAR(45) NULL,
             user_agent TEXT NULL,
             PRIMARY KEY (id),

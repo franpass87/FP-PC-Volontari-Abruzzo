@@ -20,6 +20,7 @@ class PCV_List_Table extends WP_List_Table {
     private $comuni_data;
     private $all_comuni;
     private $filters_displayed = false;
+    private $filtered_count = 0;
 
     /**
      * Costruttore
@@ -55,6 +56,7 @@ class PCV_List_Table extends WP_List_Table {
             'categoria'  => esc_html__( 'Categoria', self::TEXT_DOMAIN ),
             'chiamato'   => esc_html__( 'Chiamato', self::TEXT_DOMAIN ),
             'note'       => esc_html__( 'Note', self::TEXT_DOMAIN ),
+            'accompagnatori' => esc_html__( 'Accompagnatori', self::TEXT_DOMAIN ),
             'privacy'    => esc_html__( 'Privacy', self::TEXT_DOMAIN ),
             'partecipa'  => esc_html__( 'Partecipa', self::TEXT_DOMAIN ),
             'dorme'      => esc_html__( 'Pernotta', self::TEXT_DOMAIN ),
@@ -136,6 +138,13 @@ class PCV_List_Table extends WP_List_Table {
                 }
                 $truncated = strlen( $note ) > 50 ? substr( $note, 0, 50 ) . '...' : $note;
                 return '<span class="pcv-note-preview" title="' . esc_attr( $note ) . '">' . esc_html( $truncated ) . '</span>';
+            case 'accompagnatori':
+                $accompagnatori = isset( $item->accompagnatori ) ? $item->accompagnatori : '';
+                if ( empty( $accompagnatori ) ) {
+                    return '<span class="pcv-no-accompagnatori">' . esc_html__( 'Nessun accompagnatore', self::TEXT_DOMAIN ) . '</span>';
+                }
+                $truncated = strlen( $accompagnatori ) > 50 ? substr( $accompagnatori, 0, 50 ) . '...' : $accompagnatori;
+                return '<span class="pcv-accompagnatori-preview" title="' . esc_attr( $accompagnatori ) . '">' . esc_html( $truncated ) . '</span>';
             case 'chiamato':
             case 'privacy':
             case 'partecipa':
@@ -204,6 +213,15 @@ class PCV_List_Table extends WP_List_Table {
     }
 
     /**
+     * Ottiene il numero di record filtrati
+     *
+     * @return int
+     */
+    public function get_filtered_count() {
+        return $this->filtered_count;
+    }
+
+    /**
      * Prepara items
      *
      * @return void
@@ -269,6 +287,9 @@ class PCV_List_Table extends WP_List_Table {
 
         $total_items = $this->repository->count_volunteers( $args );
         $items = $this->repository->get_volunteers( $args );
+
+        // Salva il numero di record filtrati per il contatore
+        $this->filtered_count = $total_items;
 
         $this->items = $items;
         $this->set_pagination_args( [
@@ -341,6 +362,30 @@ class PCV_List_Table extends WP_List_Table {
         $categories = PCV_Category_Manager::get_categories_for_select();
 
         $url_no_vars = remove_query_arg( [ 'f_comune', 'f_prov', 'f_cat', 'f_partecipa', 'f_dorme', 'f_mangia', 'f_chiamato', 's', 'paged' ] );
+
+        // Mostra il contatore dei record filtrati
+        $filtered_count = $this->get_filtered_count();
+        $total_count = $this->repository->count_volunteers(); // Totale senza filtri
+        
+        echo '<div class="pcv-counter-info" style="background: #f0f6fc; padding: 10px 15px; margin-bottom: 15px; border-left: 4px solid #2271b1; border-radius: 4px;">';
+        if ( $filtered_count === $total_count ) {
+            printf( 
+                '<strong>%s</strong>: %d %s',
+                esc_html__( 'Totale volontari', self::TEXT_DOMAIN ),
+                $filtered_count,
+                esc_html__( 'record', self::TEXT_DOMAIN )
+            );
+        } else {
+            printf( 
+                '<strong>%s</strong>: %d %s %s %d %s',
+                esc_html__( 'Volontari filtrati', self::TEXT_DOMAIN ),
+                $filtered_count,
+                esc_html__( 'di', self::TEXT_DOMAIN ),
+                $total_count,
+                esc_html__( 'record totali', self::TEXT_DOMAIN )
+            );
+        }
+        echo '</div>';
 
         echo '<div class="pcv-topbar"><form method="get" id="pcv-filter-form" action="' . esc_url( admin_url( 'admin.php' ) ) . '">';
         echo '<input type="hidden" name="page" value="pcv-volontari">';

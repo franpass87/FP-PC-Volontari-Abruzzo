@@ -128,6 +128,10 @@ class PCV_Ajax_Handler {
             $data['note'] = wp_kses_post( wp_unslash( $_POST['note'] ) );
         }
 
+        if ( isset( $_POST['accompagnatori'] ) ) {
+            $data['accompagnatori'] = wp_kses_post( wp_unslash( $_POST['accompagnatori'] ) );
+        }
+
         if ( isset( $_POST['privacy'] ) ) {
             $data['privacy'] = absint( $_POST['privacy'] );
         }
