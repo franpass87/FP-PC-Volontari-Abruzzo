@@ -10,13 +10,14 @@
 
   // Funzione per filtrare volontari via AJAX
   function filterVolunteersAjax() {
-    if (typeof window.PCV_AJAX_DATA === 'undefined') {
-      console.error('PCV_AJAX_DATA non è definito');
-      return;
-    }
-    
-    if (typeof jQuery === 'undefined') {
-      console.error('jQuery non è disponibile');
+    // Fallback: se AJAX o jQuery non sono disponibili, fai submit del form
+    if (typeof window.PCV_AJAX_DATA === 'undefined' || typeof jQuery === 'undefined') {
+      var form = document.getElementById('pcv-filter-form');
+      if (form) {
+        form.submit();
+      } else {
+        console.error('PCV_AJAX_DATA/jQuery non disponibili e form pcv-filter-form non trovato');
+      }
       return;
     }
 
@@ -320,54 +321,49 @@
         }, 100);
       });
 
-      // Auto-submit quando cambia categoria
-      var categoriaSelect = document.getElementById('pcv-admin-categoria');
-      if (categoriaSelect) {
-        console.log('Categoria select found:', categoriaSelect);
-        categoriaSelect.addEventListener('change', function(){
-          setTimeout(function() {
-            console.log('Filtering via AJAX after categoria change');
-            filterVolunteersAjax();
-          }, 100);
-        });
-      } else {
-        console.log('Categoria select not found');
-      }
+    }
 
-      // Auto-submit per i filtri booleani
-      if (partecipaSelect) {
-        partecipaSelect.addEventListener('change', function(){
-          setTimeout(function(){
-            console.log('Filtering via AJAX after partecipa change');
-            filterVolunteersAjax();
-          }, 100);
-        });
-      }
-      if (dormeSelect) {
-        dormeSelect.addEventListener('change', function(){
-          setTimeout(function(){
-            console.log('Filtering via AJAX after dorme change');
-            filterVolunteersAjax();
-          }, 100);
-        });
-      }
-      if (mangiaSelect) {
-        mangiaSelect.addEventListener('change', function(){
-          setTimeout(function(){
-            console.log('Filtering via AJAX after mangia change');
-            filterVolunteersAjax();
-          }, 100);
-        });
-      }
-      if (chiamatoSelect) {
-        chiamatoSelect.addEventListener('change', function(){
-          setTimeout(function(){
-            console.log('Filtering via AJAX after chiamato change');
-            filterVolunteersAjax();
-          }, 100);
-        });
-      }
+    // Listener indipendenti: categoria e booleani (sempre, se presenti)
+    var categoriaSelectGlobal = document.getElementById('pcv-admin-categoria');
+    var partecipaSelectGlobal = document.getElementById('pcv-admin-partecipa');
+    var dormeSelectGlobal = document.getElementById('pcv-admin-dorme');
+    var mangiaSelectGlobal = document.getElementById('pcv-admin-mangia');
+    var chiamatoSelectGlobal = document.getElementById('pcv-admin-chiamato');
 
+    if (categoriaSelectGlobal) {
+      categoriaSelectGlobal.addEventListener('change', function(){
+        setTimeout(function() {
+          filterVolunteersAjax();
+        }, 100);
+      });
+    }
+    if (partecipaSelectGlobal) {
+      partecipaSelectGlobal.addEventListener('change', function(){
+        setTimeout(function(){
+          filterVolunteersAjax();
+        }, 100);
+      });
+    }
+    if (dormeSelectGlobal) {
+      dormeSelectGlobal.addEventListener('change', function(){
+        setTimeout(function(){
+          filterVolunteersAjax();
+        }, 100);
+      });
+    }
+    if (mangiaSelectGlobal) {
+      mangiaSelectGlobal.addEventListener('change', function(){
+        setTimeout(function(){
+          filterVolunteersAjax();
+        }, 100);
+      });
+    }
+    if (chiamatoSelectGlobal) {
+      chiamatoSelectGlobal.addEventListener('change', function(){
+        setTimeout(function(){
+          filterVolunteersAjax();
+        }, 100);
+      });
     }
     
     // Gestione ricerca con debounce (indipendente dai filtri provincia/comune)
