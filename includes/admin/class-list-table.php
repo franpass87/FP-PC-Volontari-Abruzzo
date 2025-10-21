@@ -318,18 +318,18 @@ class PCV_List_Table extends WP_List_Table {
         }
         $this->filters_displayed = true;
 
-
+        // Usa la stessa logica di prepare_items() per mantenere coerenza
         $f_comune_raw = isset( $_GET['f_comune'] ) ? wp_unslash( $_GET['f_comune'] ) : '';
-        $f_comune = sanitize_text_field( $f_comune_raw );
+        $f_comune = trim( sanitize_text_field( $f_comune_raw ) );
 
         $f_prov_raw = isset( $_GET['f_prov'] ) ? wp_unslash( $_GET['f_prov'] ) : '';
-        $f_prov = strtoupper( sanitize_text_field( $f_prov_raw ) );
+        $f_prov = trim( sanitize_text_field( $f_prov_raw ) );
 
         $f_cat_raw = isset( $_GET['f_cat'] ) ? wp_unslash( $_GET['f_cat'] ) : '';
-        $f_cat = sanitize_text_field( $f_cat_raw );
+        $f_cat = trim( sanitize_text_field( $f_cat_raw ) );
 
         $s_raw = isset( $_GET['s'] ) ? wp_unslash( $_GET['s'] ) : '';
-        $s = sanitize_text_field( $s_raw );
+        $s = trim( sanitize_text_field( $s_raw ) );
 
         $f_partecipa_raw = isset( $_GET['f_partecipa'] ) ? wp_unslash( $_GET['f_partecipa'] ) : '';
         $f_partecipa = ($f_partecipa_raw === '1' || $f_partecipa_raw === '0') ? $f_partecipa_raw : '';
@@ -339,6 +339,9 @@ class PCV_List_Table extends WP_List_Table {
 
         $f_mangia_raw = isset( $_GET['f_mangia'] ) ? wp_unslash( $_GET['f_mangia'] ) : '';
         $f_mangia = ($f_mangia_raw === '1' || $f_mangia_raw === '0') ? $f_mangia_raw : '';
+
+        $f_chiamato_raw = isset( $_GET['f_chiamato'] ) ? wp_unslash( $_GET['f_chiamato'] ) : '';
+        $f_chiamato = ($f_chiamato_raw === '1' || $f_chiamato_raw === '0') ? $f_chiamato_raw : '';
 
         if ( ! array_key_exists( $f_prov, $this->province_data ) ) {
             $f_prov = '';
@@ -367,8 +370,13 @@ class PCV_List_Table extends WP_List_Table {
         $filtered_count = $this->get_filtered_count();
         $total_count = $this->repository->count_volunteers(); // Totale senza filtri
         
+        // Determina se ci sono filtri attivi
+        $has_filters = !empty( $f_comune ) || !empty( $f_prov ) || !empty( $f_cat ) || 
+                       !empty( $s ) || !empty( $f_partecipa ) || !empty( $f_dorme ) || 
+                       !empty( $f_mangia ) || !empty( $f_chiamato );
+        
         echo '<div class="pcv-counter-info" style="background: #f0f6fc; padding: 10px 15px; margin-bottom: 15px; border-left: 4px solid #2271b1; border-radius: 4px;">';
-        if ( $filtered_count === $total_count ) {
+        if ( !$has_filters ) {
             printf( 
                 '<strong>%s</strong>: %d %s',
                 esc_html__( 'Totale volontari', self::TEXT_DOMAIN ),
