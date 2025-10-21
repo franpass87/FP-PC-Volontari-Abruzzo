@@ -175,11 +175,6 @@ class PCV_Shortcode {
                 </div>
             </div>
 
-            <div class="pcv-field">
-                <label for="pcv_accompagnatori"><?php esc_html_e( 'Accompagnatori', self::TEXT_DOMAIN ); ?></label>
-                <textarea id="pcv_accompagnatori" name="pcv_accompagnatori" rows="3" placeholder="<?php esc_attr_e( 'Indica eventuali accompagnatori (nome, età, relazione...)', self::TEXT_DOMAIN ); ?>"></textarea>
-            </div>
-
             <div class="pcv-checkbox-divider" aria-hidden="true"></div>
 
             <div class="pcv-checkbox">

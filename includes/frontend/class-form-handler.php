@@ -67,7 +67,6 @@ class PCV_Form_Handler {
         $partecipa_raw = isset( $_POST['pcv_partecipa'] ) ? wp_unslash( $_POST['pcv_partecipa'] ) : null;
         $dorme_raw  = isset( $_POST['pcv_dorme'] ) ? wp_unslash( $_POST['pcv_dorme'] ) : null;
         $mangia_raw = isset( $_POST['pcv_mangia'] ) ? wp_unslash( $_POST['pcv_mangia'] ) : null;
-        $accompagnatori = $this->sanitizer->sanitize_text( wp_unslash( $_POST['pcv_accompagnatori'] ?? '' ) );
 
         // Validazione checkbox (devono essere '1' se presenti)
         if ( ! $this->validator->validate_checkbox_value( $partecipa_raw ) ) {
@@ -97,7 +96,6 @@ class PCV_Form_Handler {
             'partecipa'  => $partecipa,
             'dorme'      => $dorme,
             'mangia'     => $mangia,
-            'accompagnatori' => $accompagnatori,
         ];
 
         // Valida dati
@@ -127,7 +125,6 @@ class PCV_Form_Handler {
             'dorme'      => $dorme,
             'mangia'     => $mangia,
             'chiamato'   => 0,
-            'accompagnatori' => $accompagnatori,
             'ip'         => $ip_address,
             'user_agent' => $user_agent,
         ];
