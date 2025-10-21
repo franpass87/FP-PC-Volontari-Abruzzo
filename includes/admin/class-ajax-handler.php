@@ -279,14 +279,11 @@ class PCV_Ajax_Handler {
         error_log( 'PCV Filter AJAX - Nonce received: ' . ( isset( $_POST['nonce'] ) ? $_POST['nonce'] : 'NOT SET' ) );
         error_log( 'PCV Filter AJAX - Nonce verification: ' . ( wp_verify_nonce( $_POST['nonce'] ?? '', 'pcv_ajax_nonce' ) ? 'VALID' : 'INVALID' ) );
         
-        // Verifica nonce usando wp_verify_nonce con gestione errori personalizzata
-        // TEMPORANEO: Disabilitiamo la verifica nonce per testare
-        /*
+        // Verifica nonce
         if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'pcv_ajax_nonce' ) ) {
             error_log( 'PCV Filter AJAX - Nonce verification failed' );
             wp_send_json_error( [ 'message' => __( 'Nonce non valido', self::TEXT_DOMAIN ) ] );
         }
-        */
 
         // Verifica permessi
         if ( ! PCV_Role_Manager::can_view_volunteers() ) {

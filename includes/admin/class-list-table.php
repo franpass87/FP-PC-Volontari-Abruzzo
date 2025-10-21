@@ -21,6 +21,8 @@ class PCV_List_Table extends WP_List_Table {
     private $all_comuni;
     private $filters_displayed = false;
     private $filtered_count = 0;
+    private $has_filters = false;
+    private $total_count = 0;
 
     /**
      * Costruttore
@@ -222,6 +224,24 @@ class PCV_List_Table extends WP_List_Table {
     }
 
     /**
+     * Ottiene se ci sono filtri attivi
+     *
+     * @return bool
+     */
+    public function has_filters() {
+        return $this->has_filters;
+    }
+
+    /**
+     * Ottiene il numero totale di record senza filtri
+     *
+     * @return int
+     */
+    public function get_total_count() {
+        return $this->total_count;
+    }
+
+    /**
      * Prepara items
      *
      * @return void
@@ -290,6 +310,14 @@ class PCV_List_Table extends WP_List_Table {
 
         // Salva il numero di record filtrati per il contatore
         $this->filtered_count = $total_items;
+        
+        // Calcola se ci sono filtri attivi
+        $this->has_filters = !empty( $f_comune ) || !empty( $f_prov ) || !empty( $f_cat ) || 
+                             !empty( $s ) || !empty( $f_partecipa ) || !empty( $f_dorme ) || 
+                             !empty( $f_mangia ) || !empty( $f_chiamato );
+        
+        // Calcola il totale senza filtri
+        $this->total_count = $this->repository->count_volunteers();
 
         $this->items = $items;
         $this->set_pagination_args( [
@@ -366,14 +394,10 @@ class PCV_List_Table extends WP_List_Table {
 
         $url_no_vars = remove_query_arg( [ 'f_comune', 'f_prov', 'f_cat', 'f_partecipa', 'f_dorme', 'f_mangia', 'f_chiamato', 's', 'paged' ] );
 
-        // Mostra il contatore dei record filtrati
+        // Mostra il contatore dei record filtrati usando i valori calcolati in prepare_items()
         $filtered_count = $this->get_filtered_count();
-        $total_count = $this->repository->count_volunteers(); // Totale senza filtri
-        
-        // Determina se ci sono filtri attivi
-        $has_filters = !empty( $f_comune ) || !empty( $f_prov ) || !empty( $f_cat ) || 
-                       !empty( $s ) || !empty( $f_partecipa ) || !empty( $f_dorme ) || 
-                       !empty( $f_mangia ) || !empty( $f_chiamato );
+        $total_count = $this->get_total_count();
+        $has_filters = $this->has_filters();
         
         echo '<div class="pcv-counter-info" style="background: #f0f6fc; padding: 10px 15px; margin-bottom: 15px; border-left: 4px solid #2271b1; border-radius: 4px;">';
         if ( !$has_filters ) {
