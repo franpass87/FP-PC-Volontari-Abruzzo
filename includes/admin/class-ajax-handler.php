@@ -132,6 +132,16 @@ class PCV_Ajax_Handler {
             $data['accompagnatori'] = wp_kses_post( wp_unslash( $_POST['accompagnatori'] ) );
         }
 
+        if ( isset( $_POST['num_accompagnatori'] ) ) {
+            $num_accompagnatori_raw = wp_unslash( $_POST['num_accompagnatori'] );
+            $num_accompagnatori = absint( $num_accompagnatori_raw );
+            // Limita a un massimo ragionevole (es. 20 accompagnatori)
+            if ( $num_accompagnatori > 20 ) {
+                $num_accompagnatori = 20;
+            }
+            $data['num_accompagnatori'] = $num_accompagnatori;
+        }
+
         if ( isset( $_POST['privacy'] ) ) {
             $data['privacy'] = absint( $_POST['privacy'] );
         }

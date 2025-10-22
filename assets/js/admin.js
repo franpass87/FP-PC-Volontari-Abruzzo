@@ -190,6 +190,7 @@
       <td>${escapeHtml(item.categoria || '')}</td>
       <td>${parseInt(item.chiamato) === 1 ? 'Sì' : 'No'}</td>
       <td>${formatNoteCell(item.note)}</td>
+      <td>${formatNumAccompagnatoriCell(item.num_accompagnatori)}</td>
       <td>${formatAccompagnatoriCell(item.accompagnatori)}</td>
       <td>${parseInt(item.privacy) === 1 ? 'Sì' : 'No'}</td>
       <td>${parseInt(item.partecipa) === 1 ? 'Sì' : 'No'}</td>
@@ -233,10 +234,21 @@
     return '<span class="pcv-note-preview" title="' + escapeHtml(note) + '">' + escapeHtml(truncated) + '</span>';
   }
 
-  // Rende la cella accompagnatori coerente con la colonna "Accompagnatori" della list table
+  // Rende la cella numero accompagnatori coerente con la colonna "N° Accompagnatori" della list table
+  function formatNumAccompagnatoriCell(numAccompagnatori) {
+    var num = parseInt(numAccompagnatori) || 0;
+    if (num === 0) {
+      return '<span class="pcv-no-accompagnatori">Nessun accompagnatore</span>';
+    }
+    
+    var totalPersone = num + 1; // +1 per il volontario principale
+    return '<span class="pcv-accompagnatori-count" title="Totale persone: ' + totalPersone + '">' + num + '</span>';
+  }
+
+  // Rende la cella dettagli accompagnatori coerente con la colonna "Dettagli Accompagnatori" della list table
   function formatAccompagnatoriCell(accompagnatori) {
     if (!accompagnatori || (typeof accompagnatori === 'string' && accompagnatori.trim() === '')) {
-      return '<span class="pcv-no-accompagnatori">Nessun accompagnatore</span>';
+      return '<span class="pcv-no-accompagnatori">Nessun dettaglio</span>';
     }
     
     var truncated = accompagnatori.length > 50 ? accompagnatori.substring(0, 50) + '...' : accompagnatori;
@@ -572,8 +584,14 @@
                 <textarea name="note" rows="4" placeholder="Inserisci note aggiuntive per questo contatto..."></textarea>
               </div>
               <div class="pcv-form-row">
-                <label>Accompagnatori</label>
-                <textarea name="accompagnatori" rows="4" placeholder="Inserisci gli accompagnatori, uno per riga..."></textarea>
+                <label>Numero di accompagnatori</label>
+                <input type="number" name="num_accompagnatori" min="0" max="20" value="0" placeholder="0">
+                <small>Inserisci il numero di accompagnatori (massimo 20)</small>
+              </div>
+              <div class="pcv-form-row">
+                <label>Dettagli accompagnatori</label>
+                <textarea name="accompagnatori" rows="4" placeholder="Inserisci i dettagli degli accompagnatori (nome, età, relazione...)"></textarea>
+                <small>Dettagli degli accompagnatori (opzionale)</small>
               </div>
               <div class="pcv-form-row">
                 <label><input type="checkbox" name="privacy" value="1"> Privacy</label>
@@ -799,6 +817,7 @@
             form.querySelector('[name="telefono"]').value = v.telefono || '';
             form.querySelector('[name="categoria"]').value = v.categoria || '';
             form.querySelector('[name="note"]').value = v.note || '';
+            form.querySelector('[name="num_accompagnatori"]').value = v.num_accompagnatori || 0;
             form.querySelector('[name="accompagnatori"]').value = v.accompagnatori || '';
             form.querySelector('[name="privacy"]').checked = parseInt(v.privacy) === 1;
             form.querySelector('[name="partecipa"]').checked = parseInt(v.partecipa) === 1;
@@ -909,6 +928,7 @@
         comune: formData.get('comune'),
         categoria: formData.get('categoria'),
         note: formData.get('note'),
+        num_accompagnatori: formData.get('num_accompagnatori'),
         accompagnatori: formData.get('accompagnatori'),
         privacy: formData.get('privacy') ? 1 : 0,
         partecipa: formData.get('partecipa') ? 1 : 0,

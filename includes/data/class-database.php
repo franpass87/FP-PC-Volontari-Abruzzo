@@ -55,7 +55,7 @@ class PCV_Database {
         }
 
         $needs_upgrade = false;
-        foreach ( [ 'dorme', 'mangia', 'categoria', 'note', 'chiamato', 'accompagnatori' ] as $column ) {
+        foreach ( [ 'dorme', 'mangia', 'categoria', 'note', 'chiamato', 'accompagnatori', 'num_accompagnatori' ] as $column ) {
             $column_exists = $wpdb->get_var(
                 $wpdb->prepare( "SHOW COLUMNS FROM `{$table}` LIKE %s", $column )
             );
@@ -71,6 +71,9 @@ class PCV_Database {
             $charset = $wpdb->get_charset_collate();
             dbDelta( self::get_schema_sql( $table, $charset ) );
         }
+
+        // Migrazione specifica per il campo num_accompagnatori
+        self::maybe_migrate_num_accompagnatori_field();
     }
 
     /**
@@ -108,6 +111,7 @@ class PCV_Database {
             chiamato TINYINT(1) NOT NULL DEFAULT 0,
             note TEXT NULL,
             accompagnatori TEXT NULL,
+            num_accompagnatori INT UNSIGNED NOT NULL DEFAULT 0,
             ip VARCHAR(45) NULL,
             user_agent TEXT NULL,
             PRIMARY KEY (id),
@@ -117,6 +121,34 @@ class PCV_Database {
             KEY idx_provincia (provincia),
             KEY idx_created (created_at)
         ) {$charset};";
+    }
+
+    /**
+     * Migra il campo num_accompagnatori se necessario
+     *
+     * @return void
+     */
+    private static function maybe_migrate_num_accompagnatori_field() {
+        global $wpdb;
+        
+        $table = self::get_table_name();
+        
+        // Verifica se il campo num_accompagnatori esiste
+        $column_info = $wpdb->get_row(
+            $wpdb->prepare( "SHOW COLUMNS FROM `{$table}` LIKE %s", 'num_accompagnatori' )
+        );
+        
+        if ( ! $column_info ) {
+            // Aggiunge il campo num_accompagnatori
+            $wpdb->query( "ALTER TABLE `{$table}` ADD COLUMN num_accompagnatori INT UNSIGNED NOT NULL DEFAULT 0 AFTER accompagnatori" );
+            
+            // Migra i dati esistenti dal campo accompagnatori se contiene numeri
+            $wpdb->query( "UPDATE `{$table}` SET num_accompagnatori = CASE 
+                WHEN accompagnatori IS NULL OR accompagnatori = '' THEN 0
+                WHEN accompagnatori REGEXP '^[0-9]+$' THEN CAST(accompagnatori AS UNSIGNED)
+                ELSE 0
+            END" );
+        }
     }
 
     /**

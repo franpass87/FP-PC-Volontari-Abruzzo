@@ -71,6 +71,14 @@ class PCV_Validator {
             $errors[] = __( 'Devi accettare la privacy policy.', 'pc-volontari-abruzzo' );
         }
 
+        // Validazione numero accompagnatori
+        if ( isset( $data['num_accompagnatori'] ) ) {
+            $num_accompagnatori = (int) $data['num_accompagnatori'];
+            if ( $num_accompagnatori < 0 || $num_accompagnatori > 20 ) {
+                $errors[] = __( 'Il numero di accompagnatori deve essere compreso tra 0 e 20.', 'pc-volontari-abruzzo' );
+            }
+        }
+
         return empty( $errors ) ? true : $errors;
     }
 

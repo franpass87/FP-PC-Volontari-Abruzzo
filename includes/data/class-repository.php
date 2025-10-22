@@ -22,7 +22,7 @@ class PCV_Repository {
         $inserted = $wpdb->insert(
             $table,
             $data,
-            [ '%s','%s','%s','%s','%s','%s','%s','%s','%d','%d','%d','%d','%s','%s','%s','%s' ]
+            [ '%s','%s','%s','%s','%s','%s','%s','%s','%d','%d','%d','%d','%s','%d','%s','%s','%s' ]
         );
 
         return $inserted ? (int) $wpdb->insert_id : false;
@@ -217,6 +217,7 @@ class PCV_Repository {
             'chiamato' => '%d',
             'note' => '%s',
             'accompagnatori' => '%s',
+            'num_accompagnatori' => '%d',
         ];
 
         // Filtra solo i campi permessi

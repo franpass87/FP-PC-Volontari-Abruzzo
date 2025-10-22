@@ -204,6 +204,20 @@ class PCV_Importer {
             $dorme     = $this->sanitizer->normalize_boolean_input( $row['dorme'] ?? '0' );
             $mangia    = $this->sanitizer->normalize_boolean_input( $row['mangia'] ?? ( $row['pasti'] ?? '0' ) );
             $chiamato  = $this->sanitizer->normalize_boolean_input( $row['chiamato'] ?? ( $row['gia_chiamato'] ?? '0' ) );
+            
+            // Sanitizza campo dettagli accompagnatori
+            $accompagnatori = $this->sanitizer->sanitize_text( $row['accompagnatori'] ?? '' );
+            
+            // Sanitizza campo numero accompagnatori
+            $num_accompagnatori_raw = $row['num_accompagnatori'] ?? '0';
+            $num_accompagnatori = 0;
+            if ( $num_accompagnatori_raw !== '' && is_numeric( $num_accompagnatori_raw ) ) {
+                $num_accompagnatori = absint( $num_accompagnatori_raw );
+                // Limita a un massimo ragionevole (es. 20 accompagnatori)
+                if ( $num_accompagnatori > 20 ) {
+                    $num_accompagnatori = 20;
+                }
+            }
 
             $created_at = $this->sanitizer->normalize_datetime_input( $row['created_at'] ?? ( $row['data'] ?? '' ) );
             $ip         = isset( $row['ip'] ) ? sanitize_text_field( $row['ip'] ) : '';
@@ -212,23 +226,25 @@ class PCV_Importer {
             $inserted = $wpdb->insert(
                 $table,
                 [
-                    'created_at' => $created_at,
-                    'nome'       => $nome,
-                    'cognome'    => $cognome,
-                    'comune'     => $comune,
-                    'provincia'  => $provincia,
-                    'email'      => $email_raw,
-                    'telefono'   => $telefono,
-                    'categoria'  => $category,
-                    'privacy'    => $privacy,
-                    'partecipa'  => $partecipa,
-                    'dorme'      => $dorme,
-                    'mangia'     => $mangia,
-                    'chiamato'   => $chiamato,
-                    'ip'         => $ip,
-                    'user_agent' => $user_agent,
+                    'created_at'     => $created_at,
+                    'nome'           => $nome,
+                    'cognome'        => $cognome,
+                    'comune'         => $comune,
+                    'provincia'      => $provincia,
+                    'email'          => $email_raw,
+                    'telefono'       => $telefono,
+                    'categoria'      => $category,
+                    'privacy'        => $privacy,
+                    'partecipa'      => $partecipa,
+                    'dorme'              => $dorme,
+                    'mangia'             => $mangia,
+                    'chiamato'           => $chiamato,
+                    'accompagnatori'     => $accompagnatori,
+                    'num_accompagnatori' => $num_accompagnatori,
+                    'ip'                 => $ip,
+                    'user_agent'     => $user_agent,
                 ],
-                [ '%s','%s','%s','%s','%s','%s','%s','%s','%d','%d','%d','%d','%d','%s','%s' ]
+                [ '%s','%s','%s','%s','%s','%s','%s','%s','%d','%d','%d','%d','%d','%d','%s','%s' ]
             );
 
             if ( $inserted ) {
@@ -301,6 +317,16 @@ class PCV_Importer {
                 'label'       => __( 'Già chiamato', self::TEXT_DOMAIN ),
                 'required'    => false,
                 'description' => __( 'Indica se il volontario è già stato contattato (1/0, si/no, true/false).', self::TEXT_DOMAIN ),
+            ],
+            'accompagnatori' => [
+                'label'       => __( 'Dettagli accompagnatori', self::TEXT_DOMAIN ),
+                'required'    => false,
+                'description' => __( 'Dettagli degli accompagnatori (nome, età, relazione...).', self::TEXT_DOMAIN ),
+            ],
+            'num_accompagnatori' => [
+                'label'       => __( 'Numero accompagnatori', self::TEXT_DOMAIN ),
+                'required'    => false,
+                'description' => __( 'Numero di accompagnatori (0-20).', self::TEXT_DOMAIN ),
             ],
             'created_at' => [
                 'label'       => __( 'Data iscrizione', self::TEXT_DOMAIN ),

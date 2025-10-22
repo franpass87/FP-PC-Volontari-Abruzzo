@@ -85,17 +85,33 @@ class PCV_Form_Handler {
         $dorme  = $dorme_raw === '1' ? 1 : 0;
         $mangia = $mangia_raw === '1' ? 1 : 0;
 
+        // Sanitizza campo numero accompagnatori
+        $num_accompagnatori_raw = isset( $_POST['pcv_num_accompagnatori'] ) ? wp_unslash( $_POST['pcv_num_accompagnatori'] ) : '';
+        $num_accompagnatori = 0;
+        if ( $num_accompagnatori_raw !== '' ) {
+            $num_accompagnatori = absint( $num_accompagnatori_raw );
+            // Limita a un massimo ragionevole (es. 20 accompagnatori)
+            if ( $num_accompagnatori > 20 ) {
+                $num_accompagnatori = 20;
+            }
+        }
+
+        // Sanitizza campo dettagli accompagnatori
+        $accompagnatori = $this->sanitizer->sanitize_text( wp_unslash( $_POST['pcv_accompagnatori'] ?? '' ) );
+
         $data = [
-            'nome'       => $nome,
-            'cognome'    => $cognome,
-            'provincia'  => $provincia,
-            'comune'     => $comune,
-            'email'      => $email,
-            'telefono'   => $telefono,
-            'privacy'    => $privacy,
-            'partecipa'  => $partecipa,
-            'dorme'      => $dorme,
-            'mangia'     => $mangia,
+            'nome'               => $nome,
+            'cognome'            => $cognome,
+            'provincia'          => $provincia,
+            'comune'             => $comune,
+            'email'              => $email,
+            'telefono'           => $telefono,
+            'privacy'            => $privacy,
+            'partecipa'          => $partecipa,
+            'dorme'              => $dorme,
+            'mangia'             => $mangia,
+            'accompagnatori'     => $accompagnatori,
+            'num_accompagnatori' => $num_accompagnatori,
         ];
 
         // Valida dati
@@ -112,21 +128,23 @@ class PCV_Form_Handler {
         $category = $this->get_default_category_value();
 
         $insert_data = [
-            'created_at' => $now,
-            'nome'       => $nome,
-            'cognome'    => $cognome,
-            'comune'     => $comune,
-            'provincia'  => $provincia,
-            'email'      => $email,
-            'telefono'   => $telefono,
-            'categoria'  => $category,
-            'privacy'    => $privacy,
-            'partecipa'  => $partecipa,
-            'dorme'      => $dorme,
-            'mangia'     => $mangia,
-            'chiamato'   => 0,
-            'ip'         => $ip_address,
-            'user_agent' => $user_agent,
+            'created_at'         => $now,
+            'nome'               => $nome,
+            'cognome'            => $cognome,
+            'comune'             => $comune,
+            'provincia'          => $provincia,
+            'email'              => $email,
+            'telefono'           => $telefono,
+            'categoria'          => $category,
+            'privacy'            => $privacy,
+            'partecipa'          => $partecipa,
+            'dorme'              => $dorme,
+            'mangia'             => $mangia,
+            'accompagnatori'     => $accompagnatori,
+            'num_accompagnatori' => $num_accompagnatori,
+            'chiamato'           => 0,
+            'ip'                 => $ip_address,
+            'user_agent'         => $user_agent,
         ];
 
         $insert_id = $this->repository->insert( $insert_data );

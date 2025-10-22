@@ -58,7 +58,8 @@ class PCV_List_Table extends WP_List_Table {
             'categoria'  => esc_html__( 'Categoria', self::TEXT_DOMAIN ),
             'chiamato'   => esc_html__( 'Chiamato', self::TEXT_DOMAIN ),
             'note'       => esc_html__( 'Note', self::TEXT_DOMAIN ),
-            'accompagnatori' => esc_html__( 'Accompagnatori', self::TEXT_DOMAIN ),
+            'num_accompagnatori' => esc_html__( 'N° Accompagnatori', self::TEXT_DOMAIN ),
+            'accompagnatori' => esc_html__( 'Dettagli Accompagnatori', self::TEXT_DOMAIN ),
             'privacy'    => esc_html__( 'Privacy', self::TEXT_DOMAIN ),
             'partecipa'  => esc_html__( 'Partecipa', self::TEXT_DOMAIN ),
             'dorme'      => esc_html__( 'Pernotta', self::TEXT_DOMAIN ),
@@ -140,10 +141,17 @@ class PCV_List_Table extends WP_List_Table {
                 }
                 $truncated = strlen( $note ) > 50 ? substr( $note, 0, 50 ) . '...' : $note;
                 return '<span class="pcv-note-preview" title="' . esc_attr( $note ) . '">' . esc_html( $truncated ) . '</span>';
+            case 'num_accompagnatori':
+                $num_accompagnatori = isset( $item->num_accompagnatori ) ? (int) $item->num_accompagnatori : 0;
+                if ( $num_accompagnatori === 0 ) {
+                    return '<span class="pcv-no-accompagnatori">' . esc_html__( 'Nessun accompagnatore', self::TEXT_DOMAIN ) . '</span>';
+                }
+                $total_persone = $num_accompagnatori + 1; // +1 per il volontario principale
+                return '<span class="pcv-accompagnatori-count" title="' . sprintf( esc_attr__( 'Totale persone: %d', self::TEXT_DOMAIN ), $total_persone ) . '">' . esc_html( $num_accompagnatori ) . '</span>';
             case 'accompagnatori':
                 $accompagnatori = isset( $item->accompagnatori ) ? $item->accompagnatori : '';
                 if ( empty( $accompagnatori ) ) {
-                    return '<span class="pcv-no-accompagnatori">' . esc_html__( 'Nessun accompagnatore', self::TEXT_DOMAIN ) . '</span>';
+                    return '<span class="pcv-no-accompagnatori">' . esc_html__( 'Nessun dettaglio', self::TEXT_DOMAIN ) . '</span>';
                 }
                 $truncated = strlen( $accompagnatori ) > 50 ? substr( $accompagnatori, 0, 50 ) . '...' : $accompagnatori;
                 return '<span class="pcv-accompagnatori-preview" title="' . esc_attr( $accompagnatori ) . '">' . esc_html( $truncated ) . '</span>';
