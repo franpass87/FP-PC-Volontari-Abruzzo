@@ -85,19 +85,9 @@ class PCV_Form_Handler {
         $dorme  = $dorme_raw === '1' ? 1 : 0;
         $mangia = $mangia_raw === '1' ? 1 : 0;
 
-        // Sanitizza campo numero accompagnatori
-        $num_accompagnatori_raw = isset( $_POST['pcv_num_accompagnatori'] ) ? wp_unslash( $_POST['pcv_num_accompagnatori'] ) : '';
-        $num_accompagnatori = 0;
-        if ( $num_accompagnatori_raw !== '' ) {
-            $num_accompagnatori = absint( $num_accompagnatori_raw );
-            // Limita a un massimo ragionevole (es. 20 accompagnatori)
-            if ( $num_accompagnatori > 20 ) {
-                $num_accompagnatori = 20;
-            }
-        }
-
-        // Sanitizza campo dettagli accompagnatori
-        $accompagnatori = $this->sanitizer->sanitize_text( wp_unslash( $_POST['pcv_accompagnatori'] ?? '' ) );
+        // Campi accompagnatori nascosti dal frontend - valori predefiniti
+        $num_accompagnatori = 0; // Valore predefinito per il numero di accompagnatori
+        $accompagnatori = ''; // Valore predefinito per i dettagli accompagnatori
 
         $data = [
             'nome'               => $nome,

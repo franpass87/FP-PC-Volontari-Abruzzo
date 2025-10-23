@@ -75,8 +75,6 @@ class PCV_Shortcode {
         $comune_label        = $this->get_label_value( 'pcv_label_comune', 'Comune di provenienza *' );
         $email_label         = $this->get_label_value( 'pcv_label_email', 'Email *' );
         $phone_label         = $this->get_label_value( 'pcv_label_telefono', 'Telefono *' );
-        $accompagnatori_label = $this->get_label_value( 'pcv_label_accompagnatori', 'Accompagnatori' );
-        $num_accompagnatori_label = $this->get_label_value( 'pcv_label_num_accompagnatori', 'Numero di accompagnatori' );
         $privacy_field_label = $this->get_label_value( 'pcv_label_privacy', 'Ho letto e accetto l\'Informativa Privacy *' );
         $submit_label        = $this->get_label_value( 'pcv_label_submit', 'Invia iscrizione' );
         $optional_group_aria = $this->get_label_value( 'pcv_label_optional_group', 'Opzioni facoltative' );
@@ -155,21 +153,6 @@ class PCV_Shortcode {
                 </div>
             </div>
 
-            <div class="pcv-row">
-                <div class="pcv-field">
-                    <label for="pcv_num_accompagnatori"><?php echo esc_html( $num_accompagnatori_label ); ?></label>
-                    <input type="number" id="pcv_num_accompagnatori" name="pcv_num_accompagnatori" min="0" max="20" value="0" placeholder="0">
-                    <small class="pcv-field-help"><?php esc_html_e( 'Inserisci il numero di accompagnatori (massimo 20)', self::TEXT_DOMAIN ); ?></small>
-                </div>
-            </div>
-
-            <div class="pcv-row">
-                <div class="pcv-field">
-                    <label for="pcv_accompagnatori"><?php echo esc_html( $accompagnatori_label ); ?></label>
-                    <textarea id="pcv_accompagnatori" name="pcv_accompagnatori" rows="3" placeholder="<?php esc_attr_e( 'Indica eventuali accompagnatori (nome, età, relazione...)', self::TEXT_DOMAIN ); ?>"></textarea>
-                    <small class="pcv-field-help"><?php esc_html_e( 'Dettagli degli accompagnatori (opzionale)', self::TEXT_DOMAIN ); ?></small>
-                </div>
-            </div>
 
             <div class="pcv-checkbox-group" role="group" aria-label="<?php echo esc_attr( $optional_group_aria ); ?>">
                 <div class="pcv-optional-heading">
