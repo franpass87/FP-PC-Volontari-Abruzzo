@@ -50,14 +50,34 @@ class PCV_Exporter {
             $params[] = '%' . $wpdb->esc_like( $f_prov ) . '%';
         }
 
-        if ( ! empty( $filters['search'] ) ) {
+		if ( ! empty( $filters['search'] ) ) {
             $search = sanitize_text_field( $filters['search'] );
             $like = '%' . $wpdb->esc_like( $search ) . '%';
             $where .= " AND ( nome LIKE %s OR cognome LIKE %s OR email LIKE %s OR telefono LIKE %s OR categoria LIKE %s OR accompagnatori LIKE %s )";
             array_push( $params, $like, $like, $like, $like, $like, $like );
         }
 
-        $sql = "SELECT * FROM {$table} {$where} ORDER BY created_at DESC";
+		if ( ! empty( $filters['categoria'] ) ) {
+			$f_cat = sanitize_text_field( $filters['categoria'] );
+			$where .= " AND categoria LIKE %s";
+			$params[] = '%' . $wpdb->esc_like( $f_cat ) . '%';
+		}
+
+		$allowed_orderby = [ 'created_at', 'nome', 'cognome', 'comune', 'provincia', 'categoria' ];
+		$orderby = 'created_at';
+		if ( ! empty( $filters['sort_by'] ) ) {
+			$maybe = sanitize_key( $filters['sort_by'] );
+			if ( in_array( $maybe, $allowed_orderby, true ) ) {
+				$orderby = $maybe;
+			}
+		}
+		$order = 'DESC';
+		if ( ! empty( $filters['sort_dir'] ) ) {
+			$dir = strtoupper( $filters['sort_dir'] );
+			$order = ( $dir === 'ASC' ) ? 'ASC' : 'DESC';
+		}
+
+		$sql = "SELECT * FROM {$table} {$where} ORDER BY {$orderby} {$order}";
         $rows = empty( $params )
             ? $wpdb->get_results( $sql, ARRAY_A )
             : $wpdb->get_results( $wpdb->prepare( $sql, $params ), ARRAY_A );
@@ -67,52 +87,86 @@ class PCV_Exporter {
         header( 'Content-Disposition: attachment; filename=volontari_abruzzo_' . date( 'Ymd_His' ) . '.csv' );
 
         $out = fopen( 'php://output', 'w' );
-        $headers = [
-            __( 'ID', self::TEXT_DOMAIN ),
-            __( 'Data', self::TEXT_DOMAIN ),
-            __( 'Nome', self::TEXT_DOMAIN ),
-            __( 'Cognome', self::TEXT_DOMAIN ),
-            __( 'Comune', self::TEXT_DOMAIN ),
-            __( 'Provincia', self::TEXT_DOMAIN ),
-            __( 'Email', self::TEXT_DOMAIN ),
-            __( 'Telefono', self::TEXT_DOMAIN ),
-            __( 'Categoria', self::TEXT_DOMAIN ),
-            __( 'Chiamato', self::TEXT_DOMAIN ),
-            __( 'Note', self::TEXT_DOMAIN ),
-            __( 'N° Accompagnatori', self::TEXT_DOMAIN ),
-            __( 'Dettagli Accompagnatori', self::TEXT_DOMAIN ),
-            __( 'Privacy', self::TEXT_DOMAIN ),
-            __( 'Partecipa', self::TEXT_DOMAIN ),
-            __( 'Pernotta', self::TEXT_DOMAIN ),
-            __( 'Pasti', self::TEXT_DOMAIN ),
-            __( 'IP', self::TEXT_DOMAIN ),
-            __( 'User Agent', self::TEXT_DOMAIN ),
-        ];
-        fputcsv( $out, $headers, ';' );
+		$all_headers = [
+			'id' => __( 'ID', self::TEXT_DOMAIN ),
+			'created_at' => __( 'Data', self::TEXT_DOMAIN ),
+			'nome' => __( 'Nome', self::TEXT_DOMAIN ),
+			'cognome' => __( 'Cognome', self::TEXT_DOMAIN ),
+			'comune' => __( 'Comune', self::TEXT_DOMAIN ),
+			'provincia' => __( 'Provincia', self::TEXT_DOMAIN ),
+			'email' => __( 'Email', self::TEXT_DOMAIN ),
+			'telefono' => __( 'Telefono', self::TEXT_DOMAIN ),
+			'categoria' => __( 'Categoria', self::TEXT_DOMAIN ),
+			'chiamato' => __( 'Chiamato', self::TEXT_DOMAIN ),
+			'note' => __( 'Note', self::TEXT_DOMAIN ),
+			'num_accompagnatori' => __( 'N° Accompagnatori', self::TEXT_DOMAIN ),
+			'accompagnatori' => __( 'Dettagli Accompagnatori', self::TEXT_DOMAIN ),
+			'privacy' => __( 'Privacy', self::TEXT_DOMAIN ),
+			'partecipa' => __( 'Partecipa', self::TEXT_DOMAIN ),
+			'dorme' => __( 'Pernotta', self::TEXT_DOMAIN ),
+			'mangia' => __( 'Pasti', self::TEXT_DOMAIN ),
+			'ip' => __( 'IP', self::TEXT_DOMAIN ),
+			'user_agent' => __( 'User Agent', self::TEXT_DOMAIN ),
+		];
 
-        foreach ( $rows as $r ) {
-            fputcsv( $out, [
-                $r['id'],
-                $r['created_at'],
-                $this->sanitizer->csv_text_guard( $r['nome'] ),
-                $this->sanitizer->csv_text_guard( $r['cognome'] ),
-                $this->sanitizer->csv_text_guard( $r['comune'] ),
-                $this->sanitizer->csv_text_guard( $r['provincia'] ),
-                $this->sanitizer->csv_text_guard( $r['email'] ),
-                $this->sanitizer->csv_text_guard( $r['telefono'] ),
-                $this->sanitizer->csv_text_guard( isset( $r['categoria'] ) ? $r['categoria'] : '' ),
-                ! empty( $r['chiamato'] ) ? '1' : '0',
-                $this->sanitizer->csv_text_guard( isset( $r['note'] ) ? $r['note'] : '' ),
-                isset( $r['num_accompagnatori'] ) ? (int) $r['num_accompagnatori'] : 0,
-                $this->sanitizer->csv_text_guard( isset( $r['accompagnatori'] ) ? $r['accompagnatori'] : '' ),
-                $r['privacy'] ? '1' : '0',
-                $r['partecipa'] ? '1' : '0',
-                ! empty( $r['dorme'] ) ? '1' : '0',
-                ! empty( $r['mangia'] ) ? '1' : '0',
-                $this->sanitizer->csv_text_guard( $r['ip'] ),
-                $this->sanitizer->csv_text_guard( $r['user_agent'] ),
-            ], ';' );
-        }
+		$default_order = array_keys( $all_headers );
+		$requested_cols = [];
+		if ( ! empty( $filters['columns'] ) && is_array( $filters['columns'] ) ) {
+			foreach ( $filters['columns'] as $col ) {
+				$k = sanitize_key( $col );
+				if ( isset( $all_headers[ $k ] ) ) {
+					$requested_cols[] = $k;
+				}
+			}
+		}
+		$final_cols = ! empty( $requested_cols ) ? $requested_cols : $default_order;
+
+		$headers = [];
+		foreach ( $final_cols as $k ) {
+			$headers[] = $all_headers[ $k ];
+		}
+		fputcsv( $out, $headers, ';' );
+
+		foreach ( $rows as $r ) {
+			$line = [];
+			foreach ( $final_cols as $k ) {
+				switch ( $k ) {
+					case 'id':
+						$line[] = isset( $r['id'] ) ? $r['id'] : '';
+						break;
+					case 'created_at':
+						$line[] = isset( $r['created_at'] ) ? $r['created_at'] : '';
+						break;
+					case 'nome':
+					case 'cognome':
+					case 'comune':
+					case 'provincia':
+					case 'email':
+					case 'telefono':
+					case 'categoria':
+					case 'note':
+					case 'accompagnatori':
+					case 'ip':
+					case 'user_agent':
+						$line[] = $this->sanitizer->csv_text_guard( isset( $r[ $k ] ) ? $r[ $k ] : '' );
+						break;
+					case 'num_accompagnatori':
+						$line[] = isset( $r['num_accompagnatori'] ) ? (int) $r['num_accompagnatori'] : 0;
+						break;
+					case 'chiamato':
+					case 'privacy':
+					case 'partecipa':
+					case 'dorme':
+					case 'mangia':
+						$val = ! empty( $r[ $k ] ) ? '1' : '0';
+						$line[] = $val;
+						break;
+					default:
+						$line[] = isset( $r[ $k ] ) ? $r[ $k ] : '';
+				}
+			}
+			fputcsv( $out, $line, ';' );
+		}
         fclose( $out );
         exit;
     }

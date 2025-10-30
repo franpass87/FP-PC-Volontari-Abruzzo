@@ -493,8 +493,8 @@ class PCV_List_Table extends WP_List_Table {
         echo '<input type="search" name="s" value="' . esc_attr( $s ) . '" placeholder="' . esc_attr__( 'Cerca…', self::TEXT_DOMAIN ) . '">';
         submit_button( __( 'Filtra', self::TEXT_DOMAIN ), 'secondary', '', false );
         echo ' <a href="' . esc_url( $url_no_vars ) . '" class="button">' . esc_html__( 'Pulisci', self::TEXT_DOMAIN ) . '</a> ';
-        $export_url = wp_nonce_url( add_query_arg( [ 'pcv_export' => 'csv' ], admin_url( 'admin.php?page=pcv-volontari' ) ), 'pcv_export' );
-        echo ' <a class="button button-primary" href="' . esc_url( $export_url ) . '">' . esc_html__( 'Export CSV', self::TEXT_DOMAIN ) . '</a>';
+		$export_url = wp_nonce_url( add_query_arg( [ 'pcv_export' => 'csv_options' ], admin_url( 'admin.php?page=pcv-volontari' ) ), 'pcv_export' );
+		echo ' <a class="button button-primary" href="' . esc_url( $export_url ) . '">' . esc_html__( 'Export CSV', self::TEXT_DOMAIN ) . '</a>';
         echo '</form></div>';
     }
 

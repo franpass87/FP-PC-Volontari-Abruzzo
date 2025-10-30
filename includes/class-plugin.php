@@ -277,12 +277,25 @@ class PCV_Plugin {
             return;
         }
 
-        $filters = [
+		$filters = [
             'comune'    => isset( $_GET['f_comune'] ) ? sanitize_text_field( wp_unslash( $_GET['f_comune'] ) ) : '',
             'provincia' => isset( $_GET['f_prov'] ) ? sanitize_text_field( wp_unslash( $_GET['f_prov'] ) ) : '',
             'categoria' => isset( $_GET['f_cat'] ) ? sanitize_text_field( wp_unslash( $_GET['f_cat'] ) ) : '',
             'search'    => isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '',
-        ];
+		];
+
+		// Opzioni di ordinamento per export (se presenti)
+		if ( isset( $_GET['sort_by'] ) ) {
+			$filters['sort_by'] = sanitize_text_field( wp_unslash( $_GET['sort_by'] ) );
+		}
+		if ( isset( $_GET['sort_dir'] ) ) {
+			$filters['sort_dir'] = sanitize_text_field( wp_unslash( $_GET['sort_dir'] ) );
+		}
+		if ( isset( $_GET['cols'] ) && is_string( $_GET['cols'] ) ) {
+			$cols_raw = wp_unslash( $_GET['cols'] );
+			$parts = array_filter( array_map( 'trim', explode( ',', $cols_raw ) ) );
+			$filters['columns'] = $parts;
+		}
 
         $this->exporter->export_to_csv( $filters );
     }
